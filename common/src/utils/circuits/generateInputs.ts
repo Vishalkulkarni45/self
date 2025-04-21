@@ -220,7 +220,7 @@ export function generateCircuitInputsVCandDisclose(
     closestleaf: nameAndYob_smt_leaf_key,
     siblings: nameAndYob_smt_siblings,
   } = generateSMTProof(nameAndYob_smt, name_leaf);
-
+  console.log('dg1 length', formattedMrz.length);
   return {
     secret: formatInput(secret),
     attestation_id: formatInput(attestation_id),

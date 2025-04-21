@@ -1,6 +1,6 @@
 pragma circom 2.1.9;
 
-include "../utils/passport/disclose/disclose.circom";
+include "../utils/passport/disclose/disclose_id.circom";
 include "../utils/passport/disclose/proveCountryIsNotInList.circom";
 include "../utils/passport/ofac/ofac_name_dob.circom";
 include "../utils/passport/ofac/ofac_name_yob.circom";
@@ -35,14 +35,14 @@ include "../utils/passport/date/isValid.circom";
 /// @output revealedData_packed Packed revealed data
 /// @output forbidden_countries_list_packed Packed forbidden countries list
 /// @output nullifier Scope nullifier - not deterministic on the passport data
-template VC_AND_DISCLOSE(
+template VC_AND_DISCLOSE_ID(
     nLevels,
     MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,
     passportNoTreeLevels,
     namedobTreeLevels,
     nameyobTreeLevels
 ) {
-    var DG1_LEN = 93;
+    var DG1_LEN = 95;
 
     signal input secret;
     signal input attestation_id;
@@ -55,7 +55,7 @@ template VC_AND_DISCLOSE(
     signal input path[nLevels];
     signal input siblings[nLevels];
 
-    signal input selector_dg1[88];
+    signal input selector_dg1[90];
 
     signal input majority[2];
     signal input current_date[6];
@@ -80,6 +80,7 @@ template VC_AND_DISCLOSE(
     signal input scope;
     signal input user_identifier;
 
+
     // verify commitment is part of the merkle tree
     VERIFY_COMMITMENT(nLevels, DG1_LEN)(
         secret,
@@ -96,13 +97,13 @@ template VC_AND_DISCLOSE(
     // verify passport validity
     signal validity_ASCII[6];
     for (var i = 0; i < 6; i++) {
-        validity_ASCII[i] <== dg1[70 +i];
+        validity_ASCII[i] <== dg1[43 +i];
     }
     
     IsValid()(current_date,validity_ASCII);
     
     // disclose optional data
-    component disclose = DISCLOSE(
+    component disclose = DISCLOSE_ID(
         MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,
         passportNoTreeLevels,
         namedobTreeLevels,
@@ -125,7 +126,7 @@ template VC_AND_DISCLOSE(
     disclose.selector_ofac <== selector_ofac;
     disclose.forbidden_countries_list <== forbidden_countries_list;
 
-    signal output revealedData_packed[3] <== disclose.revealedData_packed;
+    signal output revealedData_packed[4] <== disclose.revealedData_packed;
 
     var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3);
     signal output forbidden_countries_list_packed[chunkLength] <== disclose.forbidden_countries_list_packed;
@@ -144,4 +145,4 @@ component main {
         current_date,
         attestation_id
     ]
-} = VC_AND_DISCLOSE(33, 40, 64, 64, 64);
+} = VC_AND_DISCLOSE_ID(33, 40, 64, 64, 64);

@@ -481,3 +481,9 @@ export function getDobLeaf(dobMrz: (bigint | number)[], i?: number): bigint {
     console.log('err : Dob', err, i, dobMrz);
   }
 }
+
+type leaf_type = 'country_passport_number' | 'name_dob' | 'name_yob';
+export function getOFACLeaf(type: leaf_type, document_type: 'passport' | 'id_card') {
+
+
+}
