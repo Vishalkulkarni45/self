@@ -21,7 +21,6 @@ include "../ofac/ofac_name_yob_id.circom";
 /// @output forbidden_countries_list_packed Packed forbidden countries list
 template DISCLOSE_ID(
     MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,
-    passportNoTreeLevels,
     namedobTreeLevels,
     nameyobTreeLevels
 ) {
@@ -35,9 +34,6 @@ template DISCLOSE_ID(
 
     signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3];
 
-    signal input ofac_passportno_smt_leaf_key;
-    signal input ofac_passportno_smt_root;
-    signal input ofac_passportno_smt_siblings[passportNoTreeLevels];
 
     signal input ofac_namedob_smt_leaf_key;
     signal input ofac_namedob_smt_root;
@@ -89,9 +85,6 @@ template DISCLOSE_ID(
         ofac_nameyob_smt_root,
         ofac_nameyob_smt_siblings
     );
-    log("ofacCheckResultNameDob", ofacCheckResultNameDob);
-    log("ofacCheckResultNameYob", ofacCheckResultNameYob);
-    log("selector_ofac", selector_ofac);
     revealedData[92] <== ofacCheckResultNameDob * selector_ofac;
     revealedData[93] <== ofacCheckResultNameYob * selector_ofac;
     signal output revealedData_packed[4] <== PackBytes(94)(revealedData);

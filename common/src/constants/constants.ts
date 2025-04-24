@@ -32,6 +32,8 @@ export const hashAlgos = ['sha512', 'sha384', 'sha256', 'sha224', 'sha1'];
 export type hashAlgosTypes = 'sha512' | 'sha384' | 'sha256' | 'sha224' | 'sha1';
 export const saltLengths = [64, 48, 32];
 
+export type document_type = 'passport' | 'id_card';
+
 /**
  * Maximum number of countries in the forbidden countries list.
  * 
