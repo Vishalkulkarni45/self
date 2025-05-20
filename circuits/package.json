@@ -18,6 +18,7 @@
     "test-disclose": "yarn ts-mocha --max-old-space-size=8192 'tests/disclose/vc_and_disclose.test.ts' --exit",
     "test-dsc": "yarn ts-mocha --max-old-space-size=51200 'tests/dsc/dsc.test.ts' --exit",
     "test-ecdsa": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/ecdsa.test.ts' --exit",
+    "test-vc-selfrica": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/selfricaDisclose.test.ts' --exit",
     "test-is-older-than": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/is_older_than.test.ts' --exit",
     "test-is-valid": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/is_valid.test.ts' --exit",
     "test-not-in-list": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/prove_country_is_not_in_list.test.ts' --exit",
