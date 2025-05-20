@@ -3,8 +3,8 @@ pragma circom 2.1.9;
 include "circomlib/circuits/poseidon.circom";
 include "circomlib/circuits/escalarmulfix.circom";
 include "circomlib/circuits/bitify.circom";
-include "circomlib/circuits/compconstant.circom"
-include "circomlib/circuits/comparators.circom"
+include "circomlib/circuits/compconstant.circom";
+include "circomlib/circuits/comparators.circom";
 include "../utils/selfrica/babyJubJubScalarMul.circom";
 include "../utils/passport/customHashers.circom";
 include "../utils/selfrica/babyEcdsa.circom";
@@ -17,7 +17,6 @@ template VC_AND_DISCLOSE(n) {
     signal input s;
     signal input Tx; 
     signal input Ty; 
-    signal input r_inv;
     signal input Ux;
     signal input Uy;
     signal input pubKeyX;
@@ -37,13 +36,15 @@ template VC_AND_DISCLOSE(n) {
             16950150798460657717958625567821834550301663161624707787222815936182638968203
         ];
 
-    signal computedNum2Bits[254] = Num2Bits(254)(s);
-    signal computedCompConstantIn[254] = computedNum2Bits;
+    component computNum2Bits = Num2Bits(254);
+    computNum2Bits.in <== s;
+    signal computedCompConstantIn[254] <== computNum2Bits.out;
     // computedCompConstantIn[253] === 0;
     // computedCompConstantIn[252] === 0;
     // computedCompConstantIn[254] === 0;
 
-    signal computedCompConstant = CompConstant(SUBGROUP_ORDER - 1)(computedCompConstantIn);
+    component computedCompConstant = CompConstant(SUBGROUP_ORDER - 1);
+     computedCompConstant.in <== computedCompConstantIn;
     computedCompConstant.out === 0;
 
 
@@ -63,7 +64,8 @@ template VC_AND_DISCLOSE(n) {
     scalar_range_check.out === 1 ;
 
     //Calculate msg_hash
-    component msg_hasher = calSmileDataHash()(SmileID_data);
+    component msg_hasher = calSmileDataHash();
+    msg_hasher.data <== SmileID_data;
 
     component bit_decompose = Num2Bits(256);
     bit_decompose.in <== msg_hasher.out;
@@ -85,8 +87,8 @@ template VC_AND_DISCLOSE(n) {
     // calculates (-r_inv * msg_hash) % SUBGROUP_ORDER
     component r_inv_msg_hash = BabyScalarMul();
     for(var i =0 ;i<4 ;i++){
-        mul_scalar.in1[i] <== r_inv[i];
-        mul_scalar.in2[i] <== msg_hash_limbs[i];
+        r_inv_msg_hash.in1[i] <== r_inv[i];
+        r_inv_msg_hash.in2[i] <== msg_hash_limbs[i];
     }
 
     signal r_inv_msg_hash_bits[256];
@@ -102,7 +104,7 @@ template VC_AND_DISCLOSE(n) {
     }
 
     component mulFix = EscalarMulFix(256, BASE8);
-    for (i=0; i<256; i++) {
+    for (var i=0; i<256; i++) {
         mulFix.e[i] <== r_inv_msg_hash_bits[i];
     }
 
@@ -116,7 +118,7 @@ template VC_AND_DISCLOSE(n) {
     ecdsa.pubKeyX === pubKeyX;
     ecdsa.pubKeyY === pubKeyY;
 
-    signal is_pkx_zero = IsZero()(publicKeyX);
+    signal is_pkx_zero <== IsZero()(pubKeyX);
     is_pkx_zero === 0;
 
   }
@@ -131,27 +133,27 @@ template calSmileDataHash(){
     for (var i = 0; i<18 ; i++){
         hasher16[i] = Poseidon(16);
         for (var j = 0; j<16 ; j++){
-            hasher16[i].in[j] <== data[i*16+j];
+            hasher16[i].inputs[j] <== data[i*16+j];
         }
         inter_hash_1_16[i] <== hasher16[i].out;
     }
    
     hasher16[18] = Poseidon(16);
     for (var i = 0; i<16 ; i++){
-        hasher16[18].in[i] <== inter_hash_1_16[i];
+        hasher16[18].inputs[i] <== inter_hash_1_16[i];
     }
 
     component hasher12 = Poseidon(12);
-    hasher12.in[0] <== inter_hash_1_16[16];
-    hasher12.in[1] <== inter_hash_1_16[17];
+    hasher12.inputs[0] <== inter_hash_1_16[16];
+    hasher12.inputs[1] <== inter_hash_1_16[17];
 
     for(var i = 18 * 16; i<298 ; i++){
-        hasher12.in[i - 18 * 16 + 2] <== data[i];
+        hasher12.inputs[i - 18 * 16 + 2] <== data[i];
     }
 
     component hasher = Poseidon(2);
-    hasher.in[0] <== hasher16[18].out;
-    hasher.in[1] <== hasher12.out;
+    hasher.inputs[0] <== hasher16[18].out;
+    hasher.inputs[1] <== hasher12.out;
 
     out <== hasher.out;
 

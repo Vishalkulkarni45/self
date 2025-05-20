@@ -1,6 +1,6 @@
 import { wasm as wasmTester } from 'circom_tester';
-import * as crypto from 'crypto';
 import * as path from 'path';
+import * as fs from 'fs';
 import { splitToWords } from '../../../common/src/utils/bytes';
 
 describe('selfricaDisclose', () => {
@@ -12,9 +12,8 @@ describe('selfricaDisclose', () => {
                 include: ['node_modules'],
             }
         );
-        const input = {
-           r_inv:["7454187305358665460","12339561404529962506","3965992003123030795","435874783350371333"]
-        }
+        const inputPath = path.join(__dirname, 'input.json');
+        const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
