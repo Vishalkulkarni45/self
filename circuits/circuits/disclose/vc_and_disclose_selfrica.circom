@@ -63,10 +63,7 @@ template VC_AND_DISCLOSE(n) {
     scalar_range_check.out === 1 ;
 
     //Calculate msg_hash
-    component msg_hasher = CustomHasher(n);
-    for(var i =0; i<n : i++){
-        msg_hasher.in[i] <== SmileID_data[i];
-    }
+    component msg_hasher = calSmileDataHash()(SmileID_data);
 
     component bit_decompose = Num2Bits(256);
     bit_decompose.in <== msg_hasher.out;
@@ -124,3 +121,38 @@ template VC_AND_DISCLOSE(n) {
 
   }
 
+template calSmileDataHash(){
+    signal input data[298];
+    signal output out;
+
+    component hasher16[19];
+    signal inter_hash_1_16[18];
+
+    for (var i = 0; i<18 ; i++){
+        hasher16[i] = Poseidon(16);
+        for (var j = 0; j<16 ; j++){
+            hasher16[i].in[j] <== data[i*16+j];
+        }
+        inter_hash_1_16[i] <== hasher16[i].out;
+    }
+   
+    hasher16[18] = Poseidon(16);
+    for (var i = 0; i<16 ; i++){
+        hasher16[18].in[i] <== inter_hash_1_16[i];
+    }
+
+    component hasher12 = Poseidon(12);
+    hasher12.in[0] <== inter_hash_1_16[16];
+    hasher12.in[1] <== inter_hash_1_16[17];
+
+    for(var i = 18 * 16; i<298 ; i++){
+        hasher12.in[i - 18 * 16 + 2] <== data[i];
+    }
+
+    component hasher = Poseidon(2);
+    hasher.in[0] <== hasher16[18].out;
+    hasher.in[1] <== hasher12.out;
+
+    out <== hasher.out;
+
+}
