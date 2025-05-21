@@ -32,7 +32,7 @@ describe('selfricaDisclose', () => {
     before(async function () {
         this.timeout(0);
         circuit = await wasmTester(
-            path.join(__dirname, `../../circuits/tests/utils/vcDiscloseSelfrica.circom`),
+            path.join(__dirname, '../../circuits/disclose/vc_and_disclose_selfrica.circom'),
             { include: ['node_modules'] }
         );
     });

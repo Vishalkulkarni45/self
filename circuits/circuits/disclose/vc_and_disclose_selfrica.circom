@@ -190,3 +190,5 @@ template CustomHasher298(){
 
     out <== finalHasher.out;
 }
+
+component main = VC_AND_DISCLOSE();
