@@ -1,5 +1,6 @@
-include "../crypto/bigInt/bigInt.circom";
+pragma circom 2.1.9;
 
+include "../crypto/bigInt/bigInt.circom";
 template BabyScalarMul(){
     signal input in1[4];
     signal input in2[4];

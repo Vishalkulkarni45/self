@@ -12,18 +12,16 @@ include "@openpassport/zk-email-circuits/lib/bigint.circom";
 
 template VC_AND_DISCLOSE(n) {
     
-    signal input SmileID_data[n];
+    signal input SmileID_data[298];
     //signal input disclose_sel[n];
     signal input s;
     signal input Tx; 
     signal input Ty; 
-    signal input Ux;
-    signal input Uy;
     signal input pubKeyX;
     signal input pubKeyY;
 
-    //Supply -r_inv
-    signal input r_inv[4];
+     //Supply -r_inv
+     signal input r_inv[4];
 
     // signal output pi_hash;
     // signal reveal_data[n];
@@ -39,12 +37,11 @@ template VC_AND_DISCLOSE(n) {
     component computNum2Bits = Num2Bits(254);
     computNum2Bits.in <== s;
     signal computedCompConstantIn[254] <== computNum2Bits.out;
-    // computedCompConstantIn[253] === 0;
-    // computedCompConstantIn[252] === 0;
-    // computedCompConstantIn[254] === 0;
+    computedCompConstantIn[252] === 0;
+    computedCompConstantIn[253] === 0;
 
     component computedCompConstant = CompConstant(SUBGROUP_ORDER - 1);
-     computedCompConstant.in <== computedCompConstantIn;
+    computedCompConstant.in <== computedCompConstantIn;
     computedCompConstant.out === 0;
 
 
@@ -65,7 +62,9 @@ template VC_AND_DISCLOSE(n) {
 
     //Calculate msg_hash
     component msg_hasher = calSmileDataHash();
-    msg_hasher.data <== SmileID_data;
+    for (var i = 0; i < 298; i++) {
+        msg_hasher.data[i] <== SmileID_data[i];
+    }
 
     component bit_decompose = Num2Bits(256);
     bit_decompose.in <== msg_hasher.out;
@@ -75,13 +74,13 @@ template VC_AND_DISCLOSE(n) {
     signal msg_hash_limbs[4];
     component bits2Num[4];
 
-    //convert msg_hash to 4 limbs
+    // Convert msg_hash_bits (little-endian) to 4 LE limbs
     for (var i = 0; i < 4; i++) {
         bits2Num[i] = Bits2Num(64);
         for (var j = 0; j < 64; j++) {
-            bits2Num[i].in[64 - 1 - j] <== msg_hash_bits[i * 64 + j];
+            bits2Num[i].in[j] <== msg_hash_bits[i * 64 + j];
         }
-        msg_hash_limbs[4 - 1 - i] <== bits2Num[i].out;
+        msg_hash_limbs[i] <== bits2Num[i].out;
     }
 
     // calculates (-r_inv * msg_hash) % SUBGROUP_ORDER
@@ -94,7 +93,7 @@ template VC_AND_DISCLOSE(n) {
     signal r_inv_msg_hash_bits[256];
     component num2bits[4];
 
-    //convert r_inv_msg_hash limbs to bits
+   // convert r_inv_msg_hash limbs to bits
     for (var i=0; i<4; i++){
         num2bits[i]= Num2Bits(64);
         num2bits[i].in <==r_inv_msg_hash.out[i];
@@ -102,9 +101,12 @@ template VC_AND_DISCLOSE(n) {
             r_inv_msg_hash_bits[i*64+j] <== num2bits[i].out[j];
         }
     }
+    r_inv_msg_hash_bits[255] === 0;
+    r_inv_msg_hash_bits[254] === 0;
 
-    component mulFix = EscalarMulFix(256, BASE8);
-    for (var i=0; i<256; i++) {
+
+    component mulFix = EscalarMulFix(254, BASE8);
+    for (var i=0; i<254; i++) {
         mulFix.e[i] <== r_inv_msg_hash_bits[i];
     }
 
@@ -115,6 +117,7 @@ template VC_AND_DISCLOSE(n) {
     ecdsa.Uy <== mulFix.out[1];
     ecdsa.s <== s;
 
+
     ecdsa.pubKeyX === pubKeyX;
     ecdsa.pubKeyY === pubKeyY;
 
@@ -123,38 +126,51 @@ template VC_AND_DISCLOSE(n) {
 
   }
 
+
 template calSmileDataHash(){
     signal input data[298];
     signal output out;
 
-    component hasher16[19];
-    signal inter_hash_1_16[18];
+    var FULL_CHUNK_SIZE = 16;
+    var FULL_CHUNK_COUNT = 18;
+    var REMAINING_DATA = 298 - FULL_CHUNK_SIZE * FULL_CHUNK_COUNT;  // 10
 
-    for (var i = 0; i<18 ; i++){
-        hasher16[i] = Poseidon(16);
-        for (var j = 0; j<16 ; j++){
-            hasher16[i].inputs[j] <== data[i*16+j];
+    // Step 1: Hash each 16-element chunk
+    component hasher16[FULL_CHUNK_COUNT];
+    signal inter_hash_1_16[FULL_CHUNK_COUNT];
+
+    for (var i = 0; i < FULL_CHUNK_COUNT; i++) {
+        hasher16[i] = Poseidon(FULL_CHUNK_SIZE);
+        for (var j = 0; j < FULL_CHUNK_SIZE; j++) {
+            hasher16[i].inputs[j] <== data[i * FULL_CHUNK_SIZE + j];
         }
         inter_hash_1_16[i] <== hasher16[i].out;
     }
-   
-    hasher16[18] = Poseidon(16);
-    for (var i = 0; i<16 ; i++){
-        hasher16[18].inputs[i] <== inter_hash_1_16[i];
+
+    // Step 2: Hash first 16 intermediate hashes → h_2_16
+    component hasher2_16 = Poseidon(FULL_CHUNK_SIZE);
+    for (var i = 0; i < FULL_CHUNK_SIZE; i++) {
+        hasher2_16.inputs[i] <== inter_hash_1_16[i];
     }
 
-    component hasher12 = Poseidon(12);
-    hasher12.inputs[0] <== inter_hash_1_16[16];
-    hasher12.inputs[1] <== inter_hash_1_16[17];
+    // Step 3: Hash [last 2 intermediate hashes + remaining 10 data values] → h_2_12
+    component hasher2_12 = Poseidon(12);
+    hasher2_12.inputs[0] <== inter_hash_1_16[16];
+    hasher2_12.inputs[1] <== inter_hash_1_16[17];
 
-    for(var i = 18 * 16; i<298 ; i++){
-        hasher12.inputs[i - 18 * 16 + 2] <== data[i];
+    for (var i = 0; i < REMAINING_DATA; i++) {
+        hasher2_12.inputs[i + 2] <== data[FULL_CHUNK_SIZE * FULL_CHUNK_COUNT + i]; // data[288 + i]
     }
 
-    component hasher = Poseidon(2);
-    hasher.inputs[0] <== hasher16[18].out;
-    hasher.inputs[1] <== hasher12.out;
+    // Fill any remaining Poseidon(12) inputs with 0
+    for (var i = REMAINING_DATA + 2; i < 12; i++) {
+        hasher2_12.inputs[i] <== 0;
+    }
 
-    out <== hasher.out;
+    // Step 4: Final hash
+    component finalHasher = Poseidon(2);
+    finalHasher.inputs[0] <== hasher2_16.out;
+    finalHasher.inputs[1] <== hasher2_12.out;
 
+    out <== finalHasher.out;
 }
