@@ -10,24 +10,37 @@ include "../utils/passport/customHashers.circom";
 include "../utils/selfrica/babyEcdsa.circom";
 include "@openpassport/zk-email-circuits/lib/bigint.circom";
 
-template VC_AND_DISCLOSE(n) {
+template VC_AND_DISCLOSE() {
     
     signal input SmileID_data[298];
-    //signal input disclose_sel[n];
+    signal input disclose_sel[298];
     signal input s;
     signal input Tx; 
     signal input Ty; 
     signal input pubKeyX;
     signal input pubKeyY;
 
-     //Supply -r_inv
-     signal input r_inv[4];
+    //Supply -r_inv
+    signal input r_inv[4];
 
-    // signal output pi_hash;
-    // signal reveal_data[n];
+    signal output pi_hash;
+
+    component ascii_range_check[298];
+    component pi_hasher = CustomHasher298();
+    for(var i=0; i<298; i++){
+        // Check if the data is in the ASCII range 0 - 127
+        ascii_range_check[i] = Num2Bits(7); 
+        ascii_range_check[i].in <== SmileID_data[i];
+
+        //Check is selctor binary
+        disclose_sel[i] * (disclose_sel[i] - 1) === 0;
+        pi_hasher.in[i] <== disclose_sel[i] * SmileID_data[i];
+    }
+
+    pi_hash <== pi_hasher.out;
+
 
    
-
     var SUBGROUP_ORDER = 2736030358979909402780800718157159386076813972158567259200215660948447373041;
     var BASE8[2] = [
             5299619240641551281634865583518297030282874472190772894086521144482721001553,
@@ -44,6 +57,9 @@ template VC_AND_DISCLOSE(n) {
     computedCompConstant.in <== computedCompConstantIn;
     computedCompConstant.out === 0;
 
+    // Check if s is not 0
+    signal is_s_zero <== IsZero()(s);
+    is_s_zero === 0;
 
     signal scalar_mod[4];
    // SUBGROUP ORDER in limbs
@@ -61,9 +77,9 @@ template VC_AND_DISCLOSE(n) {
     scalar_range_check.out === 1 ;
 
     //Calculate msg_hash
-    component msg_hasher = calSmileDataHash();
+    component msg_hasher = CustomHasher298();
     for (var i = 0; i < 298; i++) {
-        msg_hasher.data[i] <== SmileID_data[i];
+        msg_hasher.in[i] <== SmileID_data[i];
     }
 
     component bit_decompose = Num2Bits(256);
@@ -127,8 +143,8 @@ template VC_AND_DISCLOSE(n) {
   }
 
 
-template calSmileDataHash(){
-    signal input data[298];
+template CustomHasher298(){
+    signal input in[298];
     signal output out;
 
     var FULL_CHUNK_SIZE = 16;
@@ -142,7 +158,7 @@ template calSmileDataHash(){
     for (var i = 0; i < FULL_CHUNK_COUNT; i++) {
         hasher16[i] = Poseidon(FULL_CHUNK_SIZE);
         for (var j = 0; j < FULL_CHUNK_SIZE; j++) {
-            hasher16[i].inputs[j] <== data[i * FULL_CHUNK_SIZE + j];
+            hasher16[i].inputs[j] <== in[i * FULL_CHUNK_SIZE + j];
         }
         inter_hash_1_16[i] <== hasher16[i].out;
     }
@@ -159,7 +175,7 @@ template calSmileDataHash(){
     hasher2_12.inputs[1] <== inter_hash_1_16[17];
 
     for (var i = 0; i < REMAINING_DATA; i++) {
-        hasher2_12.inputs[i + 2] <== data[FULL_CHUNK_SIZE * FULL_CHUNK_COUNT + i]; // data[288 + i]
+        hasher2_12.inputs[i + 2] <== in[FULL_CHUNK_SIZE * FULL_CHUNK_COUNT + i]; // data[288 + i]
     }
 
     // Fill any remaining Poseidon(12) inputs with 0

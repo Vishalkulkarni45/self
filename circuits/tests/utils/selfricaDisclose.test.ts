@@ -1,48 +1,226 @@
 import { wasm as wasmTester } from 'circom_tester';
 import * as path from 'path';
-import * as fs from 'fs';
-import { splitToWords } from '../../../common/src/utils/bytes';
+
+
+function makeInput({
+    disclose_sel = Array.from({ length: 298 }, () => (Math.floor(Math.random() * 2)).toString()),
+
+    smileData = smiledata,
+    s = "630037470879847701531609472542609422023135651243206071524269210093213685328",
+    r_inv = [
+        "4143620579060054611",
+        "8060624601953140490",
+        "11954084563919738676",
+        "373078728474647234"
+    ],
+} = {}) {
+    return {
+        SmileID_data: smileData,
+        disclose_sel,
+        s,
+        Tx: "7134949030369245611098341356089261752084236119341587288220577651919838782737",
+        Ty: "16290264981912618299876954392625697366383580113869408488564063660349257812652",
+        pubKeyX: "8340205584289499356632824273164643272534879542102350781612931945544420616740",
+        pubKeyY: "9254805840148540323662821564096842980317301284978427129105934150012998266827",
+        r_inv,
+    };
+}
 
 describe('selfricaDisclose', () => {
+    let circuit: any;
 
-    it('should  verify valid signature', async function () {
-        this.timeout(200000);
-        const circuit = await wasmTester(
+    before(async function () {
+        this.timeout(0);
+        circuit = await wasmTester(
             path.join(__dirname, `../../circuits/tests/utils/vcDiscloseSelfrica.circom`),
-            {
-                include: ['node_modules'],
-            }
+            { include: ['node_modules'] }
         );
-        const input = {
-            SmileID_data: smiledata,
-            s: "630037470879847701531609472542609422023135651243206071524269210093213685328",
-            Tx: "7134949030369245611098341356089261752084236119341587288220577651919838782737",
-            Ty: "16290264981912618299876954392625697366383580113869408488564063660349257812652",
-            pubKeyX: "8340205584289499356632824273164643272534879542102350781612931945544420616740",
-            pubKeyY: "9254805840148540323662821564096842980317301284978427129105934150012998266827",
-            r_inv: [
-                "4143620579060054611",
-                "8060624601953140490",
-                "11954084563919738676",
-                "373078728474647234"
-            ]
-        }
-
-        try {
-            const witness = await circuit.calculateWitness(input);
-           
-
-            // const output = await circuit.getOutput(witness,{"SmileID_data": [298], "s":1, "Tx":1, "Ty":1, "Ux":1, "Uy":1, "pubKeyX":1, "pubKeyY":1, "r_inv": [4], "p_msg_hash": 1});
-            // console.log("p_msg_hash:", output.toString());
-
-            await circuit.checkConstraints(witness);
-        } catch (error) {
-            throw error;
-        }
-
     });
 
-})
+    [
+        {
+            shouldVerify: true,
+            reason: 'should verify with valid input',
+            input: () => makeInput(),
+        },
+        {
+            shouldVerify: false,
+            reason: 'should fail if disclose_sel contains non-binary values',
+            input: () => makeInput({
+                disclose_sel: Array.from({ length: 298 }, (_, i) => (i === 0 ? "2" : "1"))
+            }),
+        },
+        {
+            shouldVerify: false,
+            reason: 'should fail if SmileID_data contains out-of-range ASCII values',
+            input: () => {
+                const badSmileData = [...smiledata];
+                badSmileData[10] = "200";
+                return makeInput({ smileData: badSmileData });
+            },
+        },
+        {
+            shouldVerify: false,
+            reason: 'should fail if s is zero',
+            input: () => makeInput({ s: "0" }),
+        },
+        {
+            shouldVerify: false,
+            reason: 'should fail if r_inv is not less than scalar_mod',
+            input: () => makeInput({
+                r_inv: [
+                    "7454187305358665457",
+                    "12339561404529962506",
+                    "3965992003123030795",
+                    "435874783350371333"
+                ]
+            }),
+        },
+    ].forEach(({ shouldVerify, reason, input }) => {
+        it(reason, async function () {
+            this.timeout(0);
+
+            // Improved logic: always expect valid inputs to pass, and invalid to throw
+            if (shouldVerify) {
+                try {
+                    const witness = await circuit.calculateWitness(input());
+                    await circuit.checkConstraints(witness);
+                } catch (err) {
+                    throw new Error(`Expected verification to succeed, but failed: ${err}`);
+                }
+            } else {
+                let passed = false;
+                try {
+                    const witness = await circuit.calculateWitness(input());
+                    await circuit.checkConstraints(witness);
+                    passed = true;
+                } catch (err) {
+                    // Expected to fail
+                }
+                if (passed) {
+                    throw new Error('Circuit is underconstrained and accepted invalid input');
+                }
+            }
+        });
+    });
+
+    it('should fail if SmileID_data is empty', async function () {
+        this.timeout(0);
+        const input = makeInput({ smileData: [] });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted empty SmileID_data');
+    });
+
+    it('should fail if disclose_sel is empty', async function () {
+        this.timeout(0);
+        const input = makeInput({ disclose_sel: [] });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted empty disclose_sel');
+    });
+
+    it('should fail if SmileID_data contains negative values', async function () {
+        this.timeout(0);
+        const badSmileData = [...smiledata];
+        badSmileData[5] = "-1";
+        const input = makeInput({ smileData: badSmileData });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted negative SmileID_data');
+    });
+
+    it('should fail if disclose_sel contains negative values', async function () {
+        this.timeout(0);
+        const badDiscloseSel = Array.from({ length: 298 }, (_, i) => (i === 0 ? "-1" : "1"));
+        const input = makeInput({ disclose_sel: badDiscloseSel });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted negative disclose_sel');
+    });
+
+    it('should fail if r_inv contains negative values', async function () {
+        this.timeout(0);
+        const badRInv = ["-1", "1", "2", "3"];
+        const input = makeInput({ r_inv: badRInv });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted negative r_inv');
+    });
+
+    it('should fail if s is not a stringified number', async function () {
+        this.timeout(0);
+        const input = makeInput({ s: "not_a_number" as any });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted non-numeric s');
+    });
+
+    it('should fail if SmileID_data contains non-numeric strings', async function () {
+        this.timeout(0);
+        const badSmileData = [...smiledata];
+        badSmileData[0] = "abc";
+        const input = makeInput({ smileData: badSmileData });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted non-numeric SmileID_data');
+    });
+
+    it('should fail if disclose_sel contains non-numeric strings', async function () {
+        this.timeout(0);
+        const badDiscloseSel = Array.from({ length: 298 }, (_, i) => (i === 0 ? "abc" : "1"));
+        const input = makeInput({ disclose_sel: badDiscloseSel });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted non-numeric disclose_sel');
+    });
+
+    it('should fail if r_inv contains non-numeric strings', async function () {
+        this.timeout(0);
+        const badRInv = ["abc", "1", "2", "3"];
+        const input = makeInput({ r_inv: badRInv });
+        let passed = false;
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+            passed = true;
+        } catch (err) { }
+        if (passed) throw new Error('Circuit accepted non-numeric r_inv');
+    });
+
+});
 
 const smiledata = [
     "100",
