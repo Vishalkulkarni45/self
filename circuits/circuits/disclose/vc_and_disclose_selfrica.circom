@@ -26,7 +26,7 @@ template VC_AND_DISCLOSE() {
     signal output pi_hash;
 
     component ascii_range_check[298];
-    component pi_hasher = CustomHasher298();
+    component pi_hasher = PackBytesAndPoseidon(298);
     for(var i=0; i<298; i++){
         // Check if the data is in the ASCII range 0 - 127
         ascii_range_check[i] = Num2Bits(7); 
@@ -77,7 +77,7 @@ template VC_AND_DISCLOSE() {
     scalar_range_check.out === 1 ;
 
     //Calculate msg_hash
-    component msg_hasher = CustomHasher298();
+    component msg_hasher = PackBytesAndPoseidon(298);
     for (var i = 0; i < 298; i++) {
         msg_hasher.in[i] <== SmileID_data[i];
     }
@@ -142,53 +142,5 @@ template VC_AND_DISCLOSE() {
 
   }
 
-
-template CustomHasher298(){
-    signal input in[298];
-    signal output out;
-
-    var FULL_CHUNK_SIZE = 16;
-    var FULL_CHUNK_COUNT = 18;
-    var REMAINING_DATA = 298 - FULL_CHUNK_SIZE * FULL_CHUNK_COUNT;  // 10
-
-    // Step 1: Hash each 16-element chunk
-    component hasher16[FULL_CHUNK_COUNT];
-    signal inter_hash_1_16[FULL_CHUNK_COUNT];
-
-    for (var i = 0; i < FULL_CHUNK_COUNT; i++) {
-        hasher16[i] = Poseidon(FULL_CHUNK_SIZE);
-        for (var j = 0; j < FULL_CHUNK_SIZE; j++) {
-            hasher16[i].inputs[j] <== in[i * FULL_CHUNK_SIZE + j];
-        }
-        inter_hash_1_16[i] <== hasher16[i].out;
-    }
-
-    // Step 2: Hash first 16 intermediate hashes → h_2_16
-    component hasher2_16 = Poseidon(FULL_CHUNK_SIZE);
-    for (var i = 0; i < FULL_CHUNK_SIZE; i++) {
-        hasher2_16.inputs[i] <== inter_hash_1_16[i];
-    }
-
-    // Step 3: Hash [last 2 intermediate hashes + remaining 10 data values] → h_2_12
-    component hasher2_12 = Poseidon(12);
-    hasher2_12.inputs[0] <== inter_hash_1_16[16];
-    hasher2_12.inputs[1] <== inter_hash_1_16[17];
-
-    for (var i = 0; i < REMAINING_DATA; i++) {
-        hasher2_12.inputs[i + 2] <== in[FULL_CHUNK_SIZE * FULL_CHUNK_COUNT + i]; // data[288 + i]
-    }
-
-    // Fill any remaining Poseidon(12) inputs with 0
-    for (var i = REMAINING_DATA + 2; i < 12; i++) {
-        hasher2_12.inputs[i] <== 0;
-    }
-
-    // Step 4: Final hash
-    component finalHasher = Poseidon(2);
-    finalHasher.inputs[0] <== hasher2_16.out;
-    finalHasher.inputs[1] <== hasher2_12.out;
-
-    out <== finalHasher.out;
-}
 
 component main = VC_AND_DISCLOSE();
