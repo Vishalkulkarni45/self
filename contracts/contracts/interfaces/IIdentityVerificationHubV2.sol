@@ -12,22 +12,21 @@ import {CircuitConstants} from "../constants/CircuitConstants.sol";
  * @dev Defines data structures and external functions for verifying proofs and recovering human-readable data.
  */
 interface IIdentityVerificationHubV2 {
-
     /**
      * @notice Enum representing types of data that may be revealed.
      */
     enum RevealedDataType {
-        ISSUING_STATE,     // The issuing state of the passport.
-        NAME,              // The full name of the passport holder.
-        PASSPORT_NUMBER,   // The passport number.
-        NATIONALITY,       // The nationality.
-        DATE_OF_BIRTH,     // The date of birth.
-        GENDER,            // The gender.
-        EXPIRY_DATE,       // The passport expiry date.
-        OLDER_THAN,        // The "older than" age verification value.
-        PASSPORT_NO_OFAC,  // The passport number OFAC status.
+        ISSUING_STATE, // The issuing state of the passport.
+        NAME, // The full name of the passport holder.
+        PASSPORT_NUMBER, // The passport number.
+        NATIONALITY, // The nationality.
+        DATE_OF_BIRTH, // The date of birth.
+        GENDER, // The gender.
+        EXPIRY_DATE, // The passport expiry date.
+        OLDER_THAN, // The "older than" age verification value.
+        PASSPORT_NO_OFAC, // The passport number OFAC status.
         NAME_AND_DOB_OFAC, // The name and date of birth OFAC verification result.
-        NAME_AND_YOB_OFAC  // The name and year of birth OFAC verification result.
+        NAME_AND_YOB_OFAC // The name and year of birth OFAC verification result.
     }
 
     /**
@@ -95,10 +94,7 @@ interface IIdentityVerificationHubV2 {
      */
     function verifyVcAndDisclose(
         VcAndDiscloseHubProof memory proof
-    )
-        external
-        view
-        returns (VcAndDiscloseVerificationResult memory result);
+    ) external view returns (VcAndDiscloseVerificationResult memory result);
 
     /**
      * @notice Verifies a EU ID Card VC and Disclose proof.
@@ -108,10 +104,7 @@ interface IIdentityVerificationHubV2 {
      */
     function verifyEuIdVcAndDisclose(
         IdCardVcAndDiscloseHubProof memory proof
-    )
-        external
-        view
-        returns (IdCardVcAndDiscloseVerificationResult memory result);
+    ) external view returns (IdCardVcAndDiscloseVerificationResult memory result);
 
     /**
      * @notice Registers a passport commitment using a register circuit proof.
@@ -124,8 +117,7 @@ interface IIdentityVerificationHubV2 {
         bytes32 attestationId,
         uint256 registerCircuitVerifierId,
         IRegisterCircuitVerifier.RegisterCircuitProof memory registerCircuitProof
-    )
-        external;
+    ) external;
 
     /**
      * @notice Registers a DSC key commitment using a DSC circuit proof.
@@ -138,8 +130,7 @@ interface IIdentityVerificationHubV2 {
         bytes32 attestationId,
         uint256 dscCircuitVerifierId,
         IDscCircuitVerifier.DscCircuitProof memory dscCircuitProof
-    )
-        external;
+    ) external;
 
     /**
      * @notice Returns the address of the Identity Registry for a specific attestation type.
@@ -160,68 +151,42 @@ interface IIdentityVerificationHubV2 {
      * @param typeId The signature type identifier.
      * @return verifier The address of the register circuit verifier.
      */
-    function sigTypeToRegisterCircuitVerifiers(
-        uint256 typeId
-    )
-        external
-        view
-        returns (address verifier);
+    function sigTypeToRegisterCircuitVerifiers(uint256 typeId) external view returns (address verifier);
 
     /**
      * @notice Retrieves the DSC circuit verifier for a given signature type.
      * @param typeId The signature type identifier.
      * @return verifier The address of the DSC circuit verifier.
      */
-    function sigTypeToDscCircuitVerifiers(
-        uint256 typeId
-    )
-        external
-        view
-        returns (address verifier);
+    function sigTypeToDscCircuitVerifiers(uint256 typeId) external view returns (address verifier);
 
     /**
      * @notice Updates the registry address.
      * @param attestationId The attestation identifier.
      * @param registryAddress The new registry address.
      */
-    function updateRegistry(
-        bytes32 attestationId,
-        address registryAddress
-    )
-        external;
+    function updateRegistry(bytes32 attestationId, address registryAddress) external;
 
     /**
      * @notice Updates the VC and Disclose circuit verifier address.
      * @param attestationId The attestation identifier.
      * @param vcAndDiscloseCircuitVerifierAddress The new VC and Disclose circuit verifier address.
      */
-    function updateVcAndDiscloseCircuit(
-        bytes32 attestationId,
-        address vcAndDiscloseCircuitVerifierAddress
-    )
-        external;
+    function updateVcAndDiscloseCircuit(bytes32 attestationId, address vcAndDiscloseCircuitVerifierAddress) external;
 
     /**
      * @notice Updates the register circuit verifier for a specific signature type.
      * @param typeId The signature type identifier.
      * @param verifierAddress The new register circuit verifier address.
      */
-    function updateRegisterCircuitVerifier(
-        uint256 typeId,
-        address verifierAddress
-    )
-        external;
+    function updateRegisterCircuitVerifier(uint256 typeId, address verifierAddress) external;
 
     /**
      * @notice Updates the DSC circuit verifier for a specific signature type.
      * @param typeId The signature type identifier.
      * @param verifierAddress The new DSC circuit verifier address.
      */
-    function updateDscVerifier(
-        uint256 typeId,
-        address verifierAddress
-    )
-        external;
+    function updateDscVerifier(uint256 typeId, address verifierAddress) external;
 
     /**
      * @notice Batch updates register circuit verifiers.
@@ -231,17 +196,12 @@ interface IIdentityVerificationHubV2 {
     function batchUpdateRegisterCircuitVerifiers(
         uint256[] calldata typeIds,
         address[] calldata verifierAddresses
-    )
-        external;
+    ) external;
 
     /**
      * @notice Batch updates DSC circuit verifiers.
      * @param typeIds An array of signature type identifiers.
      * @param verifierAddresses An array of new DSC circuit verifier addresses.
      */
-    function batchUpdateDscCircuitVerifiers(
-        uint256[] calldata typeIds,
-        address[] calldata verifierAddresses
-    )
-        external;
+    function batchUpdateDscCircuitVerifiers(uint256[] calldata typeIds, address[] calldata verifierAddresses) external;
 }
