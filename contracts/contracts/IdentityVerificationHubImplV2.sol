@@ -349,6 +349,17 @@ contract IdentityVerificationHubImplV2 is
         return result;
     }
 
+    // We need this function
+    // function verifyVcAndDisclose(
+    //     bytes input
+    // )
+    //     external
+    //     virtual
+    //     view
+    //     onlyProxy
+    //     returns (bytes)
+    // {}
+
     // ====================================================
     // External Functions - Registration
     // ====================================================
