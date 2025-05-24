@@ -3,7 +3,7 @@ import path from 'path';
 import { wasm as wasm_tester } from 'circom_tester';
 import { generateCircuitInputsOfac } from '../../../common/src/utils/circuits/generateInputs';
 import { SMT } from '@openpassport/zk-kit-smt';
-import { poseidon2 } from 'poseidon-lite';
+import { poseidon2, poseidon3 } from 'poseidon-lite';
 import passportNoAndNationalityjson from '../../../common/ofacdata/outputs/passportNoAndNationalitySMT.json';
 import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSMT.json';
 import nameAndYobjson from '../../../common/ofacdata/outputs/nameAndYobSMT.json';
@@ -237,7 +237,7 @@ describe('OFAC - Name and YOB match', function () {
   });
 });
 
-describe.only('OFAC - SMT Security Tests', function () {
+describe('OFAC - SMT Security Tests', function () {
   this.timeout(0);
   let passNoAndNationality_smt = new SMT(poseidon2, true);
   let circuit: any;

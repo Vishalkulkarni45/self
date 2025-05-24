@@ -10,8 +10,10 @@ include "../utils/passport/customHashers.circom";
 include "../utils/selfrica/babyEcdsa.circom";
 include "@openpassport/zk-email-circuits/lib/bigint.circom";
 
-template VC_AND_DISCLOSE() {
-    
+template VC_AND_DISCLOSE(
+    namedobTreeLevels,
+    nameyobTreeLevels
+) {
     signal input SmileID_data[298];
     signal input disclose_sel[298];
     signal input s;
@@ -38,8 +40,6 @@ template VC_AND_DISCLOSE() {
     }
 
     pi_hash <== pi_hasher.out;
-
-
    
     var SUBGROUP_ORDER = 2736030358979909402780800718157159386076813972158567259200215660948447373041;
     var BASE8[2] = [
@@ -140,7 +140,7 @@ template VC_AND_DISCLOSE() {
     signal is_pkx_zero <== IsZero()(pubKeyX);
     is_pkx_zero === 0;
 
+    //check for validity of the document
   }
 
-
-component main = VC_AND_DISCLOSE();
+component main = VC_AND_DISCLOSE(64, 64);
