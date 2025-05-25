@@ -25,6 +25,7 @@ template VC_AND_DISCLOSE(
     //Supply -r_inv
     signal input r_inv[4];
 
+    //TODO: calculate hash using packedbytes 
     signal output pi_hash;
 
     component ascii_range_check[298];
@@ -47,15 +48,13 @@ template VC_AND_DISCLOSE(
             16950150798460657717958625567821834550301663161624707787222815936182638968203
         ];
 
-    component computNum2Bits = Num2Bits(254);
-    computNum2Bits.in <== s;
-    signal computedCompConstantIn[254] <== computNum2Bits.out;
-    computedCompConstantIn[252] === 0;
-    computedCompConstantIn[253] === 0;
+    component computes2bits = Num2Bits(254);
+    computes2bits.in <== s;
 
-    component computedCompConstant = CompConstant(SUBGROUP_ORDER - 1);
-    computedCompConstant.in <== computedCompConstantIn;
-    computedCompConstant.out === 0;
+    // Check s should be less than SUBGROUPT_ORDER - 1
+    component compConst = CompConstant(SUBGROUP_ORDER - 1);
+    compConst.in <== computes2bits.out;
+    compConst.out === 0;
 
     // Check if s is not 0
     signal is_s_zero <== IsZero()(s);
@@ -125,8 +124,6 @@ template VC_AND_DISCLOSE(
             r_inv_msg_hash_bits[i*64+j] <== num2bits[i].out[j];
         }
     }
-    r_inv_msg_hash_bits[255] === 0;
-    r_inv_msg_hash_bits[254] === 0;
 
 
     component mulFix = EscalarMulFix(254, BASE8);

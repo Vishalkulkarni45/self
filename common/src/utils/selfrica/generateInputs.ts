@@ -64,15 +64,17 @@ export const generateCircuitInput = () => {
     const msg = generateRandomsg();
     const sk = BigInt(subOrder - BigInt(Math.floor(Math.random() * 90098)));
     const pk = mulPointEscalar(Base8, sk);
-    const sig = signECDSA(sk, msg)
 
+    const sig = signECDSA(sk, msg)
     console.assert(verifyECDSA(msg, sig, pk) == true, "Invalid signature");
 
     let { T, U } = getEffECDSAArgs(msg, sig);
     console.assert(verifyEffECDSA(sig.s, T, U, pk) == true, "Invalid signature");
 
+    console.assert(sig.s < subOrder, " s is greater than scalar field");
     console.assert(inCurve(T), "Point T not on curve");
     console.assert(inCurve(U), "Point U not on curve");
+
 
     const rInv = modInv(sig.R[0], subOrder);
 
