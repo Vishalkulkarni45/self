@@ -1,17 +1,18 @@
 import * as constants from './constants';
+import { Point } from "@zk-kit/baby-jubjub";
 
 export type SmileData = {
     country: string;
-    idType: string; 
+    idType: string;
     idNumber: string;
-    issuanceDate: string; 
-    expiryDate: string; 
+    issuanceDate: string;
+    expiryDate: string;
     fullName: string;
     dob: string;
-    photoHash: string; 
-    phoneNumber: string; 
-    document: string; 
-    gender: string; 
+    photoHash: string;
+    phoneNumber: string;
+    document: string;
+    gender: string;
     address: string;
 };
 
@@ -94,3 +95,18 @@ export const serializeSmileData = (smileData: SmileData) => {
     return serializedData;
 }
 
+export type Signature = {
+    R: Point<bigint>,
+    s: bigint
+};
+
+export type SelfricaCircuitInput = {
+    SmileID_data: string[],
+    disclose_sel: string[],
+    s: string,
+    Tx: string,
+    Ty: string,
+    pubKeyX: string,
+    pubKeyY: string,
+    r_inv: string[]
+};
