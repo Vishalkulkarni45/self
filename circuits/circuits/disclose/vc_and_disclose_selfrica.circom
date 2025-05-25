@@ -68,8 +68,6 @@ template VC_AND_DISCLOSE(
     scalar_mod[2] <== 3965992003123030795;
     scalar_mod[3] <== 435874783350371333;
 
-    
-    //TODO: check BigLessThan bez it passes even if r_inv = scalar_mod
     //Check is - r_inv < scalar_mod
     component scalar_range_check = BigLessThan(64,4);
     scalar_range_check.a <== r_inv;
@@ -99,11 +97,21 @@ template VC_AND_DISCLOSE(
         msg_hash_limbs[i] <== bits2Num[i].out;
     }
 
+     //TODO: find template BigModP
+    //msg_hash % SUBORDER
+    component msgReduced = BigMultModP(64,4,4,4);
+    for(var i=0; i<4; i++){
+        msgReduced.in1[i]<== msg_hash_limbs[i];
+        if(i==0){msgReduced.in2[i]<== 1;}
+        else{msgReduced.in2[i]<== 0; }
+        msgReduced.modulus[i]<== scalar_mod[i];
+    }
+
     // calculates (-r_inv * msg_hash) % SUBGROUP_ORDER
     component r_inv_msg_hash = BabyScalarMul();
     for(var i =0 ;i<4 ;i++){
         r_inv_msg_hash.in1[i] <== r_inv[i];
-        r_inv_msg_hash.in2[i] <== msg_hash_limbs[i];
+        r_inv_msg_hash.in2[i] <== msgReduced.mod[i];
     }
 
     signal r_inv_msg_hash_bits[256];
