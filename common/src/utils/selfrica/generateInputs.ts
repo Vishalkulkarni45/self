@@ -61,10 +61,14 @@ export const generateCircuitInputsOfac = (smileData: SmileData, smt: SMT, proofL
     }
 }
 
-export const generateCircuitInput = () => {
-    const msg = serializeSmileData(OFAC_DUMMY_INPUT).split('').map((x) => x.charCodeAt(0));
+export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: boolean) => {
+    let smileData = ofac ? OFAC_DUMMY_INPUT : NON_OFAC_DUMMY_INPUT;
+    const msg = serializeSmileData(smileData).split('').map((x) => x.charCodeAt(0));
     const sk = BigInt(subOrder - BigInt(Math.floor(Math.random() * 90098)));
     const pk = mulPointEscalar(Base8, sk);
+
+    const nameDobInputs = generateCircuitInputsOfac(smileData, nameDobSmt, 2);
+    const nameYobInputs = generateCircuitInputsOfac(smileData, nameYobSmt, 1);
 
     const sig = signECDSA(sk, msg)
     console.assert(verifyECDSA(msg, sig, pk) == true, "Invalid signature");
@@ -83,13 +87,22 @@ export const generateCircuitInput = () => {
 
     const circuitInput: SelfricaCircuitInput = {
         SmileID_data: msg.map(String),
-        disclose_sel: Array.from({ length: SELFRICA_MAX_LENGTH }, () => (Math.floor(Math.random() * (2))).toString()),
+        // disclose_sel: Array.from({ length: SELFRICA_MAX_LENGTH }, () => (Math.floor(Math.random() * (2))).toString()),
+        disclose_sel: Array(SELFRICA_MAX_LENGTH).fill('1'),
         s: sig.s.toString(),
         Tx: T[0].toString(),
         Ty: T[1].toString(),
         pubKeyX: pk[0].toString(),
         pubKeyY: pk[1].toString(),
-        r_inv: rInvLimbs.map(String)
+        r_inv: rInvLimbs.map(String), 
+        forbidden_countries_list: ['0', '0', '0', '0', '0', '0',],
+        ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
+        ofac_name_dob_smt_root: nameDobInputs.smt_root,
+        ofac_name_dob_smt_siblings: nameDobInputs.smt_siblings,
+        ofac_name_yob_smt_leaf_key: nameYobInputs.smt_leaf_key,
+        ofac_name_yob_smt_root: nameYobInputs.smt_root,
+        ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
+        selector_ofac: ['0'],
     }
 
     return circuitInput;

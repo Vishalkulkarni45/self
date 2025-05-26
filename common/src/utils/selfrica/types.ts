@@ -108,5 +108,13 @@ export type SelfricaCircuitInput = {
     Ty: string,
     pubKeyX: string,
     pubKeyY: string,
-    r_inv: string[]
+    r_inv: string[], 
+    forbidden_countries_list: string[],
+    ofac_name_dob_smt_leaf_key: string[],
+    ofac_name_dob_smt_root: string[],
+    ofac_name_dob_smt_siblings: string[],
+    ofac_name_yob_smt_leaf_key: string[],
+    ofac_name_yob_smt_root: string[],
+    ofac_name_yob_smt_siblings: string[],
+    selector_ofac: string[],
 };
