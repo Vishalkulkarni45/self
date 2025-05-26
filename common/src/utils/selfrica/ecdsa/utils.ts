@@ -3,6 +3,7 @@ import { poseidon10, poseidon11, poseidon9 } from "poseidon-lite"
 import { Signature } from "../types";
 import { packBytesArray } from "../../bytes";
 import { SELFRICA_MAX_LENGTH } from "../constants";
+import { packBytesAndPoseidon } from "../../hash";
 /**
  * Compute the hash of a message using the ECDSA algorithm
  * @param msg
@@ -12,8 +13,8 @@ export const getECDSAMessageHash = (msg: number[]): bigint => {
     if (!(msg.length == SELFRICA_MAX_LENGTH)) {
         throw new Error(`Message must be of length ${SELFRICA_MAX_LENGTH}!`);
     }
-    const msgPacked = packBytesArray(msg);
-    return modulus(poseidon9(msgPacked), subOrder);
+    const msgHash = BigInt(packBytesAndPoseidon(msg));
+    return modulus(msgHash, subOrder);
 };
 
 export const modulus = (a: bigint, m: bigint): bigint => {
