@@ -92,7 +92,7 @@ interface IIdentityVerificationHubV2 {
      * @param proofData Encoded proof data containing all necessary verification parameters.
      * @return result Encoded verification result containing all relevant data.
      */
-    function verifyVcAndDiscloseUnified(bytes calldata proofData) external view returns (bytes memory result);
+    function verifyVcAndDisclose(bytes calldata proofData) external view returns (bytes memory result);
 
     /**
      * @notice Registers a passport commitment using a register circuit proof.
