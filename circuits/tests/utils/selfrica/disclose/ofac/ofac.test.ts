@@ -191,5 +191,5 @@ describe("OFAC - Name and YOB match", async () => {
         const witness = await circuit.calculateWitness(inputs);
         const ofacCheckResult = (await circuit.getOutput(witness, ['ofacCheckResult'])).ofacCheckResult;
         expect(ofacCheckResult).to.equal('0');
-    }); 
+    });
 });

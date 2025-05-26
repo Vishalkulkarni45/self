@@ -48,7 +48,7 @@ template DISCLOSE_SELFRICA(
 
     revealed_data[selfrica_max_length] <== ofac_name_dob_circuit.ofacCheckResult * selector_ofac;
     revealed_data[selfrica_max_length + 1] <== ofac_name_yob_circuit.ofacCheckResult * selector_ofac;
- 
+    
     component country_not_in_list_circuit = CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, country_length);
 
     for (var i = 0; i < country_length; i++) { 
@@ -58,4 +58,7 @@ template DISCLOSE_SELFRICA(
 
     var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length);
     signal output forbidden_countries_list_packed[chunkLength] <== country_not_in_list_circuit.forbidden_countries_list_packed;
+
+    var revealed_data_packed_chunk_length = computeIntChunkLength(selfrica_max_length + 2);
+    signal output revealedData_packed[revealed_data_packed_chunk_length] <== PackBytes(selfrica_max_length + 2)(revealed_data);
 }

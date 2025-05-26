@@ -5,6 +5,9 @@ import { SMT } from '@openpassport/zk-kit-smt';
 import { poseidon2 } from 'poseidon-lite';
 import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSelfricaSMT.json';
 import nameAndYobjson from '../../../common/ofacdata/outputs/nameAndYobSelfricaSMT.json';
+import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
+import { SELFRICA_MAX_LENGTH } from '../../../common/src/utils/selfrica/constants';
+import { deepEqual } from 'assert';
 
 describe('should verify signature on random inputs', () => {
     let circuit;
@@ -65,8 +68,12 @@ describe('should verify signature on random inputs', () => {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
 
-            throw new Error(" Circuit verified for invalid msg byte ascii ");
-        } catch (e) {}
+            throw new Error("Circuit verified for invalid disclose selector ");
+        } catch (e) {
+            if (e.message.includes("Circuit verified for invalid disclose selector")) {
+                throw new Error("Circuit verified for invalid disclose selector ");
+            }
+        }
     }); 
     it('should fail for s > 251 bits', async function () {
         this.timeout(0);
@@ -78,7 +85,11 @@ describe('should verify signature on random inputs', () => {
             await circuit.checkConstraints(witness);
 
             throw new Error("Circuit verified for invalid s (s > 251 bits)");
-        } catch (e) {}
+        } catch (e) {
+            if (e.message.includes("Circuit verified for invalid s (s > 251 bits)")) {
+                throw new Error("Circuit verified for invalid s (s > 251 bits) ");
+            }
+        }
     }); 
     it('should fail for s = 0 ', async function () {
         this.timeout(0);
@@ -90,7 +101,11 @@ describe('should verify signature on random inputs', () => {
             await circuit.checkConstraints(witness);
 
             throw new Error(" Circuit verified for s = 0");
-        } catch (e) {}
+        } catch (e) {
+            if (e.message.includes("Circuit verified for s = 0")) {
+                throw new Error("Circuit verified for s = 0 ");
+            }
+        }
     }); 
     it('should fail for -r_inv <  SUBGROUP ORDER ', async function () {
         this.timeout(0);
@@ -101,8 +116,12 @@ describe('should verify signature on random inputs', () => {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
 
-            throw new Error(" Circuit verified for invalid msg byte ascii ");
-        } catch (e) {}
+            throw new Error(" Circuit verified for invalid r_inv ");
+        } catch (e) {
+            if (e.message.includes("Circuit verified for invalid r_inv ")) {
+                throw new Error("Circuit verified for invalid r_inv ");
+            }
+        }
     }); 
 
     it('should fail for wrong pubKeyX ', async function () {
@@ -114,8 +133,12 @@ describe('should verify signature on random inputs', () => {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
 
-            throw new Error(" Circuit verified for invalid msg byte ascii ");
-        } catch (e) {}
+            throw new Error(" Circuit verified for invalid pubKeyX ");
+        } catch (e) {
+            if (e.message.includes("Circuit verified for invalid pubKeyX ")) {
+                throw new Error("Circuit verified for invalid pubKeyX ");
+            }
+        }
     }); 
 
     it('should fail for wrong pubKeyY ', async function () {
@@ -127,8 +150,12 @@ describe('should verify signature on random inputs', () => {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
 
-            throw new Error(" Circuit verified for invalid msg byte ascii ");
-        } catch (e) {}
+            throw new Error(" Circuit verified for invalid pubKeyY ");
+        } catch (e) {
+            if (e.message.includes("Circuit verified for invalid pubKeyY ")) {
+                throw new Error("Circuit verified for invalid pubKeyY ");
+            }
+        }
     }); 
     // it.only('should fail for pubKeyx == 0 ', async function () {
     //     this.timeout(0);
@@ -150,6 +177,61 @@ describe('should verify signature on random inputs', () => {
     //         throw new Error(" Circuit verified for invalid msg byte ascii ");
     //     }
     // })
+    it("should return 0 for an OFAC person", async function () {
+        this.timeout(0);
+        const input = generateCircuitInput(namedob_smt, nameyob_smt, true);
+        input.selector_ofac = ["1"];
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
 
+            const revealedData = (await circuit.getOutput(witness, ['revealedData_packed[9]']));
+            const revealedData_packed = [
+                revealedData['revealedData_packed[0]'],
+                revealedData['revealedData_packed[1]'],
+                revealedData['revealedData_packed[2]'],
+                revealedData['revealedData_packed[3]'],
+                revealedData['revealedData_packed[4]'],
+                revealedData['revealedData_packed[5]'],
+                revealedData['revealedData_packed[6]'],
+                revealedData['revealedData_packed[7]'],
+                revealedData['revealedData_packed[8]'],
+            ];
+            const revealedDataUnpacked = unpackReveal(revealedData_packed);
+            const ofac_results = revealedDataUnpacked.slice(SELFRICA_MAX_LENGTH, SELFRICA_MAX_LENGTH + 2);
 
+            deepEqual(ofac_results, ['\x00', '\x00']);
+        } catch (e) {
+            console.log(e.message);
+        }
+    })
+
+    it("should return 1 for a non OFAC person", async function () {
+        this.timeout(0);
+        const input = generateCircuitInput(namedob_smt, nameyob_smt, false);
+        input.selector_ofac = ["1"];
+        try {
+            const witness = await circuit.calculateWitness(input);
+            await circuit.checkConstraints(witness);
+
+            const revealedData = (await circuit.getOutput(witness, ['revealedData_packed[9]']));
+            const revealedData_packed = [
+                revealedData['revealedData_packed[0]'],
+                revealedData['revealedData_packed[1]'],
+                revealedData['revealedData_packed[2]'],
+                revealedData['revealedData_packed[3]'],
+                revealedData['revealedData_packed[4]'],
+                revealedData['revealedData_packed[5]'],
+                revealedData['revealedData_packed[6]'],
+                revealedData['revealedData_packed[7]'],
+                revealedData['revealedData_packed[8]'],
+            ];
+            const revealedDataUnpacked = unpackReveal(revealedData_packed);
+            const ofac_results = revealedDataUnpacked.slice(SELFRICA_MAX_LENGTH, SELFRICA_MAX_LENGTH + 2);
+
+            deepEqual(ofac_results, ['\x01', '\x01']);
+        } catch (e) {
+            console.log(e.message);
+        }
+    })
 });

@@ -183,6 +183,12 @@ template VC_AND_DISCLOSE(
     disclose_circuit.ofac_name_yob_smt_siblings <== ofac_name_yob_smt_siblings;
 
     disclose_circuit.selector_ofac <== selector_ofac;
-  }
+
+    var revealed_data_packed_chunk_length = computeIntChunkLength(selfrica_length + 2);
+    signal output revealedData_packed[revealed_data_packed_chunk_length] <== disclose_circuit.revealedData_packed;
+
+    var forbidden_countries_list_packed_chunk_length = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length);
+    signal output forbidden_countries_list_packed[forbidden_countries_list_packed_chunk_length] <== disclose_circuit.forbidden_countries_list_packed;
+}
 
 component main = VC_AND_DISCLOSE(3, 64, 64);
