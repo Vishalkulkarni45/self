@@ -80,6 +80,16 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
     console.assert(inCurve(T), "Point T not on curve");
     console.assert(inCurve(U), "Point U not on curve");
 
+    const idNumber = [parseInt(smileData.idNumber, 10)];
+    const nullifierSig = signECDSA(sk, idNumber);
+    console.assert(verifyECDSA(idNumber, nullifierSig, pk) == true, "Invalid signature");
+
+    let { T: nullifierT, U: nullifierU } = getEffECDSAArgs(idNumber, nullifierSig);
+    console.assert(verifyEffECDSA(nullifierSig.s, nullifierT, nullifierU, pk) == true, "Invalid signature");
+
+    console.assert(nullifierSig.s < subOrder, " s is greater than scalar field");
+    console.assert(inCurve(nullifierT), "Point T not on curve");
+    console.assert(inCurve(nullifierU), "Point U not on curve");
 
     const rInv = modInv(sig.R[0], subOrder);
 
@@ -94,7 +104,13 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         Ty: T[1].toString(),
         pubKeyX: pk[0].toString(),
         pubKeyY: pk[1].toString(),
-        r_inv: rInvLimbs.map(String), 
+        nullifier_s: nullifierSig.s.toString(),
+        nullifier_Tx: nullifierT[0].toString(),
+        nullifier_Ty: nullifierT[1].toString(),
+        nullifier_Ux: nullifierU[0].toString(),
+        nullifier_Uy: nullifierU[1].toString(),
+        scope: '0',
+        r_inv: rInvLimbs.map(String),
         forbidden_countries_list: ['0', '0', '0', '0', '0', '0',],
         ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
         ofac_name_dob_smt_root: nameDobInputs.smt_root,

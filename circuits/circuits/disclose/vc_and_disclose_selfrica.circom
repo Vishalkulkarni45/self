@@ -28,6 +28,14 @@ template VC_AND_DISCLOSE(
     signal input pubKeyX;
     signal input pubKeyY;
 
+    signal input nullifier_s;
+    signal input nullifier_Tx; 
+    signal input nullifier_Ty; 
+    signal input nullifier_Ux; 
+    signal input nullifier_Uy; 
+    signal input scope;
+
+
     signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length];
 
     signal input ofac_name_dob_smt_leaf_key;
@@ -43,7 +51,6 @@ template VC_AND_DISCLOSE(
     //Supply -r_inv
     signal input r_inv[4];
 
-    //TODO: calculate hash using packedbytes 
     signal output pi_hash;
 
     component ascii_range_check[selfrica_length];
@@ -167,6 +174,28 @@ template VC_AND_DISCLOSE(
 
     signal is_pkx_zero <== IsZero()(pubKeyX);
     is_pkx_zero === 0;
+
+    component nullifier_ecdsa = BabyJubJubECDSA();
+    nullifier_ecdsa.Tx <== nullifier_Tx;
+    nullifier_ecdsa.Ty <== nullifier_Ty;
+    nullifier_ecdsa.Ux <== nullifier_Ux;
+    nullifier_ecdsa.Uy <== nullifier_Uy;
+    nullifier_ecdsa.s <== nullifier_s;
+
+    nullifier_ecdsa.pubKeyX === pubKeyX;
+    nullifier_ecdsa.pubKeyY === pubKeyY;
+
+    //Nullifier = HASH( nullifier ecdsa sig , scope )
+    component nullifierCal = Poseidon(2);
+    nullifierCal.inputs[0] <== nullifier_s;
+    nullifierCal.inputs[1] <== scope;
+    signal output nullifier <== nullifierCal.out;
+
+    // Identity Commitment = Hash( ecdsa sig )
+    component idCommCal = Poseidon(1);
+    idCommCal.inputs[0] <== s;
+    signal output identity_commitment <== idCommCal.out;
+
 
     component disclose_circuit = DISCLOSE_SELFRICA(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, namedobTreeLevels, nameyobTreeLevels);
 

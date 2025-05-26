@@ -2,12 +2,13 @@ import { wasm as wasmTester } from 'circom_tester';
 import * as path from 'path';
 import { generateCircuitInput } from '../../../common/src/utils/selfrica/generateInputs';
 import { SMT } from '@openpassport/zk-kit-smt';
-import { poseidon2 } from 'poseidon-lite';
+import { poseidon1, poseidon2 } from 'poseidon-lite';
 import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSelfricaSMT.json';
 import nameAndYobjson from '../../../common/ofacdata/outputs/nameAndYobSelfricaSMT.json';
 import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
 import { SELFRICA_MAX_LENGTH } from '../../../common/src/utils/selfrica/constants';
 import { deepEqual } from 'assert';
+import { expect } from 'chai';
 
 describe('should verify signature on random inputs', () => {
     let circuit;
@@ -32,12 +33,19 @@ describe('should verify signature on random inputs', () => {
             }
         );
     });
-    it('should verify correct Circuit Input', async function () {
+    it('should verify for correct Circuit Input and output ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
+        const expNullifier = poseidon2([input.nullifier_s, "0"]);
+        const expIdCommit = poseidon1([input.s]);
+   
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
+            const output = await circuit.getOutput(witness, ['nullifier', 'identity_commitment']);
+            expect(BigInt(output.nullifier)).equal(expNullifier);
+            expect(BigInt(output.identity_commitment)).equal(expIdCommit);
+
         } catch (e) { throw e }
     });
     it('should fail for invalid msg  ascii ', async function () {
@@ -58,7 +66,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error(`Expected error message to include "Num2Bits", but got:\n${errMsg}`);
             }
         }
-    }); 
+    });
     it('should fail for invalid disclose selectors ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
@@ -74,7 +82,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error("Circuit verified for invalid disclose selector ");
             }
         }
-    }); 
+    });
     it('should fail for s > 251 bits', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
@@ -90,7 +98,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error("Circuit verified for invalid s (s > 251 bits) ");
             }
         }
-    }); 
+    });
     it('should fail for s = 0 ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
@@ -106,7 +114,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error("Circuit verified for s = 0 ");
             }
         }
-    }); 
+    });
     it('should fail for -r_inv <  SUBGROUP ORDER ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
@@ -122,7 +130,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error("Circuit verified for invalid r_inv ");
             }
         }
-    }); 
+    });
 
     it('should fail for wrong pubKeyX ', async function () {
         this.timeout(0);
@@ -139,7 +147,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error("Circuit verified for invalid pubKeyX ");
             }
         }
-    }); 
+    });
 
     it('should fail for wrong pubKeyY ', async function () {
         this.timeout(0);
@@ -156,7 +164,7 @@ describe('should verify signature on random inputs', () => {
                 throw new Error("Circuit verified for invalid pubKeyY ");
             }
         }
-    }); 
+    });
     // it.only('should fail for pubKeyx == 0 ', async function () {
     //     this.timeout(0);
     //     const input = generateCircuitInput();

@@ -10,9 +10,6 @@ import { packBytesAndPoseidon } from "../../hash";
  * @returns hash as a hex string
  */
 export const getECDSAMessageHash = (msg: number[]): bigint => {
-    if (!(msg.length == SELFRICA_MAX_LENGTH)) {
-        throw new Error(`Message must be of length ${SELFRICA_MAX_LENGTH}!`);
-    }
     const msgHash = BigInt(packBytesAndPoseidon(msg));
     return modulus(msgHash, subOrder);
 };
