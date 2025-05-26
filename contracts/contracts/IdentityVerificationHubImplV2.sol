@@ -6,8 +6,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/acces
 import {CircuitConstantsV2} from "./constants/CircuitConstantsV2.sol";
 import {AttestationId} from "./constants/AttestationId.sol";
 import {Formatter} from "./libraries/Formatter.sol";
-import {CircuitAttributeHandler} from "./libraries/CircuitAttributeHandler.sol";
-import {IdCardAttributeHandler} from "./libraries/IdCardAttributeHandler.sol";
+import {CircuitAttributeHandlerV2} from "./libraries/CircuitAttributeHandlerV2.sol";
 import {IIdentityVerificationHubV2} from "./interfaces/IIdentityVerificationHubV2.sol";
 import {IIdentityRegistryV1} from "./interfaces/IIdentityRegistryV1.sol";
 import {IRegisterCircuitVerifier} from "./interfaces/IRegisterCircuitVerifier.sol";
@@ -435,6 +434,7 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
         VcAndDiscloseHubProof memory proof
     ) internal view returns (VcAndDiscloseVerificationResult memory) {
         VcAndDiscloseVerificationResult memory result;
+        CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(AttestationId.E_PASSPORT);
 
         result.identityCommitmentRoot = _verifyVcAndDiscloseProof(
             AttestationId.E_PASSPORT,
@@ -448,22 +448,18 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
 
         for (uint256 i = 0; i < 3; i++) {
             result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
-                CircuitConstantsV2.PASSPORT_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+                indices.revealedDataPackedIndex + i
             ];
         }
         for (uint256 i = 0; i < 4; i++) {
             result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[
-                CircuitConstantsV2.PASSPORT_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+                indices.forbiddenCountriesListPackedIndex + i
             ];
         }
-        result.nullifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NULLIFIER_INDEX];
-        result.attestationId = proof.vcAndDiscloseProof.pubSignals[
-            CircuitConstantsV2.PASSPORT_DISCLOSE_ATTESTATION_ID_INDEX
-        ];
-        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[
-            CircuitConstantsV2.PASSPORT_DISCLOSE_USER_IDENTIFIER_INDEX
-        ];
-        result.scope = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_SCOPE_INDEX];
+        result.nullifier = proof.vcAndDiscloseProof.pubSignals[indices.nullifierIndex];
+        result.attestationId = proof.vcAndDiscloseProof.pubSignals[indices.attestationIdIndex];
+        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[indices.userIdentifierIndex];
+        result.scope = proof.vcAndDiscloseProof.pubSignals[indices.scopeIndex];
         return result;
     }
 
@@ -474,6 +470,7 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
         IdCardVcAndDiscloseHubProof memory proof
     ) internal view returns (IdCardVcAndDiscloseVerificationResult memory) {
         IdCardVcAndDiscloseVerificationResult memory result;
+        CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(AttestationId.EU_ID_CARD);
 
         result.identityCommitmentRoot = _verifyVcAndDiscloseProof(
             AttestationId.EU_ID_CARD,
@@ -487,22 +484,18 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
 
         for (uint256 i = 0; i < 4; i++) {
             result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
-                CircuitConstantsV2.ID_CARD_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+                indices.revealedDataPackedIndex + i
             ];
         }
         for (uint256 i = 0; i < 4; i++) {
             result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[
-                CircuitConstantsV2.ID_CARD_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+                indices.forbiddenCountriesListPackedIndex + i
             ];
         }
-        result.nullifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NULLIFIER_INDEX];
-        result.attestationId = proof.vcAndDiscloseProof.pubSignals[
-            CircuitConstantsV2.ID_CARD_DISCLOSE_ATTESTATION_ID_INDEX
-        ];
-        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[
-            CircuitConstantsV2.ID_CARD_DISCLOSE_USER_IDENTIFIER_INDEX
-        ];
-        result.scope = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_SCOPE_INDEX];
+        result.nullifier = proof.vcAndDiscloseProof.pubSignals[indices.nullifierIndex];
+        result.attestationId = proof.vcAndDiscloseProof.pubSignals[indices.attestationIdIndex];
+        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[indices.userIdentifierIndex];
+        result.scope = proof.vcAndDiscloseProof.pubSignals[indices.scopeIndex];
         return result;
     }
 
@@ -618,31 +611,20 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
         bool forbiddenCountriesEnabled,
         uint256[4] memory forbiddenCountriesListPacked
     ) internal view returns (uint256 identityCommitmentRoot) {
-        // Determine constants based on attestation type
+        // Get indices for the specific attestation type
+        CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(attestationId);
         bool isPassport = (attestationId == AttestationId.E_PASSPORT);
-        uint256 merkleRootIndex = isPassport ? 
-            CircuitConstantsV2.PASSPORT_DISCLOSE_MERKLE_ROOT_INDEX : 
-            CircuitConstantsV2.ID_CARD_DISCLOSE_MERKLE_ROOT_INDEX;
-        uint256 currentDateIndex = isPassport ? 
-            CircuitConstantsV2.PASSPORT_DISCLOSE_CURRENT_DATE_INDEX : 
-            CircuitConstantsV2.ID_CARD_DISCLOSE_CURRENT_DATE_INDEX;
-        uint256 revealedDataIndex = isPassport ? 
-            CircuitConstantsV2.PASSPORT_DISCLOSE_REVEALED_DATA_PACKED_INDEX : 
-            CircuitConstantsV2.ID_CARD_DISCLOSE_REVEALED_DATA_PACKED_INDEX;
-        uint256 forbiddenCountriesIndex = isPassport ? 
-            CircuitConstantsV2.PASSPORT_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX : 
-            CircuitConstantsV2.ID_CARD_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX;
 
         // verify identity commitment root
         if (isPassport) {
             if (!IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).checkIdentityCommitmentRoot(
-                vcAndDiscloseProof.pubSignals[merkleRootIndex]
+                vcAndDiscloseProof.pubSignals[indices.merkleRootIndex]
             )) {
                 revert INVALID_COMMITMENT_ROOT();
             }
         } else {
             if (!IIdentityRegistryIdCardV1(_attestationIdToRegistry[attestationId]).checkIdentityCommitmentRoot(
-                vcAndDiscloseProof.pubSignals[merkleRootIndex]
+                vcAndDiscloseProof.pubSignals[indices.merkleRootIndex]
             )) {
                 revert INVALID_COMMITMENT_ROOT();
             }
@@ -651,7 +633,7 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
         // verify current date
         uint[6] memory dateNum;
         for (uint256 i = 0; i < 6; i++) {
-            dateNum[i] = vcAndDiscloseProof.pubSignals[currentDateIndex + i];
+            dateNum[i] = vcAndDiscloseProof.pubSignals[indices.currentDateIndex + i];
         }
 
         uint currentTimestamp = Formatter.proofDateToUnixTimestamp(dateNum);
@@ -666,11 +648,12 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
         if (isPassport) {
             uint256[3] memory revealedDataPacked;
             for (uint256 i = 0; i < 3; i++) {
-                revealedDataPacked[i] = vcAndDiscloseProof.pubSignals[revealedDataIndex + i];
+                revealedDataPacked[i] = vcAndDiscloseProof.pubSignals[indices.revealedDataPackedIndex + i];
             }
             
             if (olderThanEnabled) {
-                if (!CircuitAttributeHandler.compareOlderThan(
+                if (!CircuitAttributeHandlerV2.compareOlderThan(
+                    attestationId,
                     Formatter.fieldElementsToBytes(revealedDataPacked),
                     olderThan
                 )) {
@@ -679,7 +662,8 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
             }
             
             if (ofacEnabled[0] || ofacEnabled[1] || ofacEnabled[2]) {
-                if (!CircuitAttributeHandler.compareOfac(
+                if (!CircuitAttributeHandlerV2.compareOfac(
+                    attestationId,
                     Formatter.fieldElementsToBytes(revealedDataPacked),
                     ofacEnabled[0],
                     ofacEnabled[1],
@@ -688,9 +672,9 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
                     revert INVALID_OFAC();
                 }
                 if (!IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).checkOfacRoots(
-                    vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX],
-                    vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX],
-                    vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX]
+                    vcAndDiscloseProof.pubSignals[indices.passportNoSmtRootIndex],
+                    vcAndDiscloseProof.pubSignals[indices.namedobSmtRootIndex],
+                    vcAndDiscloseProof.pubSignals[indices.nameyobSmtRootIndex]
                 )) {
                     revert INVALID_OFAC_ROOT();
                 }
@@ -698,11 +682,12 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
         } else {
             uint256[4] memory revealedDataPacked;
             for (uint256 i = 0; i < 4; i++) {
-                revealedDataPacked[i] = vcAndDiscloseProof.pubSignals[revealedDataIndex + i];
+                revealedDataPacked[i] = vcAndDiscloseProof.pubSignals[indices.revealedDataPackedIndex + i];
             }
             
             if (olderThanEnabled) {
-                if (!IdCardAttributeHandler.compareOlderThan(
+                if (!CircuitAttributeHandlerV2.compareOlderThan(
+                    attestationId,
                     Formatter.fieldElementsToBytesIdCard(revealedDataPacked),
                     olderThan
                 )) {
@@ -711,16 +696,18 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
             }
             
             if (ofacEnabled[1] || ofacEnabled[2]) {
-                if (!IdCardAttributeHandler.compareOfac(
+                if (!CircuitAttributeHandlerV2.compareOfac(
+                    attestationId,
                     Formatter.fieldElementsToBytesIdCard(revealedDataPacked),
+                    false, // Document number OFAC not applicable for ID cards
                     ofacEnabled[1],
                     ofacEnabled[2]
                 )) {
                     revert INVALID_OFAC();
                 }
                 if (!IIdentityRegistryIdCardV1(_attestationIdToRegistry[attestationId]).checkOfacRoots(
-                    vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX],
-                    vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX]
+                    vcAndDiscloseProof.pubSignals[indices.namedobSmtRootIndex],
+                    vcAndDiscloseProof.pubSignals[indices.nameyobSmtRootIndex]
                 )) {
                     revert INVALID_OFAC_ROOT();
                 }
@@ -729,7 +716,7 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
 
         if (forbiddenCountriesEnabled) {
             for (uint256 i = 0; i < 4; i++) {
-                if (forbiddenCountriesListPacked[i] != vcAndDiscloseProof.pubSignals[forbiddenCountriesIndex + i]) {
+                if (forbiddenCountriesListPacked[i] != vcAndDiscloseProof.pubSignals[indices.forbiddenCountriesListPackedIndex + i]) {
                     revert INVALID_FORBIDDEN_COUNTRIES();
                 }
             }
@@ -745,7 +732,7 @@ contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIde
             revert INVALID_VC_AND_DISCLOSE_PROOF();
         }
 
-        return vcAndDiscloseProof.pubSignals[merkleRootIndex];
+        return vcAndDiscloseProof.pubSignals[indices.merkleRootIndex];
     }
 
     /**
