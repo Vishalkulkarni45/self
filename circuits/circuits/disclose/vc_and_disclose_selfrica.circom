@@ -10,6 +10,7 @@ include "../utils/passport/customHashers.circom";
 include "../utils/selfrica/babyEcdsa.circom";
 include "@openpassport/zk-email-circuits/lib/bigint.circom";
 include "../utils/selfrica/constants.circom";
+include "../utils/selfrica/disclose/disclose.circom";
 
 template VC_AND_DISCLOSE(
     MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, 
@@ -17,6 +18,8 @@ template VC_AND_DISCLOSE(
     nameyobTreeLevels
 ) {
     var selfrica_length = SELFRICA_MAX_LENGTH();
+    var country_length = COUNTRY_LENGTH();
+
     signal input SmileID_data[selfrica_length];
     signal input disclose_sel[selfrica_length];
     signal input s;
@@ -24,6 +27,18 @@ template VC_AND_DISCLOSE(
     signal input Ty; 
     signal input pubKeyX;
     signal input pubKeyY;
+
+    signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length];
+
+    signal input ofac_name_dob_smt_leaf_key;
+    signal input ofac_name_dob_smt_root;
+    signal input ofac_name_dob_smt_siblings[namedobTreeLevels];
+
+    signal input ofac_name_yob_smt_leaf_key;
+    signal input ofac_name_yob_smt_root;
+    signal input ofac_name_yob_smt_siblings[nameyobTreeLevels];
+
+    signal input selector_ofac;
 
     //Supply -r_inv
     signal input r_inv[4];
@@ -153,7 +168,21 @@ template VC_AND_DISCLOSE(
     signal is_pkx_zero <== IsZero()(pubKeyX);
     is_pkx_zero === 0;
 
-    //check for validity of the document
+    component disclose_circuit = DISCLOSE_SELFRICA(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, namedobTreeLevels, nameyobTreeLevels);
+
+    disclose_circuit.smile_data <== SmileID_data;
+    disclose_circuit.selector_smile_data <== disclose_sel;
+    disclose_circuit.forbidden_countries_list <== forbidden_countries_list;
+
+    disclose_circuit.ofac_name_dob_smt_leaf_key <== ofac_name_dob_smt_leaf_key;
+    disclose_circuit.ofac_name_dob_smt_root <== ofac_name_dob_smt_root;
+    disclose_circuit.ofac_name_dob_smt_siblings <== ofac_name_dob_smt_siblings;
+
+    disclose_circuit.ofac_name_yob_smt_leaf_key <== ofac_name_yob_smt_leaf_key;
+    disclose_circuit.ofac_name_yob_smt_root <== ofac_name_yob_smt_root;
+    disclose_circuit.ofac_name_yob_smt_siblings <== ofac_name_yob_smt_siblings;
+
+    disclose_circuit.selector_ofac <== selector_ofac;
   }
 
 component main = VC_AND_DISCLOSE(3, 64, 64);

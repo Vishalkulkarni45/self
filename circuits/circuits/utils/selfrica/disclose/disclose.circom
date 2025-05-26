@@ -1,3 +1,5 @@
+pragma circom 2.1.9;
+
 include "./ofac/ofac_name_dob_selfrica.circom";
 include "./ofac/ofac_name_yob_selfrica.circom";
 include "./country_not_in_list.circom";
@@ -14,7 +16,7 @@ template DISCLOSE_SELFRICA(
     signal input smile_data[selfrica_max_length];
     signal input selector_smile_data[selfrica_max_length];
 
-    signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH];
+    signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length];
 
     signal input ofac_name_dob_smt_leaf_key;
     signal input ofac_name_dob_smt_root;
@@ -44,16 +46,16 @@ template DISCLOSE_SELFRICA(
         revealed_data[i] <== smile_data[i] * selector_smile_data[i];
     }
 
-    revealed_data[selfrica_max_length] <== ofac_name_dob_circuit.ofacCheckResult;
-    revealed_data[selfrica_max_length + 1] <== ofac_name_yob_circuit.ofacCheckResult;
+    revealed_data[selfrica_max_length] <== ofac_name_dob_circuit.ofacCheckResult * selector_ofac;
+    revealed_data[selfrica_max_length + 1] <== ofac_name_yob_circuit.ofacCheckResult * selector_ofac;
+ 
+    component country_not_in_list_circuit = CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, country_length);
 
-    component country_not_in_list_circuit = CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH);
     for (var i = 0; i < country_length; i++) { 
-        country_not_in_list_circuit.country[i] <== smile_data[i];
+        country_not_in_list_circuit.country[i] <== smile_data[country_index + i];
     }
     country_not_in_list_circuit.forbidden_countries_list <== forbidden_countries_list;
 
-    var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 2);
-    signal country[country_length] = [smile_data[country_index], smile_data[country_index + 1]];
-    signal output forbidden_countries_list_packed[chunkLength] <== CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH)(country, forbidden_countries_list);
+    var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length);
+    signal output forbidden_countries_list_packed[chunkLength] <== country_not_in_list_circuit.forbidden_countries_list_packed;
 }
