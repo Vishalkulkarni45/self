@@ -16,10 +16,7 @@ export default buildModule("DeployRegistryModule", (m) => {
   const registryInitData = registryInterface.encodeFunctionData("initialize", [
     "0x0000000000000000000000000000000000000000",
   ]);
-  const registry = m.contract("IdentityRegistry", [
-    identityRegistryImpl,
-    registryInitData,
-  ]);
+  const registry = m.contract("IdentityRegistry", [identityRegistryImpl, registryInitData]);
 
   // Return deployed contracts
   return {

@@ -9,11 +9,7 @@ import { LeanIMT } from "@openpassport/zk-kit-lean-imt";
 import { poseidon2 } from "poseidon-lite";
 import { generateCommitment } from "../../../common/src/utils/passports/passport";
 import { BigNumberish } from "ethers";
-import {
-  generateRandomFieldElement,
-  getStartOfDayTimestamp,
-  splitHexFromBack,
-} from "../utils/utils";
+import { generateRandomFieldElement, getStartOfDayTimestamp, splitHexFromBack } from "../utils/utils";
 import { Formatter, CircuitAttributeHandler } from "../utils/formatter";
 import {
   formatCountriesList,
@@ -44,19 +40,11 @@ describe("VC and Disclose", () => {
     deployedActors = await deploySystemFixtures();
     registerSecret = generateRandomFieldElement();
     nullifier = generateRandomFieldElement();
-    commitment = generateCommitment(
-      registerSecret,
-      ATTESTATION_ID.E_PASSPORT,
-      deployedActors.mockPassport,
-    );
+    commitment = generateCommitment(registerSecret, ATTESTATION_ID.E_PASSPORT, deployedActors.mockPassport);
 
     await deployedActors.registry
       .connect(deployedActors.owner)
-      .devAddIdentityCommitment(
-        ATTESTATION_ID.E_PASSPORT,
-        nullifier,
-        commitment,
-      );
+      .devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
     const hashFunction = (a: bigint, b: bigint) => poseidon2([a, b]);
     imt = new LeanIMT<bigint>(hashFunction);
@@ -104,16 +92,12 @@ describe("VC and Disclose", () => {
       "ABC",
       "CBA",
     ];
-    forbiddenCountriesListPacked = getPackedForbiddenCountries(
-      forbiddenCountriesList,
-    );
+    forbiddenCountriesListPacked = getPackedForbiddenCountries(forbiddenCountriesList);
 
     invalidForbiddenCountriesList = ["AAA", "ABC", "CBA", "CBA"];
     // const invalidWholePacked = reverseBytes(Formatter.bytesToHexString(new Uint8Array(formatCountriesList(invalidForbiddenCountriesList))));
     // invalidForbiddenCountriesListPacked = splitHexFromBack(invalidWholePacked);
-    invalidForbiddenCountriesListPacked = getPackedForbiddenCountries(
-      invalidForbiddenCountriesList,
-    );
+    invalidForbiddenCountriesListPacked = getPackedForbiddenCountries(invalidForbiddenCountriesList);
 
     baseVcAndDiscloseProof = await generateVcAndDiscloseProof(
       registerSecret,
@@ -159,35 +143,21 @@ describe("VC and Disclose", () => {
       const result = await hub.verifyVcAndDisclose(vcAndDiscloseHubProof);
 
       expect(result.identityCommitmentRoot).to.equal(
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX
-        ],
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX],
       );
       expect(result.revealedDataPacked).to.have.lengthOf(3);
       expect(result.nullifier).to.equal(
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NULLIFIER_INDEX
-        ],
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NULLIFIER_INDEX],
       );
       expect(result.attestationId).to.equal(
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_ATTESTATION_ID_INDEX
-        ],
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_ATTESTATION_ID_INDEX],
       );
       expect(result.userIdentifier).to.equal(
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX
-        ],
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX],
       );
-      expect(result.scope).to.equal(
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_SCOPE_INDEX
-        ],
-      );
+      expect(result.scope).to.equal(vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_SCOPE_INDEX]);
       for (let i = 0; i < 4; i++) {
-        expect(result.forbiddenCountriesListPacked[i]).to.equal(
-          BigInt(forbiddenCountriesListPacked[i]),
-        );
+        expect(result.forbiddenCountriesListPacked[i]).to.equal(BigInt(forbiddenCountriesListPacked[i]));
       }
     });
 
@@ -203,17 +173,16 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hubImpl.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hubImpl, "UUPSUnauthorizedCallContext");
+      await expect(hubImpl.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hubImpl,
+        "UUPSUnauthorizedCallContext",
+      );
     });
 
     it("should fail with invalid identity commitment root", async () => {
       const { hub, registry, owner } = deployedActors;
 
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX
-      ] = generateRandomFieldElement();
+      vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX] = generateRandomFieldElement();
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
         olderThan: "20",
@@ -223,17 +192,17 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_COMMITMENT_ROOT");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_COMMITMENT_ROOT",
+      );
     });
 
     it("should fail with invalid passport number OFAC root", async () => {
       const { hub, registry, owner } = deployedActors;
 
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX
-      ] = generateRandomFieldElement();
+      vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX] =
+        generateRandomFieldElement();
 
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
@@ -244,17 +213,17 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_OFAC_ROOT");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_OFAC_ROOT",
+      );
     });
 
     it("should fail with invalid name and dob OFAC root", async () => {
       const { hub, registry, owner } = deployedActors;
 
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX
-      ] = generateRandomFieldElement();
+      vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX] =
+        generateRandomFieldElement();
 
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
@@ -265,17 +234,17 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_OFAC_ROOT");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_OFAC_ROOT",
+      );
     });
 
     it("should fail with invalid name and yob OFAC root", async () => {
       const { hub, registry, owner } = deployedActors;
 
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX
-      ] = generateRandomFieldElement();
+      vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX] =
+        generateRandomFieldElement();
 
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
@@ -286,17 +255,17 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_OFAC_ROOT");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_OFAC_ROOT",
+      );
     });
 
     it("should fail with invalid current date (more than + 1 day)", async () => {
       const { hub, registry, owner } = deployedActors;
 
       const currentBlock = await ethers.provider.getBlock("latest");
-      const oneDayAfter =
-        getStartOfDayTimestamp(currentBlock!.timestamp) + 24 * 60 * 60;
+      const oneDayAfter = getStartOfDayTimestamp(currentBlock!.timestamp) + 24 * 60 * 60;
 
       const date = new Date(oneDayAfter * 1000);
       const dateComponents = [
@@ -309,9 +278,8 @@ describe("VC and Disclose", () => {
       ];
 
       for (let i = 0; i < 6; i++) {
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i
-        ] = dateComponents[i].toString();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i] =
+          dateComponents[i].toString();
       }
 
       const vcAndDiscloseHubProof = {
@@ -323,9 +291,10 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "CURRENT_DATE_NOT_IN_VALID_RANGE");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "CURRENT_DATE_NOT_IN_VALID_RANGE",
+      );
     });
 
     it("should not revert when current date is within + 1 day", async () => {
@@ -333,8 +302,7 @@ describe("VC and Disclose", () => {
 
       const currentBlock = await ethers.provider.getBlock("latest");
 
-      const oneDayAfter =
-        getStartOfDayTimestamp(currentBlock!.timestamp) + 24 * 60 * 60 - 1;
+      const oneDayAfter = getStartOfDayTimestamp(currentBlock!.timestamp) + 24 * 60 * 60 - 1;
 
       const date = new Date(oneDayAfter * 1000);
       const dateComponents = [
@@ -347,9 +315,8 @@ describe("VC and Disclose", () => {
       ];
 
       for (let i = 0; i < 6; i++) {
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i
-        ] = dateComponents[i].toString();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i] =
+          dateComponents[i].toString();
       }
 
       const vcAndDiscloseHubProof = {
@@ -361,8 +328,7 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.not.be
-        .reverted;
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.not.be.reverted;
     });
 
     it("should fail with invalid current date (- 1 day)", async () => {
@@ -391,14 +357,14 @@ describe("VC and Disclose", () => {
       ];
 
       for (let i = 0; i < 6; i++) {
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i
-        ] = dateComponents[i].toString();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i] =
+          dateComponents[i].toString();
       }
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "CURRENT_DATE_NOT_IN_VALID_RANGE");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "CURRENT_DATE_NOT_IN_VALID_RANGE",
+      );
     });
 
     it("should not revert when current date is slightly less than - 1 day", async () => {
@@ -418,9 +384,8 @@ describe("VC and Disclose", () => {
       ];
 
       for (let i = 0; i < 6; i++) {
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i
-        ] = dateComponents[i].toString();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX + i] =
+          dateComponents[i].toString();
       }
 
       const vcAndDiscloseHubProof = {
@@ -432,8 +397,7 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.not.be
-        .reverted;
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.not.be.reverted;
     });
 
     it("should succeed with bigger value than older than", async () => {
@@ -448,8 +412,7 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.not
-        .reverted;
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.not.reverted;
     });
 
     it("should fail with invalid older than", async () => {
@@ -464,9 +427,10 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_OLDER_THAN");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_OLDER_THAN",
+      );
     });
 
     it("should fail with if listed in OFAC", async () => {
@@ -502,9 +466,7 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_OFAC");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(hub, "INVALID_OFAC");
     });
 
     it("should fail with invalid forbidden countries", async () => {
@@ -519,9 +481,10 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_FORBIDDEN_COUNTRIES");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_FORBIDDEN_COUNTRIES",
+      );
     });
 
     it("should not revert when all enablers are false", async () => {
@@ -536,8 +499,7 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.not.be
-        .reverted;
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.not.be.reverted;
     });
 
     it("should fail with invalid VC and Disclose proof", async () => {
@@ -554,9 +516,10 @@ describe("VC and Disclose", () => {
         vcAndDiscloseProof: vcAndDiscloseProof,
       };
 
-      await expect(
-        hub.verifyVcAndDisclose(vcAndDiscloseHubProof),
-      ).to.be.revertedWithCustomError(hub, "INVALID_VC_AND_DISCLOSE_PROOF");
+      await expect(hub.verifyVcAndDisclose(vcAndDiscloseHubProof)).to.be.revertedWithCustomError(
+        hub,
+        "INVALID_VC_AND_DISCLOSE_PROOF",
+      );
     });
   });
 
@@ -567,14 +530,10 @@ describe("VC and Disclose", () => {
       let revealedDataPacked = [BigInt(0), BigInt(0), BigInt(0)];
       for (let i = 0; i < 3; i++) {
         revealedDataPacked[i] = BigInt(
-          vcAndDiscloseProof.pubSignals[
-            CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
-          ],
+          vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i],
         );
       }
-      const bytes = Formatter.fieldElementsToBytes(
-        revealedDataPacked as [bigint, bigint, bigint],
-      );
+      const bytes = Formatter.fieldElementsToBytes(revealedDataPacked as [bigint, bigint, bigint]);
       const readableData = await hub.getReadableRevealedData(
         revealedDataPacked as [BigNumberish, BigNumberish, BigNumberish],
         types,
@@ -588,16 +547,11 @@ describe("VC and Disclose", () => {
       let revealedDataPacked = [BigInt(0), BigInt(0), BigInt(0)];
       for (let i = 0; i < 3; i++) {
         revealedDataPacked[i] = BigInt(
-          vcAndDiscloseProof.pubSignals[
-            CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
-          ],
+          vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i],
         );
       }
       await expect(
-        hubImpl.getReadableRevealedData(
-          revealedDataPacked as [BigNumberish, BigNumberish, BigNumberish],
-          ["0"],
-        ),
+        hubImpl.getReadableRevealedData(revealedDataPacked as [BigNumberish, BigNumberish, BigNumberish], ["0"]),
       ).to.be.revertedWithCustomError(hubImpl, "UUPSUnauthorizedCallContext");
     });
 
@@ -616,58 +570,23 @@ describe("VC and Disclose", () => {
         "10",
       ]);
 
-      expect(CircuitAttributeHandler.getIssuingState(bytes)).to.equal(
-        readableData[0],
-      );
-      expect(CircuitAttributeHandler.getName(bytes)).to.deep.equal(
-        readableData[1],
-      );
-      expect(CircuitAttributeHandler.getPassportNumber(bytes)).to.equal(
-        readableData[2],
-      );
-      expect(CircuitAttributeHandler.getNationality(bytes)).to.equal(
-        readableData[3],
-      );
-      expect(CircuitAttributeHandler.getDateOfBirth(bytes)).to.equal(
-        readableData[4],
-      );
-      expect(CircuitAttributeHandler.getGender(bytes)).to.equal(
-        readableData[5],
-      );
-      expect(CircuitAttributeHandler.getExpiryDate(bytes)).to.equal(
-        readableData[6],
-      );
-      expect(CircuitAttributeHandler.getOlderThan(bytes)).to.equal(
-        readableData[7],
-      );
-      expect(CircuitAttributeHandler.getPassportNoOfac(bytes)).to.equal(
-        readableData[8],
-      );
-      expect(CircuitAttributeHandler.getNameAndDobOfac(bytes)).to.equal(
-        readableData[9],
-      );
-      expect(CircuitAttributeHandler.getNameAndYobOfac(bytes)).to.equal(
-        readableData[10],
-      );
+      expect(CircuitAttributeHandler.getIssuingState(bytes)).to.equal(readableData[0]);
+      expect(CircuitAttributeHandler.getName(bytes)).to.deep.equal(readableData[1]);
+      expect(CircuitAttributeHandler.getPassportNumber(bytes)).to.equal(readableData[2]);
+      expect(CircuitAttributeHandler.getNationality(bytes)).to.equal(readableData[3]);
+      expect(CircuitAttributeHandler.getDateOfBirth(bytes)).to.equal(readableData[4]);
+      expect(CircuitAttributeHandler.getGender(bytes)).to.equal(readableData[5]);
+      expect(CircuitAttributeHandler.getExpiryDate(bytes)).to.equal(readableData[6]);
+      expect(CircuitAttributeHandler.getOlderThan(bytes)).to.equal(readableData[7]);
+      expect(CircuitAttributeHandler.getPassportNoOfac(bytes)).to.equal(readableData[8]);
+      expect(CircuitAttributeHandler.getNameAndDobOfac(bytes)).to.equal(readableData[9]);
+      expect(CircuitAttributeHandler.getNameAndYobOfac(bytes)).to.equal(readableData[10]);
     });
 
     it("should return all data", async () => {
-      const { readableData } = await setupVcAndDiscloseTest([
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-      ]);
+      const { readableData } = await setupVcAndDiscloseTest(["0", "1", "2", "3", "4", "5", "6", "7", "8"]);
       expect(readableData[0]).to.equal("FRA");
-      expect(readableData[1]).to.deep.equal([
-        "ALPHONSE HUGHUES ALBERT",
-        "DUPONT",
-      ]);
+      expect(readableData[1]).to.deep.equal(["ALPHONSE HUGHUES ALBERT", "DUPONT"]);
       expect(readableData[2]).to.equal("15AA81234");
       expect(readableData[3]).to.equal("FRA");
       expect(readableData[4]).to.equal("31-01-94");
@@ -693,10 +612,7 @@ describe("VC and Disclose", () => {
     it("should only return name", async () => {
       const { readableData } = await setupVcAndDiscloseTest(["1"]);
       expect(readableData[0]).to.equal("");
-      expect(readableData[1]).to.deep.equal([
-        "ALPHONSE HUGHUES ALBERT",
-        "DUPONT",
-      ]);
+      expect(readableData[1]).to.deep.equal(["ALPHONSE HUGHUES ALBERT", "DUPONT"]);
       expect(readableData[2]).to.equal("");
       expect(readableData[3]).to.equal("");
       expect(readableData[4]).to.equal("");
@@ -804,16 +720,11 @@ describe("VC and Disclose", () => {
       let revealedDataPacked = [BigInt(0), BigInt(0), BigInt(0)];
       for (let i = 0; i < 3; i++) {
         revealedDataPacked[i] = BigInt(
-          vcAndDiscloseProof.pubSignals[
-            CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
-          ],
+          vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i],
         );
       }
       await expect(
-        hub.getReadableRevealedData(
-          revealedDataPacked as [BigNumberish, BigNumberish, BigNumberish],
-          ["11"],
-        ),
+        hub.getReadableRevealedData(revealedDataPacked as [BigNumberish, BigNumberish, BigNumberish], ["11"]),
       ).to.be.reverted;
     });
 
@@ -834,14 +745,9 @@ describe("VC and Disclose", () => {
       const { hub } = deployedActors;
 
       const forbiddenCountriesListPacked = splitHexFromBack(
-        reverseCountryBytes(
-          Formatter.bytesToHexString(
-            new Uint8Array(formatCountriesList(forbiddenCountriesList)),
-          ),
-        ),
+        reverseCountryBytes(Formatter.bytesToHexString(new Uint8Array(formatCountriesList(forbiddenCountriesList)))),
       );
-      const readableForbiddenCountries =
-        await hub.getReadableForbiddenCountries(forbiddenCountriesListPacked);
+      const readableForbiddenCountries = await hub.getReadableForbiddenCountries(forbiddenCountriesListPacked);
 
       expect(readableForbiddenCountries[0]).to.equal(forbiddenCountriesList[0]);
       expect(readableForbiddenCountries[1]).to.equal(forbiddenCountriesList[1]);
@@ -851,27 +757,11 @@ describe("VC and Disclose", () => {
     it("should return maximum length of forbidden countries", async () => {
       const { hub } = deployedActors;
 
-      const forbiddenCountriesList = [
-        "AAA",
-        "FRA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-      ];
+      const forbiddenCountriesList = ["AAA", "FRA", "CBA", "CBA", "CBA", "CBA", "CBA", "CBA", "CBA", "CBA"];
       const forbiddenCountriesListPacked = splitHexFromBack(
-        reverseCountryBytes(
-          Formatter.bytesToHexString(
-            new Uint8Array(formatCountriesList(forbiddenCountriesList)),
-          ),
-        ),
+        reverseCountryBytes(Formatter.bytesToHexString(new Uint8Array(formatCountriesList(forbiddenCountriesList)))),
       );
-      const readableForbiddenCountries =
-        await hub.getReadableForbiddenCountries(forbiddenCountriesListPacked);
+      const readableForbiddenCountries = await hub.getReadableForbiddenCountries(forbiddenCountriesListPacked);
       expect(readableForbiddenCountries.length).to.equal(40);
       expect(readableForbiddenCountries[0]).to.equal(forbiddenCountriesList[0]);
       expect(readableForbiddenCountries[1]).to.equal(forbiddenCountriesList[1]);
@@ -887,28 +777,14 @@ describe("VC and Disclose", () => {
 
     it("should fail when getReadableForbiddenCountries is called by non-proxy", async () => {
       const { hubImpl } = deployedActors;
-      const forbiddenCountriesList = [
-        "AAA",
-        "FRA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-        "CBA",
-      ];
+      const forbiddenCountriesList = ["AAA", "FRA", "CBA", "CBA", "CBA", "CBA", "CBA", "CBA", "CBA", "CBA"];
       const forbiddenCountriesListPacked = splitHexFromBack(
-        reverseCountryBytes(
-          Formatter.bytesToHexString(
-            new Uint8Array(formatCountriesList(forbiddenCountriesList)),
-          ),
-        ),
+        reverseCountryBytes(Formatter.bytesToHexString(new Uint8Array(formatCountriesList(forbiddenCountriesList)))),
       );
-      await expect(
-        hubImpl.getReadableForbiddenCountries(forbiddenCountriesListPacked),
-      ).to.be.revertedWithCustomError(hubImpl, "UUPSUnauthorizedCallContext");
+      await expect(hubImpl.getReadableForbiddenCountries(forbiddenCountriesListPacked)).to.be.revertedWithCustomError(
+        hubImpl,
+        "UUPSUnauthorizedCallContext",
+      );
     });
   });
 });

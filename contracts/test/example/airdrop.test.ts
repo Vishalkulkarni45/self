@@ -11,10 +11,7 @@ import { generateCommitment } from "../../../common/src/utils/passports/passport
 import { generateRandomFieldElement, splitHexFromBack } from "../utils/utils";
 import BalanceTree from "../utils/example/balance-tree";
 import { castFromScope } from "../../../common/src/utils/circuits/uuid";
-import {
-  formatCountriesList,
-  reverseBytes,
-} from "../../../common/src/utils/circuits/formatInputs";
+import { formatCountriesList, reverseBytes } from "../../../common/src/utils/circuits/formatInputs";
 import { Formatter } from "../utils/formatter";
 import { hashEndpointWithScope } from "../../../common/src/utils/scope";
 
@@ -39,11 +36,7 @@ describe("Airdrop", () => {
     registerSecret = generateRandomFieldElement();
     nullifier = generateRandomFieldElement();
     attestationIds = [BigInt(ATTESTATION_ID.E_PASSPORT)];
-    commitment = generateCommitment(
-      registerSecret,
-      ATTESTATION_ID.E_PASSPORT,
-      deployedActors.mockPassport,
-    );
+    commitment = generateCommitment(registerSecret, ATTESTATION_ID.E_PASSPORT, deployedActors.mockPassport);
 
     forbiddenCountriesList = ["AAA", "ABC", "CBA"];
 
@@ -74,18 +67,10 @@ describe("Airdrop", () => {
 
     await deployedActors.registry
       .connect(deployedActors.owner)
-      .devAddIdentityCommitment(
-        ATTESTATION_ID.E_PASSPORT,
-        nullifier,
-        commitment,
-      );
+      .devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
     countriesListPacked = splitHexFromBack(
-      reverseBytes(
-        Formatter.bytesToHexString(
-          new Uint8Array(formatCountriesList(forbiddenCountriesList)),
-        ),
-      ),
+      reverseBytes(Formatter.bytesToHexString(new Uint8Array(formatCountriesList(forbiddenCountriesList)))),
     );
 
     const airdropFactory = await ethers.getContractFactory("Airdrop");
@@ -106,9 +91,7 @@ describe("Airdrop", () => {
       forbiddenCountriesListPacked: countriesListPacked,
       ofacEnabled: [true, true, true] as [boolean, boolean, boolean],
     };
-    await airdrop
-      .connect(deployedActors.owner)
-      .setVerificationConfig(verificationConfig);
+    await airdrop.connect(deployedActors.owner).setVerificationConfig(verificationConfig);
 
     const mintAmount = ethers.parseEther("424242424242");
     await token.mint(airdrop.target, mintAmount);
@@ -130,9 +113,7 @@ describe("Airdrop", () => {
     const tx = await airdrop.connect(owner).openRegistration();
     const receipt = await tx.wait();
     const event = receipt?.logs.find(
-      (log: any) =>
-        log.topics[0] ===
-        airdrop.interface.getEvent("RegistrationOpen").topicHash,
+      (log: any) => log.topics[0] === airdrop.interface.getEvent("RegistrationOpen").topicHash,
     );
     expect(event).to.not.be.null;
     expect(await airdrop.isRegistrationOpen()).to.be.true;
@@ -151,9 +132,7 @@ describe("Airdrop", () => {
     const tx = await airdrop.connect(owner).closeRegistration();
     const receipt = await tx.wait();
     const event = receipt?.logs.find(
-      (log: any) =>
-        log.topics[0] ===
-        airdrop.interface.getEvent("RegistrationClose").topicHash,
+      (log: any) => log.topics[0] === airdrop.interface.getEvent("RegistrationClose").topicHash,
     );
     expect(event).to.not.be.null;
     expect(await airdrop.isRegistrationOpen()).to.be.false;
@@ -171,10 +150,7 @@ describe("Airdrop", () => {
     const tx = await airdrop.connect(owner).openClaim();
     const receipt = await tx.wait();
 
-    const event = receipt?.logs.find(
-      (log: any) =>
-        log.topics[0] === airdrop.interface.getEvent("ClaimOpen").topicHash,
-    );
+    const event = receipt?.logs.find((log: any) => log.topics[0] === airdrop.interface.getEvent("ClaimOpen").topicHash);
     expect(event).to.not.be.null;
     expect(await airdrop.isClaimOpen()).to.be.true;
   });
@@ -192,8 +168,7 @@ describe("Airdrop", () => {
     const tx = await airdrop.connect(owner).closeClaim();
     const receipt = await tx.wait();
     const event = receipt?.logs.find(
-      (log: any) =>
-        log.topics[0] === airdrop.interface.getEvent("ClaimClose").topicHash,
+      (log: any) => log.topics[0] === airdrop.interface.getEvent("ClaimClose").topicHash,
     );
     expect(event).to.not.be.null;
     expect(await airdrop.isClaimOpen()).to.be.false;
@@ -202,9 +177,10 @@ describe("Airdrop", () => {
   it("should not able to close claim by owner", async () => {
     const { owner, user1 } = deployedActors;
     await airdrop.connect(owner).openClaim();
-    await expect(
-      airdrop.connect(user1).closeClaim(),
-    ).to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount");
+    await expect(airdrop.connect(user1).closeClaim()).to.be.revertedWithCustomError(
+      airdrop,
+      "OwnableUnauthorizedAccount",
+    );
   });
 
   it("should able to set merkle root by owner", async () => {
@@ -230,26 +206,15 @@ describe("Airdrop", () => {
     const receipt = await tx.wait();
 
     const event = receipt?.logs.find(
-      (log: any) =>
-        log.topics[0] ===
-        airdrop.interface.getEvent("UserIdentifierRegistered").topicHash,
+      (log: any) => log.topics[0] === airdrop.interface.getEvent("UserIdentifierRegistered").topicHash,
     );
     const eventArgs = event
-      ? airdrop.interface.decodeEventLog(
-          "UserIdentifierRegistered",
-          event.data,
-          event.topics,
-        )
+      ? airdrop.interface.decodeEventLog("UserIdentifierRegistered", event.data, event.topics)
       : null;
 
-    expect(eventArgs?.registeredUserIdentifier).to.be.equal(
-      await user1.getAddress(),
-    );
+    expect(eventArgs?.registeredUserIdentifier).to.be.equal(await user1.getAddress());
 
-    const appNullifier =
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NULLIFIER_INDEX
-      ];
+    const appNullifier = vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NULLIFIER_INDEX];
     expect(eventArgs?.nullifier).to.be.equal(appNullifier);
 
     const nullifierToId = await airdrop.getNullifier(appNullifier);
@@ -257,18 +222,17 @@ describe("Airdrop", () => {
 
     const isRegistered = await airdrop.isRegistered(await user1.getAddress());
     expect(isRegistered).to.be.equal(true);
-    const isRegisteredFalse = await airdrop.isRegistered(
-      await owner.getAddress(),
-    );
+    const isRegisteredFalse = await airdrop.isRegistered(await owner.getAddress());
   });
 
   it("should not able to register address by user if registration is closed", async () => {
     const { owner, user1 } = deployedActors;
 
     await airdrop.connect(owner).closeRegistration();
-    await expect(
-      airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof),
-    ).to.be.revertedWithCustomError(airdrop, "RegistrationNotOpen");
+    await expect(airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof)).to.be.revertedWithCustomError(
+      airdrop,
+      "RegistrationNotOpen",
+    );
   });
 
   it("should not able to register address by user if scope is invalid", async () => {
@@ -292,9 +256,10 @@ describe("Airdrop", () => {
     );
 
     await airdrop.connect(owner).openRegistration();
-    await expect(
-      airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof),
-    ).to.be.revertedWithCustomError(airdrop, "InvalidScope");
+    await expect(airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof)).to.be.revertedWithCustomError(
+      airdrop,
+      "InvalidScope",
+    );
   });
 
   it("should not able to register address by user if nullifier is already registered", async () => {
@@ -302,9 +267,10 @@ describe("Airdrop", () => {
 
     await airdrop.connect(owner).openRegistration();
     await airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof);
-    await expect(
-      airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof),
-    ).to.be.revertedWithCustomError(airdrop, "RegisteredNullifier");
+    await expect(airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof)).to.be.revertedWithCustomError(
+      airdrop,
+      "RegisteredNullifier",
+    );
   });
 
   it("should not able to register address by user if attestation id is invalid", async () => {
@@ -318,11 +284,7 @@ describe("Airdrop", () => {
 
     await registry
       .connect(owner)
-      .devAddIdentityCommitment(
-        ATTESTATION_ID.INVALID_ATTESTATION_ID,
-        nullifier,
-        invalidCommitment,
-      );
+      .devAddIdentityCommitment(ATTESTATION_ID.INVALID_ATTESTATION_ID, nullifier, invalidCommitment);
 
     const hashFunction = (a: bigint, b: bigint) => poseidon2([a, b]);
     const invalidImt = new LeanIMT<bigint>(hashFunction);
@@ -347,9 +309,10 @@ describe("Airdrop", () => {
     );
 
     await airdrop.connect(owner).openRegistration();
-    await expect(
-      airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof),
-    ).to.be.revertedWithCustomError(airdrop, "InvalidAttestationId");
+    await expect(airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof)).to.be.revertedWithCustomError(
+      airdrop,
+      "InvalidAttestationId",
+    );
   });
 
   it("should revert with InvalidUserIdentifier when user identifier is 0", async () => {
@@ -373,9 +336,10 @@ describe("Airdrop", () => {
     );
 
     await airdrop.connect(owner).openRegistration();
-    await expect(
-      airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof),
-    ).to.be.revertedWithCustomError(airdrop, "InvalidUserIdentifier");
+    await expect(airdrop.connect(user1).verifySelfProof(vcAndDiscloseProof)).to.be.revertedWithCustomError(
+      airdrop,
+      "InvalidUserIdentifier",
+    );
   });
 
   it("should allow registration when targetRootTimestamp is 0", async () => {
@@ -384,12 +348,7 @@ describe("Airdrop", () => {
     const airdropFactory = await ethers.getContractFactory("Airdrop");
     const newAirdrop = await airdropFactory
       .connect(owner)
-      .deploy(
-        hub.target,
-        hashEndpointWithScope("https://test.com", "test-scope"),
-        attestationIds,
-        token.target,
-      );
+      .deploy(hub.target, hashEndpointWithScope("https://test.com", "test-scope"), attestationIds, token.target);
     await newAirdrop.waitForDeployment();
 
     const verificationConfig = {
@@ -402,21 +361,16 @@ describe("Airdrop", () => {
     await newAirdrop.connect(owner).setVerificationConfig(verificationConfig);
 
     await newAirdrop.connect(owner).openRegistration();
-    await expect(newAirdrop.connect(user1).verifySelfProof(vcAndDiscloseProof))
-      .to.not.be.reverted;
+    await expect(newAirdrop.connect(user1).verifySelfProof(vcAndDiscloseProof)).to.not.be.reverted;
   });
 
   it("should return correct scope", async () => {
     const scope = await airdrop.getScope();
-    expect(scope).to.equal(
-      hashEndpointWithScope("https://test.com", "test-scope"),
-    );
+    expect(scope).to.equal(hashEndpointWithScope("https://test.com", "test-scope"));
   });
 
   it("should check if attestation ID is allowed", async () => {
-    const isAllowed = await airdrop.isAttestationIdAllowed(
-      ATTESTATION_ID.E_PASSPORT,
-    );
+    const isAllowed = await airdrop.isAttestationIdAllowed(ATTESTATION_ID.E_PASSPORT);
     expect(isAllowed).to.be.true;
 
     const isNotAllowed = await airdrop.isAttestationIdAllowed(999999); // Some random ID not in the list
@@ -455,23 +409,12 @@ describe("Airdrop", () => {
     await airdrop.connect(owner).setMerkleRoot(root);
 
     await airdrop.connect(owner).openClaim();
-    const merkleProof = tree.getProof(
-      0,
-      await user1.getAddress(),
-      BigInt(1000000000000000000),
-    );
-    const tx = await airdrop
-      .connect(user1)
-      .claim(0, BigInt(1000000000000000000), merkleProof);
+    const merkleProof = tree.getProof(0, await user1.getAddress(), BigInt(1000000000000000000));
+    const tx = await airdrop.connect(user1).claim(0, BigInt(1000000000000000000), merkleProof);
     const receipt = await tx.wait();
 
-    const event = receipt?.logs.find(
-      (log: any) =>
-        log.topics[0] === airdrop.interface.getEvent("Claimed").topicHash,
-    );
-    const eventArgs = event
-      ? airdrop.interface.decodeEventLog("Claimed", event.data, event.topics)
-      : null;
+    const event = receipt?.logs.find((log: any) => log.topics[0] === airdrop.interface.getEvent("Claimed").topicHash);
+    const eventArgs = event ? airdrop.interface.decodeEventLog("Claimed", event.data, event.topics) : null;
 
     expect(eventArgs?.index).to.equal(0);
     expect(eventArgs?.amount).to.equal(BigInt(1000000000000000000));
@@ -501,11 +444,7 @@ describe("Airdrop", () => {
     await airdrop.connect(owner).setMerkleRoot(root);
 
     await airdrop.connect(owner).openClaim();
-    const merkleProof = tree.getProof(
-      0,
-      await user1.getAddress(),
-      BigInt(1000000000000000000),
-    );
+    const merkleProof = tree.getProof(0, await user1.getAddress(), BigInt(1000000000000000000));
     await expect(
       airdrop.connect(user1).claim(0, BigInt(1000000000000000000), merkleProof),
     ).to.be.revertedWithCustomError(airdrop, "RegistrationNotClosed");
@@ -531,11 +470,7 @@ describe("Airdrop", () => {
 
     await airdrop.connect(owner).setMerkleRoot(root);
 
-    const merkleProof = tree.getProof(
-      0,
-      await user1.getAddress(),
-      BigInt(1000000000000000000),
-    );
+    const merkleProof = tree.getProof(0, await user1.getAddress(), BigInt(1000000000000000000));
     await expect(
       airdrop.connect(user1).claim(0, BigInt(1000000000000000000), merkleProof),
     ).to.be.revertedWithCustomError(airdrop, "ClaimNotOpen");
@@ -561,14 +496,8 @@ describe("Airdrop", () => {
     await airdrop.connect(owner).setMerkleRoot(root);
 
     await airdrop.connect(owner).openClaim();
-    const merkleProof = tree.getProof(
-      0,
-      await user1.getAddress(),
-      BigInt(1000000000000000000),
-    );
-    await airdrop
-      .connect(user1)
-      .claim(0, BigInt(1000000000000000000), merkleProof);
+    const merkleProof = tree.getProof(0, await user1.getAddress(), BigInt(1000000000000000000));
+    await airdrop.connect(user1).claim(0, BigInt(1000000000000000000), merkleProof);
     await expect(
       airdrop.connect(user1).claim(0, BigInt(1000000000000000000), merkleProof),
     ).to.be.revertedWithCustomError(airdrop, "AlreadyClaimed");
@@ -597,11 +526,7 @@ describe("Airdrop", () => {
     await airdrop.connect(owner).setMerkleRoot(root);
 
     await airdrop.connect(owner).openClaim();
-    const merkleProof = tree.getProof(
-      0,
-      await user1.getAddress(),
-      BigInt(1000000000000000000),
-    );
+    const merkleProof = tree.getProof(0, await user1.getAddress(), BigInt(1000000000000000000));
     merkleProof[0] = generateRandomFieldElement().toString();
     await expect(
       airdrop.connect(user1).claim(0, BigInt(1000000000000000000), merkleProof),
@@ -633,14 +558,8 @@ describe("Airdrop", () => {
     await airdrop.connect(owner).setMerkleRoot(root);
     await airdrop.connect(owner).openClaim();
 
-    const merkleProof = tree.getProof(
-      1,
-      await user2.getAddress(),
-      BigInt(1000000000000000000),
-    );
-    await expect(
-      airdrop.connect(user2).claim(1, BigInt(1000000000000000000), merkleProof),
-    )
+    const merkleProof = tree.getProof(1, await user2.getAddress(), BigInt(1000000000000000000));
+    await expect(airdrop.connect(user2).claim(1, BigInt(1000000000000000000), merkleProof))
       .to.be.revertedWithCustomError(airdrop, "NotRegistered")
       .withArgs(await user2.getAddress());
 
@@ -661,21 +580,15 @@ describe("Airdrop", () => {
     await airdrop.connect(owner).setVerificationConfig(newVerificationConfig);
     const storedConfig = await airdrop.getVerificationConfig();
 
-    expect(storedConfig.olderThanEnabled).to.equal(
-      newVerificationConfig.olderThanEnabled,
-    );
+    expect(storedConfig.olderThanEnabled).to.equal(newVerificationConfig.olderThanEnabled);
     expect(storedConfig.olderThan).to.equal(newVerificationConfig.olderThan);
-    expect(storedConfig.forbiddenCountriesEnabled).to.equal(
-      newVerificationConfig.forbiddenCountriesEnabled,
-    );
+    expect(storedConfig.forbiddenCountriesEnabled).to.equal(newVerificationConfig.forbiddenCountriesEnabled);
     for (let i = 0; i < 4; i++) {
       expect(storedConfig.forbiddenCountriesListPacked[i]).to.equal(
         newVerificationConfig.forbiddenCountriesListPacked[i],
       );
     }
-    expect(storedConfig.ofacEnabled).to.deep.equal(
-      newVerificationConfig.ofacEnabled,
-    );
+    expect(storedConfig.ofacEnabled).to.deep.equal(newVerificationConfig.ofacEnabled);
   });
 
   it("should not able to set verification config by non-owner", async () => {
@@ -688,9 +601,7 @@ describe("Airdrop", () => {
       ofacEnabled: [false, false, false] as [boolean, boolean, boolean],
     };
 
-    await expect(
-      airdrop.connect(user1).setVerificationConfig(newVerificationConfig),
-    )
+    await expect(airdrop.connect(user1).setVerificationConfig(newVerificationConfig))
       .to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount")
       .withArgs(await user1.getAddress());
   });
@@ -701,19 +612,14 @@ describe("Airdrop", () => {
     expect(config.olderThan).to.equal(20);
     expect(config.forbiddenCountriesEnabled).to.equal(true);
     for (let i = 0; i < 4; i++) {
-      expect(config.forbiddenCountriesListPacked[i]).to.equal(
-        countriesListPacked[i],
-      );
+      expect(config.forbiddenCountriesListPacked[i]).to.equal(countriesListPacked[i]);
     }
     expect(config.ofacEnabled).to.deep.equal([true, true, true]);
   });
 
   it("should able to update scope by owner", async () => {
     const { owner } = deployedActors;
-    const newScope = hashEndpointWithScope(
-      "https://newtest.com",
-      "new-test-scope",
-    );
+    const newScope = hashEndpointWithScope("https://newtest.com", "new-test-scope");
 
     await airdrop.connect(owner).setScope(newScope);
     const scope = await airdrop.getScope();
@@ -728,10 +634,7 @@ describe("Airdrop", () => {
 
   it("should not be able to update scope by non-owner", async () => {
     const { user1 } = deployedActors;
-    const newScope = hashEndpointWithScope(
-      "https://newtest.com",
-      "new-test-scope",
-    );
+    const newScope = hashEndpointWithScope("https://newtest.com", "new-test-scope");
 
     await expect(airdrop.connect(user1).setScope(newScope))
       .to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount")
@@ -767,9 +670,7 @@ describe("Airdrop", () => {
     const attestationIdToRemove = ATTESTATION_ID.E_PASSPORT;
 
     await airdrop.connect(owner).removeAttestationId(attestationIdToRemove);
-    const isAllowed = await airdrop.isAttestationIdAllowed(
-      attestationIdToRemove,
-    );
+    const isAllowed = await airdrop.isAttestationIdAllowed(attestationIdToRemove);
     expect(isAllowed).to.be.false;
 
     // Verify event was emitted
@@ -783,9 +684,7 @@ describe("Airdrop", () => {
     const { user1 } = deployedActors;
     const attestationIdToRemove = ATTESTATION_ID.E_PASSPORT;
 
-    await expect(
-      airdrop.connect(user1).removeAttestationId(attestationIdToRemove),
-    )
+    await expect(airdrop.connect(user1).removeAttestationId(attestationIdToRemove))
       .to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount")
       .withArgs(await user1.getAddress());
   });

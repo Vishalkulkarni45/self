@@ -8,8 +8,7 @@ describe("Formatter", function () {
   let testFormatter: TestFormatter;
 
   before(async function () {
-    const TestFormatterFactory =
-      await ethers.getContractFactory("TestFormatter");
+    const TestFormatterFactory = await ethers.getContractFactory("TestFormatter");
     testFormatter = await TestFormatterFactory.deploy();
     await testFormatter.waitForDeployment();
   });
@@ -47,41 +46,40 @@ describe("Formatter", function () {
 
     it("should handle errors consistently between contract and ts", async function () {
       const input = "12345";
-      await expect(
-        testFormatter.testFormatDate(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDateLength");
+      await expect(testFormatter.testFormatDate(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidDateLength",
+      );
       expect(() => Formatter.formatDate(input)).to.throw("InvalidDateLength");
     });
 
     it("should handle errors consistently when month is out of range", async function () {
       const input = "941331";
-      await expect(
-        testFormatter.testFormatDate(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidMonthRange");
+      await expect(testFormatter.testFormatDate(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidMonthRange",
+      );
       expect(() => Formatter.formatDate(input)).to.throw("InvalidMonthRange");
     });
 
     it("should handle errors consistently when month is out of range (more than 20)", async function () {
       const input = "942032";
-      await expect(
-        testFormatter.testFormatDate(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidMonthRange");
+      await expect(testFormatter.testFormatDate(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidMonthRange",
+      );
       expect(() => Formatter.formatDate(input)).to.throw("InvalidMonthRange");
     });
 
     it("should handle errors consistently when day is out of range (more than 31)", async function () {
       const input = "940132";
-      await expect(
-        testFormatter.testFormatDate(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
+      await expect(testFormatter.testFormatDate(input)).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
       expect(() => Formatter.formatDate(input)).to.throw("InvalidDayRange");
     });
 
     it("should handle errors consistently when day is out of range (more than 40)", async function () {
       const input = "940140";
-      await expect(
-        testFormatter.testFormatDate(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
+      await expect(testFormatter.testFormatDate(input)).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
       expect(() => Formatter.formatDate(input)).to.throw("InvalidDayRange");
     });
   });
@@ -101,71 +99,60 @@ describe("Formatter", function () {
   describe("fieldElementsToBytes", function () {
     it("should match contract and ts implementation", async function () {
       const input = [123n, 456n, 789n];
-      const contractResult =
-        await testFormatter.testFieldElementsToBytes(input);
-      const tsResult = toHexString(
-        Formatter.fieldElementsToBytes(input as [bigint, bigint, bigint]),
-      );
+      const contractResult = await testFormatter.testFieldElementsToBytes(input);
+      const tsResult = toHexString(Formatter.fieldElementsToBytes(input as [bigint, bigint, bigint]));
       expect(contractResult).to.deep.equal(tsResult);
     });
 
     it("should match contract and ts implementation for zero values", async function () {
       const input = [0n, 0n, 0n];
-      const contractResult =
-        await testFormatter.testFieldElementsToBytes(input);
-      const tsResult = toHexString(
-        Formatter.fieldElementsToBytes(input as [bigint, bigint, bigint]),
-      );
+      const contractResult = await testFormatter.testFieldElementsToBytes(input);
+      const tsResult = toHexString(Formatter.fieldElementsToBytes(input as [bigint, bigint, bigint]));
       expect(contractResult).to.deep.equal(tsResult);
     });
 
     it("should revert when field element is out of range", async function () {
-      const input = [
-        21888242871839275222246405745257275088548364400416034343698204186575808495617n,
-        0n,
-        0n,
-      ] as [bigint, bigint, bigint];
-      await expect(
-        testFormatter.testFieldElementsToBytes(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidFieldElement");
+      const input = [21888242871839275222246405745257275088548364400416034343698204186575808495617n, 0n, 0n] as [
+        bigint,
+        bigint,
+        bigint,
+      ];
+      await expect(testFormatter.testFieldElementsToBytes(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidFieldElement",
+      );
     });
 
     it("should revert when field element is out of range", async function () {
-      const input = [
-        0n,
-        21888242871839275222246405745257275088548364400416034343698204186575808495617n,
-        0n,
-      ] as [bigint, bigint, bigint];
-      await expect(
-        testFormatter.testFieldElementsToBytes(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidFieldElement");
+      const input = [0n, 21888242871839275222246405745257275088548364400416034343698204186575808495617n, 0n] as [
+        bigint,
+        bigint,
+        bigint,
+      ];
+      await expect(testFormatter.testFieldElementsToBytes(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidFieldElement",
+      );
     });
 
     it("should revert when field element is out of range", async function () {
-      const input = [
-        0n,
-        0n,
-        21888242871839275222246405745257275088548364400416034343698204186575808495617n,
-      ] as [bigint, bigint, bigint];
-      await expect(
-        testFormatter.testFieldElementsToBytes(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidFieldElement");
+      const input = [0n, 0n, 21888242871839275222246405745257275088548364400416034343698204186575808495617n] as [
+        bigint,
+        bigint,
+        bigint,
+      ];
+      await expect(testFormatter.testFieldElementsToBytes(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidFieldElement",
+      );
     });
   });
 
   describe("extractForbiddenCountriesFromPacked", function () {
     it("should match contract and ts implementation", async function () {
       const input = "0x414141424242434343";
-      const contractResult =
-        await testFormatter.testExtractForbiddenCountriesFromPacked([
-          input,
-          0n,
-          0n,
-          0n,
-        ]);
-      const tsResult = Formatter.extractForbiddenCountriesFromPacked(
-        BigInt(input),
-      );
+      const contractResult = await testFormatter.testExtractForbiddenCountriesFromPacked([input, 0n, 0n, 0n]);
+      const tsResult = Formatter.extractForbiddenCountriesFromPacked(BigInt(input));
       expect(contractResult).to.deep.equal(tsResult);
       expect(contractResult[0]).to.equal("CCC");
       expect(contractResult[1]).to.equal("BBB");
@@ -173,16 +160,10 @@ describe("Formatter", function () {
     });
 
     it("should revert when field element is out of range", async function () {
-      const input =
-        21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+      const input = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
       await expect(
-        testFormatter.testExtractForbiddenCountriesFromPacked([
-          input,
-          0n,
-          0n,
-          0n,
-        ]),
+        testFormatter.testExtractForbiddenCountriesFromPacked([input, 0n, 0n, 0n]),
       ).to.be.revertedWithCustomError(testFormatter, "InvalidFieldElement");
     });
   });
@@ -205,9 +186,7 @@ describe("Formatter", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testFormatter.testProofDateToUnixTimestamp(
-          testCase.input,
-        );
+        const contractResult = await testFormatter.testProofDateToUnixTimestamp(testCase.input);
         const tsResult = Formatter.proofDateToUnixTimestamp(testCase.input);
         expect(contractResult).to.equal(BigInt(tsResult));
         expect(contractResult).to.equal(testCase.expected);
@@ -216,9 +195,10 @@ describe("Formatter", function () {
 
     it("should revert when date digit is out of range", async function () {
       const input = [9, 4, 0, 1, 2, 10];
-      await expect(
-        testFormatter.testProofDateToUnixTimestamp(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDateDigit");
+      await expect(testFormatter.testProofDateToUnixTimestamp(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidDateDigit",
+      );
     });
   });
 
@@ -236,9 +216,7 @@ describe("Formatter", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testFormatter.testDateToUnixTimestamp(
-          testCase.input,
-        );
+        const contractResult = await testFormatter.testDateToUnixTimestamp(testCase.input);
         const tsResult = Formatter.dateToUnixTimestamp(testCase.input);
         expect(contractResult).to.equal(BigInt(tsResult));
         expect(contractResult).to.equal(testCase.expected);
@@ -247,40 +225,43 @@ describe("Formatter", function () {
 
     it("should handle errors consistently between contract and ts", async function () {
       const input = "12345";
-      await expect(
-        testFormatter.testDateToUnixTimestamp(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDateLength");
-      expect(() => Formatter.dateToUnixTimestamp(input)).to.throw(
+      await expect(testFormatter.testDateToUnixTimestamp(input)).to.be.revertedWithCustomError(
+        testFormatter,
         "InvalidDateLength",
       );
+      expect(() => Formatter.dateToUnixTimestamp(input)).to.throw("InvalidDateLength");
     });
 
     it("should revert when month is out of range (more than 12)", async function () {
       const input = "941331";
-      await expect(
-        testFormatter.testDateToUnixTimestamp(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidMonthRange");
+      await expect(testFormatter.testDateToUnixTimestamp(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidMonthRange",
+      );
     });
 
     it("should revert when month is out of range (more than 20)", async function () {
       const input = "942031";
-      await expect(
-        testFormatter.testDateToUnixTimestamp(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidMonthRange");
+      await expect(testFormatter.testDateToUnixTimestamp(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidMonthRange",
+      );
     });
 
     it("should revert when day is out of range (more than 31)", async function () {
       const input = "940132";
-      await expect(
-        testFormatter.testDateToUnixTimestamp(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
+      await expect(testFormatter.testDateToUnixTimestamp(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidDayRange",
+      );
     });
 
     it("should revert when day is out of range (more than 40)", async function () {
       const input = "940140";
-      await expect(
-        testFormatter.testDateToUnixTimestamp(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
+      await expect(testFormatter.testDateToUnixTimestamp(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidDayRange",
+      );
     });
   });
 
@@ -293,16 +274,8 @@ describe("Formatter", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testFormatter.testSubstring(
-          testCase.str,
-          testCase.start,
-          testCase.end,
-        );
-        const tsResult = Formatter.substring(
-          testCase.str,
-          testCase.start,
-          testCase.end,
-        );
+        const contractResult = await testFormatter.testSubstring(testCase.str, testCase.start, testCase.end);
+        const tsResult = Formatter.substring(testCase.str, testCase.start, testCase.end);
         expect(contractResult).to.equal(tsResult);
         expect(contractResult).to.equal(testCase.expected);
       }
@@ -319,9 +292,7 @@ describe("Formatter", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testFormatter.testParseDatePart(
-          testCase.input,
-        );
+        const contractResult = await testFormatter.testParseDatePart(testCase.input);
         const tsResult = Formatter.parseDatePart(testCase.input);
         expect(contractResult).to.equal(tsResult);
         expect(contractResult).to.equal(testCase.expected);
@@ -347,16 +318,8 @@ describe("Formatter", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testFormatter.testToTimestamp(
-          testCase.year,
-          testCase.month,
-          testCase.day,
-        );
-        const tsResult = Formatter.toTimestamp(
-          testCase.year,
-          testCase.month,
-          testCase.day,
-        );
+        const contractResult = await testFormatter.testToTimestamp(testCase.year, testCase.month, testCase.day);
+        const tsResult = Formatter.toTimestamp(testCase.year, testCase.month, testCase.day);
         expect(contractResult).to.equal(BigInt(tsResult));
         expect(contractResult).to.equal(testCase.expected);
       }
@@ -364,44 +327,50 @@ describe("Formatter", function () {
 
     it("should revert when year is out of range", async function () {
       const input = 1969;
-      await expect(
-        testFormatter.testToTimestamp(input, 1, 1),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidYearRange");
+      await expect(testFormatter.testToTimestamp(input, 1, 1)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidYearRange",
+      );
     });
 
     it("should revert when year is out of range", async function () {
       const input = 2101;
-      await expect(
-        testFormatter.testToTimestamp(input, 1, 1),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidYearRange");
+      await expect(testFormatter.testToTimestamp(input, 1, 1)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidYearRange",
+      );
     });
 
     it("should revert when month is out of range", async function () {
       const input = 13;
-      await expect(
-        testFormatter.testToTimestamp(2000, input, 1),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidMonthRange");
+      await expect(testFormatter.testToTimestamp(2000, input, 1)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidMonthRange",
+      );
     });
 
     it("should revert when month is out of range", async function () {
       const input = 0;
-      await expect(
-        testFormatter.testToTimestamp(2000, input, 1),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidMonthRange");
+      await expect(testFormatter.testToTimestamp(2000, input, 1)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidMonthRange",
+      );
     });
 
     it("should revert when day is out of range", async function () {
       const input = 32;
-      await expect(
-        testFormatter.testToTimestamp(2000, 1, input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
+      await expect(testFormatter.testToTimestamp(2000, 1, input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidDayRange",
+      );
     });
 
     it("should revert when day is out of range", async function () {
       const input = 0;
-      await expect(
-        testFormatter.testToTimestamp(2000, 1, input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidDayRange");
+      await expect(testFormatter.testToTimestamp(2000, 1, input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidDayRange",
+      );
     });
   });
 
@@ -417,9 +386,7 @@ describe("Formatter", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testFormatter.testIsLeapYear(
-          testCase.year,
-        );
+        const contractResult = await testFormatter.testIsLeapYear(testCase.year);
         const tsResult = Formatter.isLeapYear(testCase.year);
         expect(contractResult).to.equal(tsResult);
         expect(contractResult).to.equal(testCase.expected);
@@ -428,16 +395,18 @@ describe("Formatter", function () {
 
     it("should revert when year is out of range", async function () {
       const input = 1969;
-      await expect(
-        testFormatter.testIsLeapYear(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidYearRange");
+      await expect(testFormatter.testIsLeapYear(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidYearRange",
+      );
     });
 
     it("should revert when year is out of range", async function () {
       const input = 2101;
-      await expect(
-        testFormatter.testIsLeapYear(input),
-      ).to.be.revertedWithCustomError(testFormatter, "InvalidYearRange");
+      await expect(testFormatter.testIsLeapYear(input)).to.be.revertedWithCustomError(
+        testFormatter,
+        "InvalidYearRange",
+      );
     });
   });
 });

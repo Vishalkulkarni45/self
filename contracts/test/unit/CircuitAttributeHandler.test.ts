@@ -7,16 +7,13 @@ describe("CircuitAttributeHandler", function () {
   let testHandler: TestCircuitAttributeHandler;
 
   before(async function () {
-    const TestHandlerFactory = await ethers.getContractFactory(
-      "TestCircuitAttributeHandler",
-    );
+    const TestHandlerFactory = await ethers.getContractFactory("TestCircuitAttributeHandler");
     testHandler = await TestHandlerFactory.deploy();
     await testHandler.waitForDeployment();
   });
 
   const mrz = ethers.toUtf8Bytes(
-    "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<" +
-      "L898902C36UTO7408122F1204159ZE184226B<<<<<1018",
+    "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<" + "L898902C36UTO7408122F1204159ZE184226B<<<<<1018",
   );
   const sampleMRZ = new Uint8Array([...mrz, 1, 1, 1]);
 
@@ -94,22 +91,13 @@ describe("CircuitAttributeHandler", function () {
     });
 
     it("should match contract and ts implementation for compareOlderThan", async function () {
-      const contractResult = await testHandler.testCompareOlderThan(
-        sampleMRZ,
-        18,
-      );
+      const contractResult = await testHandler.testCompareOlderThan(sampleMRZ, 18);
       const tsResult = CircuitAttributeHandler.compareOlderThan(sampleMRZ, 18);
       expect(contractResult).to.equal(tsResult);
       expect(contractResult).to.be.true;
 
-      const contractResultFalse = await testHandler.testCompareOlderThan(
-        sampleMRZ,
-        19,
-      );
-      const tsResultFalse = CircuitAttributeHandler.compareOlderThan(
-        sampleMRZ,
-        19,
-      );
+      const contractResultFalse = await testHandler.testCompareOlderThan(sampleMRZ, 19);
+      const tsResultFalse = CircuitAttributeHandler.compareOlderThan(sampleMRZ, 19);
       expect(contractResultFalse).to.equal(tsResultFalse);
       expect(contractResultFalse).to.be.false;
     });
@@ -122,14 +110,12 @@ describe("CircuitAttributeHandler", function () {
       expect(contractResult).to.equal(tsResult);
       expect(contractResult).to.equal(1);
 
-      const contractResult2 =
-        await testHandler.testGetNameAndDobOfac(sampleMRZ);
+      const contractResult2 = await testHandler.testGetNameAndDobOfac(sampleMRZ);
       const tsResult2 = CircuitAttributeHandler.getNameAndDobOfac(sampleMRZ);
       expect(contractResult2).to.equal(tsResult2);
       expect(contractResult2).to.equal(1);
 
-      const contractResult3 =
-        await testHandler.testGetNameAndYobOfac(sampleMRZ);
+      const contractResult3 = await testHandler.testGetNameAndYobOfac(sampleMRZ);
       const tsResult3 = CircuitAttributeHandler.getNameAndYobOfac(sampleMRZ);
       expect(contractResult3).to.equal(tsResult3);
       expect(contractResult3).to.equal(1);
@@ -137,84 +123,34 @@ describe("CircuitAttributeHandler", function () {
 
     it("should match contract and ts implementation for individual OFAC checks using flags", async function () {
       // Test passport number check
-      const contractPassportNo = await testHandler.testCompareOfac(
-        sampleMRZ,
-        true,
-        false,
-        false,
-      );
-      const tsPassportNo = CircuitAttributeHandler.compareOfac(
-        sampleMRZ,
-        true,
-        false,
-        false,
-      );
+      const contractPassportNo = await testHandler.testCompareOfac(sampleMRZ, true, false, false);
+      const tsPassportNo = CircuitAttributeHandler.compareOfac(sampleMRZ, true, false, false);
       expect(contractPassportNo).to.equal(tsPassportNo);
       expect(contractPassportNo).to.be.true;
 
       // Test name and DOB check
-      const contractNameDob = await testHandler.testCompareOfac(
-        sampleMRZ,
-        false,
-        true,
-        false,
-      );
-      const tsNameDob = CircuitAttributeHandler.compareOfac(
-        sampleMRZ,
-        false,
-        true,
-        false,
-      );
+      const contractNameDob = await testHandler.testCompareOfac(sampleMRZ, false, true, false);
+      const tsNameDob = CircuitAttributeHandler.compareOfac(sampleMRZ, false, true, false);
       expect(contractNameDob).to.equal(tsNameDob);
       expect(contractNameDob).to.be.true;
 
       // Test name and YOB check
-      const contractNameYob = await testHandler.testCompareOfac(
-        sampleMRZ,
-        false,
-        false,
-        true,
-      );
-      const tsNameYob = CircuitAttributeHandler.compareOfac(
-        sampleMRZ,
-        false,
-        false,
-        true,
-      );
+      const contractNameYob = await testHandler.testCompareOfac(sampleMRZ, false, false, true);
+      const tsNameYob = CircuitAttributeHandler.compareOfac(sampleMRZ, false, false, true);
       expect(contractNameYob).to.equal(tsNameYob);
       expect(contractNameYob).to.be.true;
     });
 
     it("should match contract and ts implementation for compareOfac", async function () {
       // Test with all flags true
-      const contractAllTrue = await testHandler.testCompareOfac(
-        sampleMRZ,
-        true,
-        true,
-        true,
-      );
-      const tsAllTrue = CircuitAttributeHandler.compareOfac(
-        sampleMRZ,
-        true,
-        true,
-        true,
-      );
+      const contractAllTrue = await testHandler.testCompareOfac(sampleMRZ, true, true, true);
+      const tsAllTrue = CircuitAttributeHandler.compareOfac(sampleMRZ, true, true, true);
       expect(contractAllTrue).to.equal(tsAllTrue);
       expect(contractAllTrue).to.be.true;
 
       // Test with some flags false
-      const contractSomeTrue = await testHandler.testCompareOfac(
-        sampleMRZ,
-        true,
-        false,
-        true,
-      );
-      const tsSomeTrue = CircuitAttributeHandler.compareOfac(
-        sampleMRZ,
-        true,
-        false,
-        true,
-      );
+      const contractSomeTrue = await testHandler.testCompareOfac(sampleMRZ, true, false, true);
+      const tsSomeTrue = CircuitAttributeHandler.compareOfac(sampleMRZ, true, false, true);
       expect(contractSomeTrue).to.equal(tsSomeTrue);
       expect(contractSomeTrue).to.be.true;
     });
@@ -230,16 +166,8 @@ describe("CircuitAttributeHandler", function () {
       ];
 
       for (const testCase of testCases) {
-        const contractResult = await testHandler.testExtractStringAttribute(
-          sampleMRZ,
-          testCase.start,
-          testCase.end,
-        );
-        const tsResult = CircuitAttributeHandler.extractStringAttribute(
-          sampleMRZ,
-          testCase.start,
-          testCase.end,
-        );
+        const contractResult = await testHandler.testExtractStringAttribute(sampleMRZ, testCase.start, testCase.end);
+        const tsResult = CircuitAttributeHandler.extractStringAttribute(sampleMRZ, testCase.start, testCase.end);
         expect(contractResult).to.equal(tsResult);
         expect(contractResult).to.equal(testCase.expected);
       }
@@ -247,26 +175,19 @@ describe("CircuitAttributeHandler", function () {
 
     it("should handle errors consistently between contract and ts", async function () {
       const shortMRZ = ethers.toUtf8Bytes("ABC");
-      await expect(
-        testHandler.testExtractStringAttribute(shortMRZ, 0, 5),
-      ).to.be.revertedWithCustomError(testHandler, "INSUFFICIENT_CHARCODE_LEN");
+      await expect(testHandler.testExtractStringAttribute(shortMRZ, 0, 5)).to.be.revertedWithCustomError(
+        testHandler,
+        "INSUFFICIENT_CHARCODE_LEN",
+      );
 
-      expect(() =>
-        CircuitAttributeHandler.extractStringAttribute(shortMRZ, 0, 5),
-      ).to.throw("INSUFFICIENT_CHARCODE_LEN");
+      expect(() => CircuitAttributeHandler.extractStringAttribute(shortMRZ, 0, 5)).to.throw(
+        "INSUFFICIENT_CHARCODE_LEN",
+      );
     });
 
     it("should match contract and ts implementation for empty range", async function () {
-      const contractResult = await testHandler.testExtractStringAttribute(
-        sampleMRZ,
-        2,
-        2,
-      );
-      const tsResult = CircuitAttributeHandler.extractStringAttribute(
-        sampleMRZ,
-        2,
-        2,
-      );
+      const contractResult = await testHandler.testExtractStringAttribute(sampleMRZ, 2, 2);
+      const tsResult = CircuitAttributeHandler.extractStringAttribute(sampleMRZ, 2, 2);
       expect(contractResult).to.equal(tsResult);
       expect(contractResult).to.equal("U");
     });

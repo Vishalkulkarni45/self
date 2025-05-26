@@ -50,8 +50,7 @@ const config: HardhatUserConfig = {
     },
     sepolia: {
       chainId: 11155111,
-      url:
-        process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.public.blastapi.io",
+      url: process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.public.blastapi.io",
       accounts: [process.env.PRIVATE_KEY as string],
     },
     celo: {
@@ -61,16 +60,12 @@ const config: HardhatUserConfig = {
     },
     celoAlfajores: {
       chainId: 44787,
-      url:
-        process.env.CELO_ALFAJORES_RPC_URL ||
-        "https://alfajores-forno.celo-testnet.org",
+      url: process.env.CELO_ALFAJORES_RPC_URL || "https://alfajores-forno.celo-testnet.org",
       accounts: [process.env.PRIVATE_KEY as string],
     },
     celoBaklava: {
       chainId: 62320,
-      url:
-        process.env.CELO_BAKLAVA_RPC_URL ||
-        "https://baklava-forno.celo-testnet.org",
+      url: process.env.CELO_BAKLAVA_RPC_URL || "https://baklava-forno.celo-testnet.org",
       accounts: [process.env.PRIVATE_KEY as string],
     },
   },

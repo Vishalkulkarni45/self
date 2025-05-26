@@ -11,24 +11,12 @@ export default buildModule("DeployVerifiers", (m) => {
   const verifier3 = m.contract("Verifier_dsc_sha384_ecdsa_brainpoolP512r1");
   const verifier4 = m.contract("Verifier_dsc_sha512_ecdsa_brainpoolP512r1");
   const verifier5 = m.contract("Verifier_dsc_sha512_ecdsa_secp521r1");
-  const verifier6 = m.contract(
-    "Verifier_register_sha1_sha1_sha1_ecdsa_secp256r1",
-  );
-  const verifier7 = m.contract(
-    "Verifier_register_sha256_sha256_sha256_rsapss_65537_64_2048",
-  );
-  const verifier8 = m.contract(
-    "Verifier_register_sha512_sha512_sha256_rsa_65537_4096",
-  );
-  const verifier9 = m.contract(
-    "Verifier_register_sha512_sha512_sha512_ecdsa_secp521r1",
-  );
-  const verifier10 = m.contract(
-    "Verifier_register_sha512_sha512_sha512_ecdsa_brainpoolP512r1",
-  );
-  const verifier11 = m.contract(
-    "Verifier_register_sha384_sha384_sha384_ecdsa_brainpoolP512r1",
-  );
+  const verifier6 = m.contract("Verifier_register_sha1_sha1_sha1_ecdsa_secp256r1");
+  const verifier7 = m.contract("Verifier_register_sha256_sha256_sha256_rsapss_65537_64_2048");
+  const verifier8 = m.contract("Verifier_register_sha512_sha512_sha256_rsa_65537_4096");
+  const verifier9 = m.contract("Verifier_register_sha512_sha512_sha512_ecdsa_secp521r1");
+  const verifier10 = m.contract("Verifier_register_sha512_sha512_sha512_ecdsa_brainpoolP512r1");
+  const verifier11 = m.contract("Verifier_register_sha384_sha384_sha384_ecdsa_brainpoolP512r1");
 
   // const dscVerifier = m.contract("Verifier_dsc_sha256_rsa_65537_4096");
 

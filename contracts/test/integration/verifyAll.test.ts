@@ -8,15 +8,9 @@ import { ATTESTATION_ID } from "../utils/constants";
 import { CIRCUIT_CONSTANTS } from "../../../common/src/constants/constants";
 import { LeanIMT } from "@openpassport/zk-kit-lean-imt";
 import { poseidon2 } from "poseidon-lite";
-import {
-  generateVcAndDiscloseProof,
-  parseSolidityCalldata,
-} from "../utils/generateProof";
+import { generateVcAndDiscloseProof, parseSolidityCalldata } from "../utils/generateProof";
 import { Formatter } from "../utils/formatter";
-import {
-  formatCountriesList,
-  reverseBytes,
-} from "../../../common/src/utils/circuits/formatInputs";
+import { formatCountriesList, reverseBytes } from "../../../common/src/utils/circuits/formatInputs";
 import { VerifyAll } from "../../typechain-types";
 import { getSMTs } from "../utils/generateProof";
 import { Groth16Proof, PublicSignals, groth16 } from "snarkjs";
@@ -40,18 +34,11 @@ describe("VerifyAll", () => {
   before(async () => {
     deployedActors = await deploySystemFixtures();
     const VerifyAllFactory = await ethers.getContractFactory("VerifyAll");
-    verifyAll = await VerifyAllFactory.deploy(
-      deployedActors.hub.getAddress(),
-      deployedActors.registry.getAddress(),
-    );
+    verifyAll = await VerifyAllFactory.deploy(deployedActors.hub.getAddress(), deployedActors.registry.getAddress());
 
     registerSecret = generateRandomFieldElement();
     nullifier = generateRandomFieldElement();
-    commitment = generateCommitment(
-      registerSecret,
-      ATTESTATION_ID.E_PASSPORT,
-      deployedActors.mockPassport,
-    );
+    commitment = generateCommitment(registerSecret, ATTESTATION_ID.E_PASSPORT, deployedActors.mockPassport);
 
     const hashFunction = (a: bigint, b: bigint) => poseidon2([a, b]);
     imt = new LeanIMT<bigint>(hashFunction);
@@ -100,17 +87,13 @@ describe("VerifyAll", () => {
       "CBA",
     ];
     const wholePacked = reverseBytes(
-      Formatter.bytesToHexString(
-        new Uint8Array(formatCountriesList(forbiddenCountriesList)),
-      ),
+      Formatter.bytesToHexString(new Uint8Array(formatCountriesList(forbiddenCountriesList))),
     );
     forbiddenCountriesListPacked = splitHexFromBack(wholePacked);
 
     invalidForbiddenCountriesList = ["AAA", "ABC", "CBA", "CBA"];
     const invalidWholePacked = reverseBytes(
-      Formatter.bytesToHexString(
-        new Uint8Array(formatCountriesList(invalidForbiddenCountriesList)),
-      ),
+      Formatter.bytesToHexString(new Uint8Array(formatCountriesList(invalidForbiddenCountriesList))),
     );
     invalidForbiddenCountriesListPacked = splitHexFromBack(invalidWholePacked);
 
@@ -148,14 +131,9 @@ describe("VerifyAll", () => {
 
       const tx = await registry
         .connect(owner)
-        .devAddIdentityCommitment(
-          ATTESTATION_ID.E_PASSPORT,
-          nullifier,
-          commitment,
-        );
+        .devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
       const receipt = (await tx.wait()) as any;
-      const timestamp = (await ethers.provider.getBlock(receipt.blockNumber))!
-        .timestamp;
+      const timestamp = (await ethers.provider.getBlock(receipt.blockNumber))!.timestamp;
 
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
@@ -167,11 +145,7 @@ describe("VerifyAll", () => {
       };
 
       const types = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]; // Example types
-      const [readableData, success] = await verifyAll.verifyAll(
-        timestamp,
-        vcAndDiscloseHubProof,
-        types,
-      );
+      const [readableData, success] = await verifyAll.verifyAll(timestamp, vcAndDiscloseHubProof, types);
 
       expect(success).to.be.true;
       expect(readableData.name).to.not.be.empty;
@@ -180,13 +154,7 @@ describe("VerifyAll", () => {
     it("should verify and get result successfully with out timestamp verification", async () => {
       const { registry, owner } = deployedActors;
 
-      await registry
-        .connect(owner)
-        .devAddIdentityCommitment(
-          ATTESTATION_ID.E_PASSPORT,
-          nullifier,
-          commitment,
-        );
+      await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
         olderThan: "20",
@@ -197,11 +165,7 @@ describe("VerifyAll", () => {
       };
 
       const types = ["0", "1", "2"]; // Example types
-      const [readableData, success] = await verifyAll.verifyAll(
-        0,
-        vcAndDiscloseHubProof,
-        types,
-      );
+      const [readableData, success] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
       expect(success).to.be.true;
       expect(readableData.name).to.not.be.empty;
@@ -210,17 +174,9 @@ describe("VerifyAll", () => {
     it("should return empty result when verification fails", async () => {
       const { registry, owner } = deployedActors;
 
-      await registry
-        .connect(owner)
-        .devAddIdentityCommitment(
-          ATTESTATION_ID.E_PASSPORT,
-          nullifier,
-          commitment,
-        );
+      await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX
-      ] = generateRandomFieldElement();
+      vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX] = generateRandomFieldElement();
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
         olderThan: "20",
@@ -231,11 +187,7 @@ describe("VerifyAll", () => {
       };
 
       const types = ["0", "1", "2"];
-      const [readableData, success] = await verifyAll.verifyAll(
-        0,
-        vcAndDiscloseHubProof,
-        types,
-      );
+      const [readableData, success] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
       expect(success).to.be.false;
       expect(readableData.name).to.be.empty;
@@ -244,13 +196,7 @@ describe("VerifyAll", () => {
     it("should fail with invalid root timestamp", async () => {
       const { registry, owner } = deployedActors;
 
-      await registry
-        .connect(owner)
-        .devAddIdentityCommitment(
-          ATTESTATION_ID.E_PASSPORT,
-          nullifier,
-          commitment,
-        );
+      await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
@@ -262,11 +208,7 @@ describe("VerifyAll", () => {
       };
 
       const types = ["0", "1", "2"];
-      const [readableData, success] = await verifyAll.verifyAll(
-        123456,
-        vcAndDiscloseHubProof,
-        types,
-      );
+      const [readableData, success] = await verifyAll.verifyAll(123456, vcAndDiscloseHubProof, types);
 
       expect(success).to.be.false;
       expect(readableData.name).to.be.empty;
@@ -275,13 +217,7 @@ describe("VerifyAll", () => {
     describe("Error Handling", () => {
       it("should return error code 'INVALID_VC_AND_DISCLOSE_PROOF' when proof is invalid", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
         vcAndDiscloseProof.a[0] = generateRandomFieldElement();
 
@@ -295,11 +231,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("INVALID_VC_AND_DISCLOSE_PROOF");
@@ -308,17 +240,9 @@ describe("VerifyAll", () => {
 
       it("should return error code 'CURRENT_DATE_NOT_IN_VALID_RANGE' when date is invalid", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX
-        ] = 0;
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX] = 0;
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -330,11 +254,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("CURRENT_DATE_NOT_IN_VALID_RANGE");
@@ -343,13 +263,7 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_OLDER_THAN' when age check fails", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -361,11 +275,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("INVALID_OLDER_THAN");
@@ -374,13 +284,7 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_OFAC' when OFAC check fails", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
         const { passportNo_smt, nameAndDob_smt, nameAndYob_smt } = getSMTs();
 
@@ -409,11 +313,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
         console.log("return values");
         console.log("readable data: ", readableData);
         console.log("success: ", success);
@@ -426,13 +326,7 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_FORBIDDEN_COUNTRIES' when countries check fails", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -444,11 +338,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("INVALID_FORBIDDEN_COUNTRIES");
@@ -457,13 +347,7 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_TIMESTAMP' when root timestamp doesn't match", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -488,17 +372,10 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_OFAC_ROOT' when passport number OFAC root is invalid", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX
-        ] = generateRandomFieldElement();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX] =
+          generateRandomFieldElement();
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -510,11 +387,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("INVALID_OFAC_ROOT");
@@ -523,17 +396,10 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_OFAC_ROOT' when name and dob OFAC root is invalid", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX
-        ] = generateRandomFieldElement();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX] =
+          generateRandomFieldElement();
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -545,11 +411,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("INVALID_OFAC_ROOT");
@@ -558,17 +420,10 @@ describe("VerifyAll", () => {
 
       it("should return error code 'INVALID_OFAC_ROOT' when name and yob OFAC root is invalid", async () => {
         const { registry, owner } = deployedActors;
-        await registry
-          .connect(owner)
-          .devAddIdentityCommitment(
-            ATTESTATION_ID.E_PASSPORT,
-            nullifier,
-            commitment,
-          );
+        await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
-        vcAndDiscloseProof.pubSignals[
-          CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX
-        ] = generateRandomFieldElement();
+        vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX] =
+          generateRandomFieldElement();
 
         const vcAndDiscloseHubProof = {
           olderThanEnabled: true,
@@ -580,11 +435,7 @@ describe("VerifyAll", () => {
         };
 
         const types = ["0", "1", "2"];
-        const [readableData, success, errorCode] = await verifyAll.verifyAll(
-          0,
-          vcAndDiscloseHubProof,
-          types,
-        );
+        const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
         expect(success).to.be.false;
         expect(errorCode).to.equal("INVALID_OFAC_ROOT");
@@ -606,9 +457,10 @@ describe("VerifyAll", () => {
 
     it("should not allow non-owner to set new hub address", async () => {
       const newHubAddress = await deployedActors.user1.getAddress();
-      await expect(
-        verifyAll.connect(deployedActors.user1).setHub(newHubAddress),
-      ).to.be.revertedWithCustomError(verifyAll, "OwnableUnauthorizedAccount");
+      await expect(verifyAll.connect(deployedActors.user1).setHub(newHubAddress)).to.be.revertedWithCustomError(
+        verifyAll,
+        "OwnableUnauthorizedAccount",
+      );
     });
 
     it("should not allow non-owner to set new registry address", async () => {
@@ -622,13 +474,7 @@ describe("VerifyAll", () => {
   describe("VerifyAll (Custom Error Handling)", () => {
     it("should return error code 'INVALID_VC_AND_DISCLOSE_PROOF' when vcAndDisclose proof is invalid", async () => {
       const { registry, owner } = deployedActors;
-      await registry
-        .connect(owner)
-        .devAddIdentityCommitment(
-          ATTESTATION_ID.E_PASSPORT,
-          nullifier,
-          commitment,
-        );
+      await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
       vcAndDiscloseProof.a[0] = generateRandomFieldElement();
 
@@ -642,11 +488,7 @@ describe("VerifyAll", () => {
       };
 
       const types = ["0", "1", "2"];
-      const [readableData, success, errorCode] = await verifyAll.verifyAll(
-        0,
-        vcAndDiscloseHubProof,
-        types,
-      );
+      const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
       expect(success).to.be.false;
       expect(errorCode).to.equal("INVALID_VC_AND_DISCLOSE_PROOF");
@@ -655,17 +497,9 @@ describe("VerifyAll", () => {
 
     it("should return error code 'CURRENT_DATE_NOT_IN_VALID_RANGE' when current date is out of range", async () => {
       const { registry, owner } = deployedActors;
-      await registry
-        .connect(owner)
-        .devAddIdentityCommitment(
-          ATTESTATION_ID.E_PASSPORT,
-          nullifier,
-          commitment,
-        );
+      await registry.connect(owner).devAddIdentityCommitment(ATTESTATION_ID.E_PASSPORT, nullifier, commitment);
 
-      vcAndDiscloseProof.pubSignals[
-        CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX
-      ] = 0;
+      vcAndDiscloseProof.pubSignals[CIRCUIT_CONSTANTS.VC_AND_DISCLOSE_CURRENT_DATE_INDEX] = 0;
 
       const vcAndDiscloseHubProof = {
         olderThanEnabled: true,
@@ -677,11 +511,7 @@ describe("VerifyAll", () => {
       };
 
       const types = ["0", "1", "2"];
-      const [readableData, success, errorCode] = await verifyAll.verifyAll(
-        0,
-        vcAndDiscloseHubProof,
-        types,
-      );
+      const [readableData, success, errorCode] = await verifyAll.verifyAll(0, vcAndDiscloseHubProof, types);
 
       expect(success).to.be.false;
       expect(errorCode).to.equal("CURRENT_DATE_NOT_IN_VALID_RANGE");

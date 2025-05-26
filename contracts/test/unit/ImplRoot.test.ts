@@ -11,19 +11,17 @@ describe("ImplRoot", () => {
   beforeEach(async () => {
     [owner, user1] = await ethers.getSigners();
 
-    const MockImplRootFactory = await ethers.getContractFactory(
-      "MockImplRoot",
-      owner,
-    );
+    const MockImplRootFactory = await ethers.getContractFactory("MockImplRoot", owner);
     mockImplRoot = await MockImplRootFactory.deploy();
     await mockImplRoot.waitForDeployment();
   });
 
   describe("Initialization", () => {
     it("should revert when calling __ImplRoot_init outside initialization phase", async () => {
-      await expect(
-        mockImplRoot.exposed__ImplRoot_init(),
-      ).to.be.revertedWithCustomError(mockImplRoot, "NotInitializing");
+      await expect(mockImplRoot.exposed__ImplRoot_init()).to.be.revertedWithCustomError(
+        mockImplRoot,
+        "NotInitializing",
+      );
     });
 
     it("should revert when initializing with zero address owner", async () => {
@@ -40,9 +38,10 @@ describe("ImplRoot", () => {
     it("should revert when initializing twice", async () => {
       await mockImplRoot.exposed__Ownable_init(owner.address);
 
-      await expect(
-        mockImplRoot.exposed__Ownable_init(owner.address),
-      ).to.be.revertedWithCustomError(mockImplRoot, "InvalidInitialization");
+      await expect(mockImplRoot.exposed__Ownable_init(owner.address)).to.be.revertedWithCustomError(
+        mockImplRoot,
+        "InvalidInitialization",
+      );
     });
   });
 
@@ -51,17 +50,11 @@ describe("ImplRoot", () => {
     let implContract: any;
 
     beforeEach(async () => {
-      const MockImplRootFactory = await ethers.getContractFactory(
-        "MockImplRoot",
-        owner,
-      );
+      const MockImplRootFactory = await ethers.getContractFactory("MockImplRoot", owner);
       implContract = await MockImplRootFactory.deploy();
       await implContract.waitForDeployment();
 
-      const initData = implContract.interface.encodeFunctionData(
-        "exposed__Ownable_init",
-        [owner.address],
-      );
+      const initData = implContract.interface.encodeFunctionData("exposed__Ownable_init", [owner.address]);
 
       const ProxyFactory = await ethers.getContractFactory("ERC1967Proxy");
       proxy = await ProxyFactory.deploy(implContract.target, initData);
@@ -71,50 +64,32 @@ describe("ImplRoot", () => {
     });
 
     it("should revert when calling _authorizeUpgrade from non-proxy", async () => {
-      const MockImplRootFactory = await ethers.getContractFactory(
-        "MockImplRoot",
-        owner,
-      );
+      const MockImplRootFactory = await ethers.getContractFactory("MockImplRoot", owner);
       const newImpl = await MockImplRootFactory.deploy();
       await newImpl.waitForDeployment();
 
-      await expect(
-        implContract.exposed_authorizeUpgrade(newImpl.target),
-      ).to.be.revertedWithCustomError(
+      await expect(implContract.exposed_authorizeUpgrade(newImpl.target)).to.be.revertedWithCustomError(
         implContract,
         "UUPSUnauthorizedCallContext",
       );
     });
 
     it("should revert when non-owner calls _authorizeUpgrade", async () => {
-      const MockImplRootFactory = await ethers.getContractFactory(
-        "MockImplRoot",
-        owner,
-      );
+      const MockImplRootFactory = await ethers.getContractFactory("MockImplRoot", owner);
       const newImpl = await MockImplRootFactory.deploy();
       await newImpl.waitForDeployment();
 
-      await expect(
-        mockImplRoot.connect(user1).exposed_authorizeUpgrade(newImpl.target),
-      )
-        .to.be.revertedWithCustomError(
-          mockImplRoot,
-          "OwnableUnauthorizedAccount",
-        )
+      await expect(mockImplRoot.connect(user1).exposed_authorizeUpgrade(newImpl.target))
+        .to.be.revertedWithCustomError(mockImplRoot, "OwnableUnauthorizedAccount")
         .withArgs(user1.address);
     });
 
     it("should allow owner to call _authorizeUpgrade through proxy", async () => {
-      const MockImplRootFactory = await ethers.getContractFactory(
-        "MockImplRoot",
-        owner,
-      );
+      const MockImplRootFactory = await ethers.getContractFactory("MockImplRoot", owner);
       const newImpl = await MockImplRootFactory.deploy();
       await newImpl.waitForDeployment();
 
-      await expect(
-        mockImplRoot.connect(owner).exposed_authorizeUpgrade(newImpl.target),
-      ).to.not.be.reverted;
+      await expect(mockImplRoot.connect(owner).exposed_authorizeUpgrade(newImpl.target)).to.not.be.reverted;
     });
   });
 });

@@ -10,7 +10,8 @@ When you do the upgrade, be careful with this storage patterns
 
 - You can not change the order in which the contract state variables are declared, nor their type.
 
-Pls see this page for more details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable#modifying-your-contracts
+Pls see this page for more details:
+https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable#modifying-your-contracts
 
 ## Integration Guide
 
@@ -39,17 +40,18 @@ In the npm package, you'll find the following directory structure:
 If you want to integrate SelfVerificationRoot.sol into your contract, you should also import these files.
 
 ```solidity
-import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
+import { SelfVerificationRoot } from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
 
-import {IVcAndDiscloseCircuitVerifier} from "@selfxyz/contracts/contracts/interfaces/IVcAndDiscloseCircuitVerifier.sol";
+import {
+  IVcAndDiscloseCircuitVerifier
+} from "@selfxyz/contracts/contracts/interfaces/IVcAndDiscloseCircuitVerifier.sol";
 
-import {IIdentityVerificationHubV1} from "@selfxyz/contracts/contracts/interfaces/IIdentityVerificationHubV1.sol";
+import { IIdentityVerificationHubV1 } from "@selfxyz/contracts/contracts/interfaces/IIdentityVerificationHubV1.sol";
 
-import {CircuitConstants} from "@selfxyz/contracts/contracts/constants/CircuitConstants.sol";
+import { CircuitConstants } from "@selfxyz/contracts/contracts/constants/CircuitConstants.sol";
 ```
 
-And override verifySelfProof function and write your own logic.
-You can take a look at these examples.
+And override verifySelfProof function and write your own logic. You can take a look at these examples.
 
 - [Airdrop](https://github.com/selfxyz/self/blob/main/contracts/contracts/example/Airdrop.sol)
 - [HappyBirthday](https://github.com/selfxyz/happy-birthday/blob/main/contracts/contracts/HappyBirthday.sol)
@@ -69,13 +71,13 @@ In the verifySelfProof function, you should add these validations
 Also, if you want to play with some attributes in the passport, you should import these libraries.
 
 ```solidity
-import {CircuitAttributeHandler} from "@selfxyz/contracts/contracts/libraries/CircuitAttributeHandler.sol";
-import {Formatter} from "@selfxyz/contracts/contracts/libraries/Formatter.sol";
+import { CircuitAttributeHandler } from "@selfxyz/contracts/contracts/libraries/CircuitAttributeHandler.sol";
+import { Formatter } from "@selfxyz/contracts/contracts/libraries/Formatter.sol";
 ```
 
-CircuitAttributeHandler is the library to extract readable attributes in the passport from public signals.
-The formatter is responsible for converting other data included in the public signals.
-Use it when you want to validate information related to birthdays or the time when the proof was generated.
+CircuitAttributeHandler is the library to extract readable attributes in the passport from public signals. The formatter
+is responsible for converting other data included in the public signals. Use it when you want to validate information
+related to birthdays or the time when the proof was generated.
 
 As an example, please refer to the following contract.
 
@@ -130,9 +132,8 @@ When you compile the circuits, make sure you set the build flag to true for thes
 
 - register_sha256_sha256_sha256_rsa_65537_4096
 - dsc_sha256_rsa_65537_4096
-- vc_and_disclose
-  Go to ../circuits/scripts/build/ and change false to true for these circuits.
-  Then you can run the following command to see the coverage.
+- vc_and_disclose Go to ../circuits/scripts/build/ and change false to true for these circuits. Then you can run the
+  following command to see the coverage.
 
 ```shell
 cd ../circuits

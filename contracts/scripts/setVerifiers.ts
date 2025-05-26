@@ -2,10 +2,7 @@ import { ethers } from "ethers";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
-import {
-  RegisterVerifierId,
-  DscVerifierId,
-} from "../../common/src/constants/constants";
+import { RegisterVerifierId, DscVerifierId } from "../../common/src/constants/constants";
 
 dotenv.config();
 
@@ -13,17 +10,11 @@ dotenv.config();
 console.log("Current directory:", __dirname);
 console.log(
   "Deployed addresses path:",
-  path.join(
-    __dirname,
-    "../ignition/deployments/chain-42220/deployed_addresses.json",
-  ),
+  path.join(__dirname, "../ignition/deployments/chain-42220/deployed_addresses.json"),
 );
 console.log(
   "Contract ABI path:",
-  path.join(
-    __dirname,
-    "../ignition/deployments/chain-42220/artifacts/DeployHub#IdentityVerificationHubImplV1.json",
-  ),
+  path.join(__dirname, "../ignition/deployments/chain-42220/artifacts/DeployHub#IdentityVerificationHubImplV1.json"),
 );
 
 // Debug logs for environment variables (redacted for security)
@@ -32,38 +23,22 @@ console.log("CELO_KEY configured:", !!process.env.CELO_KEY);
 
 try {
   const deployedAddresses = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        __dirname,
-        "../ignition/deployments/chain-42220/deployed_addresses.json",
-      ),
-      "utf-8",
-    ),
+    fs.readFileSync(path.join(__dirname, "../ignition/deployments/chain-42220/deployed_addresses.json"), "utf-8"),
   );
   console.log("Deployed addresses loaded:", deployedAddresses);
 
   const identityVerificationHubAbiFile = fs.readFileSync(
-    path.join(
-      __dirname,
-      "../ignition/deployments/prod/artifacts/DeployHub#IdentityVerificationHubImplV1.json",
-    ),
+    path.join(__dirname, "../ignition/deployments/prod/artifacts/DeployHub#IdentityVerificationHubImplV1.json"),
     "utf-8",
   );
   console.log("ABI file loaded");
 
-  const identityVerificationHubAbi = JSON.parse(
-    identityVerificationHubAbiFile,
-  ).abi;
+  const identityVerificationHubAbi = JSON.parse(identityVerificationHubAbiFile).abi;
   console.log("ABI parsed");
 
-  const contractAbiPath = path.join(
-    __dirname,
-    "../ignition/deployments/chain-11155111/artifacts",
-  );
+  const contractAbiPath = path.join(__dirname, "../ignition/deployments/chain-11155111/artifacts");
 
-  function getContractAddressByPartialName(
-    partialName: string,
-  ): string | unknown {
+  function getContractAddressByPartialName(partialName: string): string | unknown {
     for (const [key, value] of Object.entries(deployedAddresses)) {
       if (key.includes(partialName)) {
         return value;
@@ -73,9 +48,7 @@ try {
   }
 
   async function main() {
-    const provider = new ethers.JsonRpcProvider(
-      process.env.CELO_RPC_URL as string,
-    );
+    const provider = new ethers.JsonRpcProvider(process.env.CELO_RPC_URL as string);
     console.log("Provider created");
 
     const wallet = new ethers.Wallet(process.env.CELO_KEY as string, provider);
@@ -89,17 +62,11 @@ try {
       throw new Error("Hub address not found in deployed_addresses.json");
     }
 
-    const identityVerificationHub = new ethers.Contract(
-      hubAddress,
-      identityVerificationHubAbi,
-      wallet,
-    );
+    const identityVerificationHub = new ethers.Contract(hubAddress, identityVerificationHubAbi, wallet);
     console.log("Contract instance created");
 
     // Debug verifier addresses before updating
-    const registerVerifierKeys = Object.keys(RegisterVerifierId).filter((key) =>
-      isNaN(Number(key)),
-    );
+    const registerVerifierKeys = Object.keys(RegisterVerifierId).filter((key) => isNaN(Number(key)));
     for (const key of registerVerifierKeys) {
       const verifierName = `Verifier_${key}`;
       const verifierAddress = getContractAddressByPartialName(verifierName);
@@ -110,20 +77,14 @@ try {
       const verifierName = `Verifier_${key}`;
       const verifierAddress = getContractAddressByPartialName(verifierName);
       if (!verifierAddress) {
-        console.log(
-          `Skipping ${verifierName} because no deployed address was found.`,
-        );
+        console.log(`Skipping ${verifierName} because no deployed address was found.`);
         continue;
       }
       console.log(`Updating for ${verifierName}`);
-      const verifierId =
-        RegisterVerifierId[key as keyof typeof RegisterVerifierId];
+      const verifierId = RegisterVerifierId[key as keyof typeof RegisterVerifierId];
 
       try {
-        const tx = await identityVerificationHub.updateRegisterCircuitVerifier(
-          verifierId,
-          verifierAddress,
-        );
+        const tx = await identityVerificationHub.updateRegisterCircuitVerifier(verifierId, verifierAddress);
         const receipt = await tx.wait();
         console.log(`${verifierName} is updated with tx: ${receipt.hash}`);
       } catch (error) {
@@ -131,24 +92,17 @@ try {
       }
     }
 
-    const dscKeys = Object.keys(DscVerifierId).filter((key) =>
-      isNaN(Number(key)),
-    );
+    const dscKeys = Object.keys(DscVerifierId).filter((key) => isNaN(Number(key)));
     for (const key of dscKeys) {
       const verifierName = `Verifier_${key}`;
       const verifierAddress = getContractAddressByPartialName(verifierName);
       if (!verifierAddress) {
-        console.log(
-          `Skipping ${verifierName} because no deployed address was found.`,
-        );
+        console.log(`Skipping ${verifierName} because no deployed address was found.`);
         continue;
       }
       const verifierId = DscVerifierId[key as keyof typeof DscVerifierId];
 
-      const tx = await identityVerificationHub.updateDscVerifier(
-        verifierId,
-        verifierAddress,
-      );
+      const tx = await identityVerificationHub.updateDscVerifier(verifierId, verifierAddress);
       const receipt = await tx.wait();
       console.log(`${verifierName} is updated wit this tx: ${receipt.hash}`);
     }

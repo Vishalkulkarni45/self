@@ -48,10 +48,8 @@ import {IIdentityRegistryIdCardV1} from "./interfaces/IIdentityRegistryIdCardV1.
  * @notice Storage contract for IdentityVerificationHubImplV2.
  * @dev Inherits from ImplRoot to include upgradeability functionality.
  */
-abstract contract IdentityVerificationHubStorageV2 is
-    IdentityVerificationHubStorageV1
-{
-    mapping(bytes32 => address) internal  _attestationIdToRegistry;
+abstract contract IdentityVerificationHubStorageV2 is IdentityVerificationHubStorageV1 {
+    mapping(bytes32 => address) internal _attestationIdToRegistry;
     mapping(bytes32 => address) internal _attestationIdToDiscloseVerifier;
 }
 
@@ -60,10 +58,7 @@ abstract contract IdentityVerificationHubStorageV2 is
  * @notice Implementation contract for the Identity Verification Hub.
  * @dev Provides functions for registering commitments and verifying groth16 proofs and inclusion proofs.
  */
-contract IdentityVerificationHubImplV2 is
-    IdentityVerificationHubStorageV2,
-    IIdentityVerificationHubV2
-{
+contract IdentityVerificationHubImplV2 is IdentityVerificationHubStorageV2, IIdentityVerificationHubV2 {
     using Formatter for uint256;
 
     uint256 constant MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH = 40;
@@ -229,15 +224,7 @@ contract IdentityVerificationHubImplV2 is
      * @notice Retrieves the registry address.
      * @return The address of the Identity Registry.
      */
-    function registry(
-        bytes32 attestationId
-    )
-        external
-        virtual
-        onlyProxy
-        view
-        returns (address)
-    {
+    function registry(bytes32 attestationId) external view virtual onlyProxy returns (address) {
         return _attestationIdToRegistry[attestationId];
     }
 
@@ -245,15 +232,7 @@ contract IdentityVerificationHubImplV2 is
      * @notice Retrieves the VC and Disclose circuit verifier address.
      * @return The address of the VC and Disclose circuit verifier.
      */
-    function vcAndDiscloseCircuitVerifier(
-        bytes32 attestationId
-    )
-        external
-        virtual
-        onlyProxy
-        view
-        returns (address)
-    {
+    function vcAndDiscloseCircuitVerifier(bytes32 attestationId) external view virtual onlyProxy returns (address) {
         return _attestationIdToDiscloseVerifier[attestationId];
     }
 
@@ -262,15 +241,7 @@ contract IdentityVerificationHubImplV2 is
      * @param typeId The signature type identifier.
      * @return The register circuit verifier address.
      */
-    function sigTypeToRegisterCircuitVerifiers(
-        uint256 typeId
-    )
-        external
-        virtual
-        onlyProxy
-        view
-        returns (address)
-    {
+    function sigTypeToRegisterCircuitVerifiers(uint256 typeId) external view virtual onlyProxy returns (address) {
         return _sigTypeToRegisterCircuitVerifiers[typeId];
     }
 
@@ -279,15 +250,7 @@ contract IdentityVerificationHubImplV2 is
      * @param typeId The signature type identifier.
      * @return The DSC circuit verifier address.
      */
-    function sigTypeToDscCircuitVerifiers(
-        uint256 typeId
-    )
-        external
-        virtual
-        onlyProxy
-        view
-        returns (address)
-    {
+    function sigTypeToDscCircuitVerifiers(uint256 typeId) external view virtual onlyProxy returns (address) {
         return _sigTypeToDscCircuitVerifiers[typeId];
     }
 
@@ -299,52 +262,56 @@ contract IdentityVerificationHubImplV2 is
      */
     function verifyVcAndDisclose(
         VcAndDiscloseHubProof memory proof
-    )
-        external
-        virtual
-        view
-        onlyProxy
-        returns (VcAndDiscloseVerificationResult memory)
-    {
+    ) external view virtual onlyProxy returns (VcAndDiscloseVerificationResult memory) {
         VcAndDiscloseVerificationResult memory result;
 
         result.identityCommitmentRoot = _verifyVcAndDiscloseProof(proof);
 
         for (uint256 i = 0; i < 3; i++) {
-            result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i];
+            result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.PASSPORT_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+            ];
         }
         for (uint256 i = 0; i < 4; i++) {
-            result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i];
+            result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.PASSPORT_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+            ];
         }
         result.nullifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NULLIFIER_INDEX];
-        result.attestationId = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_ATTESTATION_ID_INDEX];
-        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_USER_IDENTIFIER_INDEX];
+        result.attestationId = proof.vcAndDiscloseProof.pubSignals[
+            CircuitConstantsV2.PASSPORT_DISCLOSE_ATTESTATION_ID_INDEX
+        ];
+        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[
+            CircuitConstantsV2.PASSPORT_DISCLOSE_USER_IDENTIFIER_INDEX
+        ];
         result.scope = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_SCOPE_INDEX];
         return result;
     }
 
     function verifyEuIdVcAndDisclose(
         IdCardVcAndDiscloseHubProof memory proof
-    )
-        external
-        virtual
-        view
-        onlyProxy
-        returns (IdCardVcAndDiscloseVerificationResult memory)
-    {
+    ) external view virtual onlyProxy returns (IdCardVcAndDiscloseVerificationResult memory) {
         IdCardVcAndDiscloseVerificationResult memory result;
 
         result.identityCommitmentRoot = _verifyVcAndDiscloseProofIdCard(proof);
 
         for (uint256 i = 0; i < 4; i++) {
-            result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i];
+            result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.ID_CARD_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+            ];
         }
         for (uint256 i = 0; i < 4; i++) {
-            result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i];
+            result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.ID_CARD_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+            ];
         }
         result.nullifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NULLIFIER_INDEX];
-        result.attestationId = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_ATTESTATION_ID_INDEX];
-        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_USER_IDENTIFIER_INDEX];
+        result.attestationId = proof.vcAndDiscloseProof.pubSignals[
+            CircuitConstantsV2.ID_CARD_DISCLOSE_ATTESTATION_ID_INDEX
+        ];
+        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[
+            CircuitConstantsV2.ID_CARD_DISCLOSE_USER_IDENTIFIER_INDEX
+        ];
         result.scope = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_SCOPE_INDEX];
         return result;
     }
@@ -374,11 +341,7 @@ contract IdentityVerificationHubImplV2 is
         bytes32 attestationId,
         uint256 registerCircuitVerifierId,
         IRegisterCircuitVerifier.RegisterCircuitProof memory registerCircuitProof
-    )
-        external
-        virtual
-        onlyProxy
-    {
+    ) external virtual onlyProxy {
         _verifyRegisterProof(attestationId, registerCircuitVerifierId, registerCircuitProof);
         if (attestationId == AttestationId.E_PASSPORT) {
             IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).registerCommitment(
@@ -407,11 +370,7 @@ contract IdentityVerificationHubImplV2 is
         bytes32 attestationId,
         uint256 dscCircuitVerifierId,
         IDscCircuitVerifier.DscCircuitProof memory dscCircuitProof
-    )
-        external
-        virtual
-        onlyProxy
-    {
+    ) external virtual onlyProxy {
         _verifyDscProof(attestationId, dscCircuitVerifierId, dscCircuitProof);
         if (attestationId == AttestationId.E_PASSPORT) {
             IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).registerDscKeyCommitment(
@@ -434,15 +393,7 @@ contract IdentityVerificationHubImplV2 is
      * @notice Updates the registry address.
      * @param registryAddress The new registry address.
      */
-    function updateRegistry(
-        bytes32 attestationId,
-        address registryAddress
-    )
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    function updateRegistry(bytes32 attestationId, address registryAddress) external virtual onlyProxy onlyOwner {
         _attestationIdToRegistry[attestationId] = registryAddress;
         emit RegistryUpdated(attestationId, registryAddress);
     }
@@ -454,12 +405,7 @@ contract IdentityVerificationHubImplV2 is
     function updateVcAndDiscloseCircuit(
         bytes32 attestationId,
         address vcAndDiscloseCircuitVerifierAddress
-    )
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    ) external virtual onlyProxy onlyOwner {
         _attestationIdToDiscloseVerifier[attestationId] = vcAndDiscloseCircuitVerifierAddress;
         emit VcAndDiscloseCircuitUpdated(attestationId, vcAndDiscloseCircuitVerifierAddress);
     }
@@ -472,12 +418,7 @@ contract IdentityVerificationHubImplV2 is
     function updateRegisterCircuitVerifier(
         uint256 typeId,
         address verifierAddress
-    )
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    ) external virtual onlyProxy onlyOwner {
         _sigTypeToRegisterCircuitVerifiers[typeId] = verifierAddress;
         emit RegisterCircuitVerifierUpdated(typeId, verifierAddress);
     }
@@ -487,15 +428,7 @@ contract IdentityVerificationHubImplV2 is
      * @param typeId The signature type identifier.
      * @param verifierAddress The new DSC circuit verifier address.
      */
-    function updateDscVerifier(
-        uint256 typeId,
-        address verifierAddress
-    )
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    function updateDscVerifier(uint256 typeId, address verifierAddress) external virtual onlyProxy onlyOwner {
         _sigTypeToDscCircuitVerifiers[typeId] = verifierAddress;
         emit DscCircuitVerifierUpdated(typeId, verifierAddress);
     }
@@ -508,12 +441,7 @@ contract IdentityVerificationHubImplV2 is
     function batchUpdateRegisterCircuitVerifiers(
         uint256[] calldata typeIds,
         address[] calldata verifierAddresses
-    )
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    ) external virtual onlyProxy onlyOwner {
         if (typeIds.length != verifierAddresses.length) {
             revert LENGTH_MISMATCH();
         }
@@ -531,12 +459,7 @@ contract IdentityVerificationHubImplV2 is
     function batchUpdateDscCircuitVerifiers(
         uint256[] calldata typeIds,
         address[] calldata verifierAddresses
-    )
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    ) external virtual onlyProxy onlyOwner {
         if (typeIds.length != verifierAddresses.length) {
             revert LENGTH_MISMATCH();
         }
@@ -558,24 +481,26 @@ contract IdentityVerificationHubImplV2 is
      */
     function _verifyVcAndDiscloseProof(
         VcAndDiscloseHubProof memory proof
-    )
-        internal
-        view
-        returns (uint256 identityCommitmentRoot)
-    {
+    ) internal view returns (uint256 identityCommitmentRoot) {
         // verify identity commitment root
-        if (!IIdentityRegistryV1(_attestationIdToRegistry[AttestationId.E_PASSPORT]).checkIdentityCommitmentRoot(proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_MERKLE_ROOT_INDEX])) {
+        if (
+            !IIdentityRegistryV1(_attestationIdToRegistry[AttestationId.E_PASSPORT]).checkIdentityCommitmentRoot(
+                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_MERKLE_ROOT_INDEX]
+            )
+        ) {
             revert INVALID_COMMITMENT_ROOT();
         }
 
         // verify current date
         uint[6] memory dateNum;
         for (uint256 i = 0; i < 6; i++) {
-            dateNum[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_CURRENT_DATE_INDEX + i];
+            dateNum[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.PASSPORT_DISCLOSE_CURRENT_DATE_INDEX + i
+            ];
         }
 
         uint currentTimestamp = Formatter.proofDateToUnixTimestamp(dateNum);
-        if(
+        if (
             currentTimestamp < _getStartOfDayTimestamp() - 1 days + 1 ||
             currentTimestamp > _getStartOfDayTimestamp() + 1 days - 1
         ) {
@@ -585,34 +510,50 @@ contract IdentityVerificationHubImplV2 is
         // verify attributes
         uint256[3] memory revealedDataPacked;
         for (uint256 i = 0; i < 3; i++) {
-            revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i];
+            revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.PASSPORT_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+            ];
         }
         if (proof.olderThanEnabled) {
-            if (!CircuitAttributeHandler.compareOlderThan(Formatter.fieldElementsToBytes(revealedDataPacked), proof.olderThan)) {
+            if (
+                !CircuitAttributeHandler.compareOlderThan(
+                    Formatter.fieldElementsToBytes(revealedDataPacked),
+                    proof.olderThan
+                )
+            ) {
                 revert INVALID_OLDER_THAN();
             }
         }
         if (proof.ofacEnabled[0] || proof.ofacEnabled[1] || proof.ofacEnabled[2]) {
-            if (!CircuitAttributeHandler.compareOfac(
-                Formatter.fieldElementsToBytes(revealedDataPacked),
-                proof.ofacEnabled[0],
-                proof.ofacEnabled[1],
-                proof.ofacEnabled[2]
-            )) {
+            if (
+                !CircuitAttributeHandler.compareOfac(
+                    Formatter.fieldElementsToBytes(revealedDataPacked),
+                    proof.ofacEnabled[0],
+                    proof.ofacEnabled[1],
+                    proof.ofacEnabled[2]
+                )
+            ) {
                 revert INVALID_OFAC();
             }
-            if (!IIdentityRegistryV1(_attestationIdToRegistry[AttestationId.E_PASSPORT]).checkOfacRoots(
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX],
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX],
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX]
-            )) {
+            if (
+                !IIdentityRegistryV1(_attestationIdToRegistry[AttestationId.E_PASSPORT]).checkOfacRoots(
+                    proof.vcAndDiscloseProof.pubSignals[
+                        CircuitConstantsV2.PASSPORT_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX
+                    ],
+                    proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX],
+                    proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX]
+                )
+            ) {
                 revert INVALID_OFAC_ROOT();
             }
         }
         if (proof.forbiddenCountriesEnabled) {
             for (uint256 i = 0; i < 4; i++) {
                 if (
-                    proof.forbiddenCountriesListPacked[i] != proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.PASSPORT_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i]
+                    proof.forbiddenCountriesListPacked[i] !=
+                    proof.vcAndDiscloseProof.pubSignals[
+                        CircuitConstantsV2.PASSPORT_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+                    ]
                 ) {
                     revert INVALID_FORBIDDEN_COUNTRIES();
                 }
@@ -620,7 +561,14 @@ contract IdentityVerificationHubImplV2 is
         }
 
         // verify the proof using the VC and Disclose circuit verifier
-        if (!IVcAndDiscloseCircuitVerifier(_vcAndDiscloseCircuitVerifier).verifyProof(proof.vcAndDiscloseProof.a, proof.vcAndDiscloseProof.b, proof.vcAndDiscloseProof.c, proof.vcAndDiscloseProof.pubSignals)) {
+        if (
+            !IVcAndDiscloseCircuitVerifier(_vcAndDiscloseCircuitVerifier).verifyProof(
+                proof.vcAndDiscloseProof.a,
+                proof.vcAndDiscloseProof.b,
+                proof.vcAndDiscloseProof.c,
+                proof.vcAndDiscloseProof.pubSignals
+            )
+        ) {
             revert INVALID_VC_AND_DISCLOSE_PROOF();
         }
 
@@ -629,24 +577,26 @@ contract IdentityVerificationHubImplV2 is
 
     function _verifyVcAndDiscloseProofIdCard(
         IdCardVcAndDiscloseHubProof memory proof
-    )
-        internal
-        view
-        returns (uint256 identityCommitmentRoot)
-    {
+    ) internal view returns (uint256 identityCommitmentRoot) {
         // verify identity commitment root
-        if (!IIdentityRegistryIdCardV1(_attestationIdToRegistry[AttestationId.EU_ID_CARD]).checkIdentityCommitmentRoot(proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_MERKLE_ROOT_INDEX])) {
+        if (
+            !IIdentityRegistryIdCardV1(_attestationIdToRegistry[AttestationId.EU_ID_CARD]).checkIdentityCommitmentRoot(
+                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_MERKLE_ROOT_INDEX]
+            )
+        ) {
             revert INVALID_COMMITMENT_ROOT();
         }
 
         // verify current date
         uint[6] memory dateNum;
         for (uint256 i = 0; i < 6; i++) {
-            dateNum[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_CURRENT_DATE_INDEX + i];
+            dateNum[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.ID_CARD_DISCLOSE_CURRENT_DATE_INDEX + i
+            ];
         }
 
         uint currentTimestamp = Formatter.proofDateToUnixTimestamp(dateNum);
-        if(
+        if (
             currentTimestamp < _getStartOfDayTimestamp() - 1 days + 1 ||
             currentTimestamp > _getStartOfDayTimestamp() + 1 days - 1
         ) {
@@ -656,33 +606,47 @@ contract IdentityVerificationHubImplV2 is
         // verify attributes
         uint256[4] memory revealedDataPacked;
         for (uint256 i = 0; i < 4; i++) {
-            revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i];
+            revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstantsV2.ID_CARD_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+            ];
         }
         if (proof.olderThanEnabled) {
-            if (!IdCardAttributeHandler.compareOlderThan(Formatter.fieldElementsToBytesIdCard(revealedDataPacked), proof.olderThan)) {
+            if (
+                !IdCardAttributeHandler.compareOlderThan(
+                    Formatter.fieldElementsToBytesIdCard(revealedDataPacked),
+                    proof.olderThan
+                )
+            ) {
                 revert INVALID_OLDER_THAN();
             }
         }
         // Need to update circuit attribute handler
         if (proof.ofacEnabled[0] || proof.ofacEnabled[1]) {
-            if (!IdCardAttributeHandler.compareOfac(
-                Formatter.fieldElementsToBytesIdCard(revealedDataPacked),
-                proof.ofacEnabled[0],
-                proof.ofacEnabled[1]
-            )) {
+            if (
+                !IdCardAttributeHandler.compareOfac(
+                    Formatter.fieldElementsToBytesIdCard(revealedDataPacked),
+                    proof.ofacEnabled[0],
+                    proof.ofacEnabled[1]
+                )
+            ) {
                 revert INVALID_OFAC();
             }
-            if (!IIdentityRegistryIdCardV1(_attestationIdToRegistry[AttestationId.EU_ID_CARD]).checkOfacRoots(
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX],
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX]
-            )) {
+            if (
+                !IIdentityRegistryIdCardV1(_attestationIdToRegistry[AttestationId.EU_ID_CARD]).checkOfacRoots(
+                    proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX],
+                    proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX]
+                )
+            ) {
                 revert INVALID_OFAC_ROOT();
             }
         }
         if (proof.forbiddenCountriesEnabled) {
             for (uint256 i = 0; i < 4; i++) {
                 if (
-                    proof.forbiddenCountriesListPacked[i] != proof.vcAndDiscloseProof.pubSignals[CircuitConstantsV2.ID_CARD_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i]
+                    proof.forbiddenCountriesListPacked[i] !=
+                    proof.vcAndDiscloseProof.pubSignals[
+                        CircuitConstantsV2.ID_CARD_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+                    ]
                 ) {
                     revert INVALID_FORBIDDEN_COUNTRIES();
                 }
@@ -690,7 +654,14 @@ contract IdentityVerificationHubImplV2 is
         }
 
         // verify the proof using the VC and Disclose circuit verifier
-        if (!IVcAndDiscloseCircuitVerifier(_vcAndDiscloseCircuitVerifier).verifyProof(proof.vcAndDiscloseProof.a, proof.vcAndDiscloseProof.b, proof.vcAndDiscloseProof.c, proof.vcAndDiscloseProof.pubSignals)) {
+        if (
+            !IVcAndDiscloseCircuitVerifier(_vcAndDiscloseCircuitVerifier).verifyProof(
+                proof.vcAndDiscloseProof.a,
+                proof.vcAndDiscloseProof.b,
+                proof.vcAndDiscloseProof.c,
+                proof.vcAndDiscloseProof.pubSignals
+            )
+        ) {
             revert INVALID_VC_AND_DISCLOSE_PROOF();
         }
 
@@ -701,33 +672,40 @@ contract IdentityVerificationHubImplV2 is
         bytes32 attestationId,
         uint256 registerCircuitVerifierId,
         IRegisterCircuitVerifier.RegisterCircuitProof memory registerCircuitProof
-    )
-        internal
-        view
-    {
+    ) internal view {
         address verifier = _sigTypeToRegisterCircuitVerifiers[registerCircuitVerifierId];
         if (verifier == address(0)) {
             revert NO_VERIFIER_SET();
         }
 
         if (attestationId == AttestationId.E_PASSPORT) {
-            if (!IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).checkDscKeyCommitmentMerkleRoot(registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_MERKLE_ROOT_INDEX])) {
+            if (
+                !IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).checkDscKeyCommitmentMerkleRoot(
+                    registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_MERKLE_ROOT_INDEX]
+                )
+            ) {
                 revert INVALID_COMMITMENT_ROOT();
             }
         } else if (attestationId == AttestationId.EU_ID_CARD) {
-            if(!IIdentityRegistryIdCardV1(_attestationIdToRegistry[attestationId]).checkDscKeyCommitmentMerkleRoot(registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_MERKLE_ROOT_INDEX])) {
+            if (
+                !IIdentityRegistryIdCardV1(_attestationIdToRegistry[attestationId]).checkDscKeyCommitmentMerkleRoot(
+                    registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_MERKLE_ROOT_INDEX]
+                )
+            ) {
                 revert INVALID_COMMITMENT_ROOT();
             }
         } else {
             revert INVALID_ATTESTATION_ID();
         }
 
-        if(!IRegisterCircuitVerifier(verifier).verifyProof(
-            registerCircuitProof.a,
-            registerCircuitProof.b,
-            registerCircuitProof.c,
-            registerCircuitProof.pubSignals
-        )) {
+        if (
+            !IRegisterCircuitVerifier(verifier).verifyProof(
+                registerCircuitProof.a,
+                registerCircuitProof.b,
+                registerCircuitProof.c,
+                registerCircuitProof.pubSignals
+            )
+        ) {
             revert INVALID_REGISTER_PROOF();
         }
     }
@@ -742,33 +720,40 @@ contract IdentityVerificationHubImplV2 is
         bytes32 attestationId,
         uint256 dscCircuitVerifierId,
         IDscCircuitVerifier.DscCircuitProof memory dscCircuitProof
-    )
-        internal
-        view
-    {
+    ) internal view {
         address verifier = _sigTypeToDscCircuitVerifiers[dscCircuitVerifierId];
         if (verifier == address(0)) {
             revert NO_VERIFIER_SET();
         }
 
         if (attestationId == AttestationId.E_PASSPORT) {
-            if (!IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).checkCscaRoot(dscCircuitProof.pubSignals[CircuitConstantsV2.DSC_CSCA_ROOT_INDEX])) {
+            if (
+                !IIdentityRegistryV1(_attestationIdToRegistry[attestationId]).checkCscaRoot(
+                    dscCircuitProof.pubSignals[CircuitConstantsV2.DSC_CSCA_ROOT_INDEX]
+                )
+            ) {
                 revert INVALID_CSCA_ROOT();
             }
         } else if (attestationId == AttestationId.EU_ID_CARD) {
-            if (!IIdentityRegistryIdCardV1(_attestationIdToRegistry[attestationId]).checkCscaRoot(dscCircuitProof.pubSignals[CircuitConstantsV2.DSC_CSCA_ROOT_INDEX])) {
+            if (
+                !IIdentityRegistryIdCardV1(_attestationIdToRegistry[attestationId]).checkCscaRoot(
+                    dscCircuitProof.pubSignals[CircuitConstantsV2.DSC_CSCA_ROOT_INDEX]
+                )
+            ) {
                 revert INVALID_CSCA_ROOT();
             }
         } else {
             revert INVALID_ATTESTATION_ID();
         }
 
-        if(!IDscCircuitVerifier(verifier).verifyProof(
-            dscCircuitProof.a,
-            dscCircuitProof.b,
-            dscCircuitProof.c,
-            dscCircuitProof.pubSignals
-        )) {
+        if (
+            !IDscCircuitVerifier(verifier).verifyProof(
+                dscCircuitProof.a,
+                dscCircuitProof.b,
+                dscCircuitProof.c,
+                dscCircuitProof.pubSignals
+            )
+        ) {
             revert INVALID_DSC_PROOF();
         }
     }

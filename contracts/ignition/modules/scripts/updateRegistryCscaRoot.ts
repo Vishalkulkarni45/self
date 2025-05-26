@@ -8,21 +8,12 @@ import serialized_csca_tree from "../../../../common/pubkeys/serialized_csca_tre
 module.exports = buildModule("UpdateRegistryCscaRoot", (m) => {
   const networkName = hre.network.config.chainId;
 
-  const deployedAddressesPath = path.join(
-    __dirname,
-    `../../deployments/chain-${networkName}/deployed_addresses.json`,
-  );
-  const deployedAddresses = JSON.parse(
-    fs.readFileSync(deployedAddressesPath, "utf8"),
-  );
+  const deployedAddressesPath = path.join(__dirname, `../../deployments/chain-${networkName}/deployed_addresses.json`);
+  const deployedAddresses = JSON.parse(fs.readFileSync(deployedAddressesPath, "utf8"));
 
-  const registryAddress =
-    deployedAddresses["DeployRegistryModule#IdentityRegistry"];
+  const registryAddress = deployedAddresses["DeployRegistryModule#IdentityRegistry"];
 
-  const deployedRegistryInstance = m.contractAt(
-    "IdentityRegistryImplV1",
-    registryAddress,
-  );
+  const deployedRegistryInstance = m.contractAt("IdentityRegistryImplV1", registryAddress);
   console.log("Deployed registry instance", deployedRegistryInstance);
   const merkleRoot = getCscaTreeRoot(serialized_csca_tree);
   console.log("Merkle root", merkleRoot);

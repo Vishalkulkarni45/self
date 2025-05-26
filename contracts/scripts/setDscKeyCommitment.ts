@@ -2,38 +2,19 @@ import { ethers } from "ethers";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
-import {
-  RegisterVerifierId,
-  DscVerifierId,
-} from "../../common/src/constants/constants";
+import { RegisterVerifierId, DscVerifierId } from "../../common/src/constants/constants";
 
 dotenv.config();
 
 const deployedAddresses = JSON.parse(
-  fs.readFileSync(
-    path.join(
-      __dirname,
-      "../ignition/deployments/chain-42220/deployed_addresses.json",
-    ),
-    "utf-8",
-  ),
+  fs.readFileSync(path.join(__dirname, "../ignition/deployments/chain-42220/deployed_addresses.json"), "utf-8"),
 );
-const contractAbiPath = path.join(
-  __dirname,
-  "../ignition/deployments/chain-11155111/artifacts",
-);
+const contractAbiPath = path.join(__dirname, "../ignition/deployments/chain-11155111/artifacts");
 
-const serializedDscTreePath = path.join(
-  __dirname,
-  "../../registry/outputs/serialized_dsc_tree.json",
-);
-const serialized_dsc_tree = JSON.parse(
-  JSON.parse(fs.readFileSync(serializedDscTreePath, "utf-8")),
-);
+const serializedDscTreePath = path.join(__dirname, "../../registry/outputs/serialized_dsc_tree.json");
+const serialized_dsc_tree = JSON.parse(JSON.parse(fs.readFileSync(serializedDscTreePath, "utf-8")));
 
-function getContractAddressByPartialName(
-  partialName: string,
-): string | unknown {
+function getContractAddressByPartialName(partialName: string): string | unknown {
   for (const [key, value] of Object.entries(deployedAddresses)) {
     if (key.includes(partialName)) {
       return value;
@@ -53,11 +34,7 @@ async function main() {
     "utf-8",
   );
   const registryAbi = JSON.parse(registryAbiFile).abi;
-  const registry = new ethers.Contract(
-    "0x66916bc86F761a11587B99c474dB9051f8262478",
-    registryAbi,
-    wallet,
-  );
+  const registry = new ethers.Contract("0x66916bc86F761a11587B99c474dB9051f8262478", registryAbi, wallet);
 
   console.log("serialized dsc tree: ", serialized_dsc_tree[0]);
   console.log("lenght: ", serialized_dsc_tree[0].length);

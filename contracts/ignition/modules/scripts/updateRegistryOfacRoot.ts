@@ -7,33 +7,18 @@ import { getSMTs } from "../../../test/utils/generateProof";
 module.exports = buildModule("UpdateRegistryOfacRoot", (m) => {
   const networkName = hre.network.config.chainId;
 
-  const deployedAddressesPath = path.join(
-    __dirname,
-    `../../deployments/chain-${networkName}/deployed_addresses.json`,
-  );
-  const deployedAddresses = JSON.parse(
-    fs.readFileSync(deployedAddressesPath, "utf8"),
-  );
+  const deployedAddressesPath = path.join(__dirname, `../../deployments/chain-${networkName}/deployed_addresses.json`);
+  const deployedAddresses = JSON.parse(fs.readFileSync(deployedAddressesPath, "utf8"));
 
-  const registryAddress =
-    deployedAddresses["DeployRegistryModule#IdentityRegistry"];
+  const registryAddress = deployedAddresses["DeployRegistryModule#IdentityRegistry"];
 
-  const deployedRegistryInstance = m.contractAt(
-    "IdentityRegistryImplV1",
-    registryAddress,
-  );
+  const deployedRegistryInstance = m.contractAt("IdentityRegistryImplV1", registryAddress);
   console.log("Deployed registry instance", deployedRegistryInstance);
 
   const { passportNo_smt, nameAndDob_smt, nameAndYob_smt } = getSMTs();
 
-  m.call(deployedRegistryInstance, "updatePassportNoOfacRoot", [
-    passportNo_smt.root,
-  ]);
-  m.call(deployedRegistryInstance, "updateNameAndDobOfacRoot", [
-    nameAndDob_smt.root,
-  ]);
-  m.call(deployedRegistryInstance, "updateNameAndYobOfacRoot", [
-    nameAndYob_smt.root,
-  ]);
+  m.call(deployedRegistryInstance, "updatePassportNoOfacRoot", [passportNo_smt.root]);
+  m.call(deployedRegistryInstance, "updateNameAndDobOfacRoot", [nameAndDob_smt.root]);
+  m.call(deployedRegistryInstance, "updateNameAndYobOfacRoot", [nameAndYob_smt.root]);
   return { deployedRegistryInstance };
 });

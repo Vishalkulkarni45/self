@@ -8,7 +8,6 @@ pragma solidity 0.8.28;
  * @dev These indices map directly to specific data fields in the corresponding circuits proofs.
  */
 library CircuitConstantsV2 {
-
     // ---------------------------
     // Register Circuit Constants
     // ---------------------------
@@ -122,5 +121,4 @@ library CircuitConstantsV2 {
     uint256 constant ID_CARD_DISCLOSE_SCOPE_INDEX = 19;
 
     uint256 constant ID_CARD_DISCLOSE_USER_IDENTIFIER_INDEX = 20;
-
 }

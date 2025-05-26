@@ -10,7 +10,6 @@ import {Formatter} from "./Formatter.sol";
  * @dev Utilizes the Formatter library for converting and formatting specific fields.
  */
 library IdCardAttributeHandler {
-
     /**
      * @dev Reverts when the provided character codes array does not contain enough data to extract an attribute.
      */
@@ -114,8 +113,10 @@ library IdCardAttributeHandler {
      * @return The extracted age as a uint256.
      */
     function getOlderThan(bytes memory charcodes) internal pure returns (uint256) {
-        return Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START])) * 10
-            + Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START + 1]));
+        return
+            Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START])) *
+            10 +
+            Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START + 1]));
     }
 
     /**
@@ -159,8 +160,9 @@ library IdCardAttributeHandler {
         bool checkNameAndDob,
         bool checkNameAndYob
     ) internal pure returns (bool) {
-        return (!checkNameAndDob || getNameAndDobOfac(charcodes) == 1) &&
-               (!checkNameAndYob || getNameAndYobOfac(charcodes) == 1);
+        return
+            (!checkNameAndDob || getNameAndDobOfac(charcodes) == 1) &&
+            (!checkNameAndYob || getNameAndYobOfac(charcodes) == 1);
     }
 
     /**
@@ -169,10 +171,7 @@ library IdCardAttributeHandler {
      * @param olderThan The threshold value to compare against.
      * @return True if the extracted age is greater than or equal to the threshold, false otherwise.
      */
-    function compareOlderThan(
-        bytes memory charcodes,
-        uint256 olderThan
-    ) internal pure returns (bool) {
+    function compareOlderThan(bytes memory charcodes, uint256 olderThan) internal pure returns (bool) {
         return getOlderThan(charcodes) >= olderThan;
     }
 
@@ -184,7 +183,11 @@ library IdCardAttributeHandler {
      * @param end The ending index (inclusive) of the attribute in the byte array.
      * @return The extracted attribute as a string.
      */
-    function extractStringAttribute(bytes memory charcodes, uint256 start, uint256 end) internal pure returns (string memory) {
+    function extractStringAttribute(
+        bytes memory charcodes,
+        uint256 start,
+        uint256 end
+    ) internal pure returns (string memory) {
         if (charcodes.length <= end) {
             revert INSUFFICIENT_CHARCODE_LEN();
         }
@@ -194,5 +197,4 @@ library IdCardAttributeHandler {
         }
         return string(attributeBytes);
     }
-
 }

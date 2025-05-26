@@ -63,9 +63,7 @@ export class Formatter {
     return numAscii - 48;
   }
 
-  static fieldElementsToBytes(
-    publicSignals: [bigint, bigint, bigint],
-  ): Uint8Array {
+  static fieldElementsToBytes(publicSignals: [bigint, bigint, bigint]): Uint8Array {
     const bytesCount = [31, 31, 31];
     const totalLength = 93;
     const bytesArray = new Uint8Array(totalLength);
@@ -91,9 +89,7 @@ export class Formatter {
   }
 
   static extractForbiddenCountriesFromPacked(publicSignal: bigint): string[] {
-    const forbiddenCountries: string[] = new Array(
-      Formatter.MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,
-    );
+    const forbiddenCountries: string[] = new Array(Formatter.MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH);
     for (let j = 0; j < Formatter.MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH; j++) {
       const byteIndex = BigInt(j * 3);
       const shift = byteIndex * 8n;
@@ -151,24 +147,9 @@ export class Formatter {
     let timestamp = 0;
     const secondsInDay = 86400;
     for (let i = 1970; i < year; i++) {
-      timestamp += Formatter.isLeapYear(i)
-        ? 366 * secondsInDay
-        : 365 * secondsInDay;
+      timestamp += Formatter.isLeapYear(i) ? 366 * secondsInDay : 365 * secondsInDay;
     }
-    const monthDayCounts = [
-      31,
-      Formatter.isLeapYear(year) ? 29 : 28,
-      31,
-      30,
-      31,
-      30,
-      31,
-      31,
-      30,
-      31,
-      30,
-      31,
-    ];
+    const monthDayCounts = [31, Formatter.isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     for (let i = 1; i < month; i++) {
       timestamp += monthDayCounts[i - 1] * secondsInDay;
     }
@@ -211,76 +192,46 @@ export class CircuitAttributeHandler {
 
   static getIssuingState(input: string | Uint8Array): string {
     const charcodes = this.normalizeInput(input);
-    return this.extractStringAttribute(
-      charcodes,
-      this.ISSUING_STATE_START,
-      this.ISSUING_STATE_END,
-    );
+    return this.extractStringAttribute(charcodes, this.ISSUING_STATE_START, this.ISSUING_STATE_END);
   }
 
   static getName(input: string | Uint8Array): [string, string] {
     const charcodes = this.normalizeInput(input);
-    const rawName = this.extractStringAttribute(
-      charcodes,
-      this.NAME_START,
-      this.NAME_END,
-    );
+    const rawName = this.extractStringAttribute(charcodes, this.NAME_START, this.NAME_END);
     return Formatter.formatName(rawName);
   }
 
   static getPassportNumber(input: string | Uint8Array): string {
     const charcodes = this.normalizeInput(input);
-    return this.extractStringAttribute(
-      charcodes,
-      this.PASSPORT_NUMBER_START,
-      this.PASSPORT_NUMBER_END,
-    );
+    return this.extractStringAttribute(charcodes, this.PASSPORT_NUMBER_START, this.PASSPORT_NUMBER_END);
   }
 
   static getNationality(input: string | Uint8Array): string {
     const charcodes = this.normalizeInput(input);
-    return this.extractStringAttribute(
-      charcodes,
-      this.NATIONALITY_START,
-      this.NATIONALITY_END,
-    );
+    return this.extractStringAttribute(charcodes, this.NATIONALITY_START, this.NATIONALITY_END);
   }
 
   static getDateOfBirth(input: string | Uint8Array): string {
     const charcodes = this.normalizeInput(input);
-    const rawDate = this.extractStringAttribute(
-      charcodes,
-      this.DATE_OF_BIRTH_START,
-      this.DATE_OF_BIRTH_END,
-    );
+    const rawDate = this.extractStringAttribute(charcodes, this.DATE_OF_BIRTH_START, this.DATE_OF_BIRTH_END);
     return Formatter.formatDate(rawDate);
   }
 
   static getGender(input: string | Uint8Array): string {
     const charcodes = this.normalizeInput(input);
-    return this.extractStringAttribute(
-      charcodes,
-      this.GENDER_START,
-      this.GENDER_END,
-    );
+    return this.extractStringAttribute(charcodes, this.GENDER_START, this.GENDER_END);
   }
 
   static getExpiryDate(input: string | Uint8Array): string {
     const charcodes = this.normalizeInput(input);
-    const rawDate = this.extractStringAttribute(
-      charcodes,
-      this.EXPIRY_DATE_START,
-      this.EXPIRY_DATE_END,
-    );
+    const rawDate = this.extractStringAttribute(charcodes, this.EXPIRY_DATE_START, this.EXPIRY_DATE_END);
     return Formatter.formatDate(rawDate);
   }
 
   static getOlderThan(input: string | Uint8Array): number {
     const charcodes = this.normalizeInput(input);
     const digit1 = Formatter.numAsciiToUint(charcodes[this.OLDER_THAN_START]);
-    const digit2 = Formatter.numAsciiToUint(
-      charcodes[this.OLDER_THAN_START + 1],
-    );
+    const digit2 = Formatter.numAsciiToUint(charcodes[this.OLDER_THAN_START + 1]);
     return digit1 * 10 + digit2;
   }
 
@@ -299,10 +250,7 @@ export class CircuitAttributeHandler {
     return charcodes[this.OFAC_START + 2];
   }
 
-  static compareOlderThan(
-    input: string | Uint8Array,
-    olderThan: number,
-  ): boolean {
+  static compareOlderThan(input: string | Uint8Array, olderThan: number): boolean {
     const charcodes = this.normalizeInput(input);
     return this.getOlderThan(charcodes) >= olderThan;
   }
@@ -346,11 +294,7 @@ export class CircuitAttributeHandler {
     return input;
   }
 
-  static extractStringAttribute(
-    input: string | Uint8Array,
-    start: number,
-    end: number,
-  ): string {
+  static extractStringAttribute(input: string | Uint8Array, start: number, end: number): string {
     const charcodes = this.normalizeInput(input);
     if (charcodes.length <= end) {
       throw new Error("INSUFFICIENT_CHARCODE_LEN");

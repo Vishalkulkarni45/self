@@ -30,14 +30,8 @@ import { poseidon2 } from "poseidon-lite";
 dotenv.config();
 
 // Read the serialized DSC tree data
-const serializedDscTreePath = path.join(
-  __dirname,
-  "../../registry/outputs/serialized_dsc_tree.json",
-);
-const serialized_dsc_tree_json = fs.readFileSync(
-  serializedDscTreePath,
-  "utf-8",
-);
+const serializedDscTreePath = path.join(__dirname, "../../registry/outputs/serialized_dsc_tree.json");
+const serialized_dsc_tree_json = fs.readFileSync(serializedDscTreePath, "utf-8");
 const serialized_dsc_tree = JSON.parse(JSON.parse(serialized_dsc_tree_json));
 
 // Create DSC key commitment tree from the serialized data
@@ -52,19 +46,14 @@ function initializeTree() {
   for (let i = 0; i < serialized_dsc_tree[0].length; i++) {
     dscTree.insert(BigInt(serialized_dsc_tree[0][i]));
   }
-  console.log(
-    `Initialized DSC tree with ${dscTree.size} commitments. Root: ${dscTree.root}`,
-  );
+  console.log(`Initialized DSC tree with ${dscTree.size} commitments. Root: ${dscTree.root}`);
 }
 
 async function main() {
   try {
     // Set up connection to blockchain
     const provider = new ethers.JsonRpcProvider(process.env.RPC_URL as string);
-    const wallet = new ethers.Wallet(
-      process.env.PRIVATE_KEY as string,
-      provider,
-    );
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider);
 
     // Load the registry contract
     const registryAbiFile = fs.readFileSync(
@@ -89,16 +78,12 @@ async function main() {
     for (let i = 0; i < commitments.length; i++) {
       try {
         const commitment = BigInt(commitments[i]);
-        console.log(
-          `Processing commitment ${i + 1}/${commitments.length}: ${commitment.toString()}`,
-        );
+        console.log(`Processing commitment ${i + 1}/${commitments.length}: ${commitment.toString()}`);
 
         // Find the index of the commitment in the tree
         const index = dscTree.indexOf(commitment);
         if (index === -1) {
-          console.warn(
-            `Commitment ${commitment.toString()} not found in the tree, skipping...`,
-          );
+          console.warn(`Commitment ${commitment.toString()} not found in the tree, skipping...`);
           continue;
         }
 
@@ -110,10 +95,7 @@ async function main() {
 
         // Call the contract to remove the commitment
         console.log(`Removing commitment from contract...`);
-        const tx = await registry.devRemoveDscKeyCommitment(
-          commitment.toString(),
-          siblingNodes,
-        );
+        const tx = await registry.devRemoveDscKeyCommitment(commitment.toString(), siblingNodes);
 
         console.log(`Transaction sent. Waiting for confirmation...`);
         const receipt = await tx.wait();
@@ -122,9 +104,7 @@ async function main() {
         // Update the commitment in our local tree to keep it in sync with the contract
         // According to documentation, update takes index and new value
         dscTree.update(index, BigInt(0)); // Update to zero, effectively "removing" it
-        console.log(
-          `Removed commitment ${i + 1}. New tree root: ${dscTree.root}`,
-        );
+        console.log(`Removed commitment ${i + 1}. New tree root: ${dscTree.root}`);
 
         // Small delay to avoid spamming the network
         await new Promise((resolve) => setTimeout(resolve, 1000));
