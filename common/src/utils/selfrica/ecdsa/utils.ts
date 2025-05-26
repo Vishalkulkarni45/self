@@ -1,18 +1,19 @@
 import { Base8, mulPointEscalar, Point, subOrder } from "@zk-kit/baby-jubjub";
-import { poseidon10 } from "poseidon-lite"
+import { poseidon10, poseidon11, poseidon9 } from "poseidon-lite"
 import { Signature } from "../types";
 import { packBytesArray } from "../../bytes";
+import { SELFRICA_MAX_LENGTH } from "../constants";
 /**
  * Compute the hash of a message using the ECDSA algorithm
  * @param msg
  * @returns hash as a hex string
  */
 export const getECDSAMessageHash = (msg: number[]): bigint => {
-    if (!(msg.length == 298)) {
-        throw new Error("Message must be of length 298!");
+    if (!(msg.length == SELFRICA_MAX_LENGTH)) {
+        throw new Error(`Message must be of length ${SELFRICA_MAX_LENGTH}!`);
     }
     const msgPacked = packBytesArray(msg);
-    return modulus(poseidon10(msgPacked), subOrder);
+    return modulus(poseidon9(msgPacked), subOrder);
 };
 
 export const modulus = (a: bigint, m: bigint): bigint => {

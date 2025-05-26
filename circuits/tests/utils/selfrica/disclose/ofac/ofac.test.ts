@@ -35,7 +35,7 @@ describe('OFAC - Name and DOB match', async () => {
     it('should return 0 if the person is in the ofac list', async () => {
         const dummy_smile_input = serializeSmileData(OFAC_DUMMY_INPUT);
         const ofacInputs = generateCircuitInputsOfac(OFAC_DUMMY_INPUT, namedob_smt, proofLevel);
-        const inputs = { 
+        const inputs = {
             smile_data: dummy_smile_input.split('').map((x) => x.charCodeAt(0)),
             ...ofacInputs,
         };

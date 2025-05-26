@@ -1,10 +1,11 @@
 import { SMT } from "@openpassport/zk-kit-smt";
 import { generateSMTProof, getNameDobLeaf, getNameDobLeafSelfrica, getNameYobLeafSelfrica } from "../trees";
-import { SelfricaCircuitInput, SmileData } from "./types";
+import { SelfricaCircuitInput, serializeSmileData, SmileData } from "./types";
 import { formatInput } from "../circuits/generateInputs";
 import { bigintTo64bitLimbs, generateRandomsg, getECDSAMessageHash, getEffECDSAArgs, modInv, modulus } from "./ecdsa/utils";
 import { signECDSA, verifyECDSA, verifyEffECDSA } from "./ecdsa/ecdsa";
 import { Base8, inCurve, mulPointEscalar, subOrder } from "@zk-kit/baby-jubjub";
+import { SELFRICA_MAX_LENGTH } from "./constants";
 
 export const OFAC_DUMMY_INPUT: SmileData = {
     country: 'KE',
@@ -61,7 +62,7 @@ export const generateCircuitInputsOfac = (smileData: SmileData, smt: SMT, proofL
 }
 
 export const generateCircuitInput = () => {
-    const msg = generateRandomsg();
+    const msg = serializeSmileData(OFAC_DUMMY_INPUT).split('').map((x) => x.charCodeAt(0));
     const sk = BigInt(subOrder - BigInt(Math.floor(Math.random() * 90098)));
     const pk = mulPointEscalar(Base8, sk);
 
@@ -82,7 +83,7 @@ export const generateCircuitInput = () => {
 
     const circuitInput: SelfricaCircuitInput = {
         SmileID_data: msg.map(String),
-        disclose_sel: Array.from({ length: 298 }, () => (Math.floor(Math.random() * (2))).toString()),
+        disclose_sel: Array.from({ length: SELFRICA_MAX_LENGTH }, () => (Math.floor(Math.random() * (2))).toString()),
         s: sig.s.toString(),
         Tx: T[0].toString(),
         Ty: T[1].toString(),

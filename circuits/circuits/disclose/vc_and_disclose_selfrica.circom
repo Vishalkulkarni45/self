@@ -9,13 +9,16 @@ include "../utils/selfrica/babyJubJubScalarMul.circom";
 include "../utils/passport/customHashers.circom";
 include "../utils/selfrica/babyEcdsa.circom";
 include "@openpassport/zk-email-circuits/lib/bigint.circom";
+include "../utils/selfrica/constants.circom";
 
 template VC_AND_DISCLOSE(
+    MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, 
     namedobTreeLevels,
     nameyobTreeLevels
 ) {
-    signal input SmileID_data[298];
-    signal input disclose_sel[298];
+    var selfrica_length = SELFRICA_MAX_LENGTH();
+    signal input SmileID_data[selfrica_length];
+    signal input disclose_sel[selfrica_length];
     signal input s;
     signal input Tx; 
     signal input Ty; 
@@ -28,9 +31,10 @@ template VC_AND_DISCLOSE(
     //TODO: calculate hash using packedbytes 
     signal output pi_hash;
 
-    component ascii_range_check[298];
-    component pi_hasher = PackBytesAndPoseidon(298);
-    for(var i=0; i<298; i++){
+    component ascii_range_check[selfrica_length];
+    component pi_hasher = PackBytesAndPoseidon(selfrica_length);
+
+    for(var i = 0; i <selfrica_length; i++){
         // Check if the data is in the ASCII range 0 - 127
         ascii_range_check[i] = Num2Bits(7); 
         ascii_range_check[i].in <== SmileID_data[i];
@@ -74,8 +78,8 @@ template VC_AND_DISCLOSE(
     scalar_range_check.out === 1 ;
 
     //Calculate msg_hash
-    component msg_hasher = PackBytesAndPoseidon(298);
-    for (var i = 0; i < 298; i++) {
+    component msg_hasher = PackBytesAndPoseidon(selfrica_length);
+    for (var i = 0; i < selfrica_length; i++) {
         msg_hasher.in[i] <== SmileID_data[i];
     }
 
@@ -98,17 +102,21 @@ template VC_AND_DISCLOSE(
 
      //TODO: find template BigModP
     //msg_hash % SUBORDER
-    component msgReduced = BigMultModP(64,4,4,4);
-    for(var i=0; i<4; i++){
+    component msgReduced = BigMultModP(64, 4, 4, 4);
+    for(var i = 0; i < 4; i++){
         msgReduced.in1[i]<== msg_hash_limbs[i];
-        if(i==0){msgReduced.in2[i]<== 1;}
-        else{msgReduced.in2[i]<== 0; }
+        if(i == 0) {
+            msgReduced.in2[i]<== 1;
+        }
+        else{
+            msgReduced.in2[i]<== 0; 
+        }
         msgReduced.modulus[i]<== scalar_mod[i];
     }
 
     // calculates (-r_inv * msg_hash) % SUBGROUP_ORDER
     component r_inv_msg_hash = BabyScalarMul();
-    for(var i =0 ;i<4 ;i++){
+    for(var i = 0 ;i < 4 ;i++) {
         r_inv_msg_hash.in1[i] <== r_inv[i];
         r_inv_msg_hash.in2[i] <== msgReduced.mod[i];
     }
@@ -117,17 +125,17 @@ template VC_AND_DISCLOSE(
     component num2bits[4];
 
    // convert r_inv_msg_hash limbs to bits
-    for (var i=0; i<4; i++){
+    for (var i = 0; i < 4; i++){
         num2bits[i]= Num2Bits(64);
         num2bits[i].in <==r_inv_msg_hash.out[i];
-        for(var j=0; j<64; j++){
-            r_inv_msg_hash_bits[i*64+j] <== num2bits[i].out[j];
+        for(var j = 0; j < 64; j++){
+            r_inv_msg_hash_bits[i * 64 +j] <== num2bits[i].out[j];
         }
     }
 
 
     component mulFix = EscalarMulFix(254, BASE8);
-    for (var i=0; i<254; i++) {
+    for (var i = 0; i < 254; i++) {
         mulFix.e[i] <== r_inv_msg_hash_bits[i];
     }
 
@@ -148,4 +156,4 @@ template VC_AND_DISCLOSE(
     //check for validity of the document
   }
 
-component main = VC_AND_DISCLOSE(64, 64);
+component main = VC_AND_DISCLOSE(3, 64, 64);
