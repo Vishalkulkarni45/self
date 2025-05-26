@@ -3,7 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 require("dotenv").config();
 import "hardhat-contract-sizer";
 import "@nomicfoundation/hardhat-ignition-ethers";
-import 'solidity-coverage';
+import "solidity-coverage";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 
@@ -15,11 +15,11 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 200,
         details: {
-          yul: true
-        }
+          yul: true,
+        },
       },
       metadata: {
-        bytecodeHash: "none"
+        bytecodeHash: "none",
       },
       viaIR: false,
     },
@@ -31,7 +31,7 @@ const config: HardhatUserConfig = {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
-    artifacts: "./artifacts"
+    artifacts: "./artifacts",
   },
   defaultNetwork: "hardhat",
   networks: {
@@ -40,8 +40,8 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
       accounts: {
         mnemonic: "test test test test test test test test test test test test",
-        count: 20
-      }
+        count: 20,
+      },
     },
     mainnet: {
       chainId: 1,
@@ -50,7 +50,8 @@ const config: HardhatUserConfig = {
     },
     sepolia: {
       chainId: 11155111,
-      url: process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.public.blastapi.io",
+      url:
+        process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.public.blastapi.io",
       accounts: [process.env.PRIVATE_KEY as string],
     },
     celo: {
@@ -60,12 +61,16 @@ const config: HardhatUserConfig = {
     },
     celoAlfajores: {
       chainId: 44787,
-      url: process.env.CELO_ALFAJORES_RPC_URL || "https://alfajores-forno.celo-testnet.org",
+      url:
+        process.env.CELO_ALFAJORES_RPC_URL ||
+        "https://alfajores-forno.celo-testnet.org",
       accounts: [process.env.PRIVATE_KEY as string],
     },
     celoBaklava: {
       chainId: 62320,
-      url: process.env.CELO_BAKLAVA_RPC_URL || "https://baklava-forno.celo-testnet.org",
+      url:
+        process.env.CELO_BAKLAVA_RPC_URL ||
+        "https://baklava-forno.celo-testnet.org",
       accounts: [process.env.PRIVATE_KEY as string],
     },
   },
@@ -81,11 +86,11 @@ const config: HardhatUserConfig = {
         chainId: 42220,
         urls: {
           apiURL: "https://api.celoscan.io/api",
-          browserURL: "https://celoscan.io"
-        }
-      }
-    ]
-  }
+          browserURL: "https://celoscan.io",
+        },
+      },
+    ],
+  },
 };
 
 export default config;
