@@ -1,11 +1,8 @@
 pragma circom 2.1.9;
 
 include "circomlib/circuits/poseidon.circom";
-include "circomlib/circuits/escalarmulfix.circom";
 include "circomlib/circuits/bitify.circom";
-include "circomlib/circuits/compconstant.circom";
-include "circomlib/circuits/comparators.circom";
-include "../utils/selfrica/babyJubJubScalarMul.circom";
+include "../utils/selfrica/verifySignature.circom";
 include "../utils/passport/customHashers.circom";
 include "../utils/selfrica/babyEcdsa.circom";
 include "@openpassport/zk-email-circuits/lib/bigint.circom";
@@ -22,12 +19,14 @@ template VC_AND_DISCLOSE(
 
     signal input SmileID_data[selfrica_length];
     signal input disclose_sel[selfrica_length];
+    //Args to verify Hash(smiledata) signature
     signal input s;
     signal input Tx; 
     signal input Ty; 
     signal input pubKeyX;
     signal input pubKeyY;
 
+    //Args to verify Hash(IdNumber) signature
     signal input nullifier_s;
     signal input nullifier_Tx; 
     signal input nullifier_Ty; 
@@ -48,13 +47,12 @@ template VC_AND_DISCLOSE(
 
     signal input selector_ofac;
 
-    //Supply -r_inv
+    //Supply -r_inv for identity commitment sig verification
     signal input r_inv[4];
-
-    signal output pi_hash;
+    //Supply -r_inv for nullifier sig verification
+    signal input r_inv_nullifier[4];
 
     component ascii_range_check[selfrica_length];
-    component pi_hasher = PackBytesAndPoseidon(selfrica_length);
 
     for(var i = 0; i <selfrica_length; i++){
         // Check if the data is in the ASCII range 0 - 127
@@ -63,41 +61,7 @@ template VC_AND_DISCLOSE(
 
         //Check is selctor binary
         disclose_sel[i] * (disclose_sel[i] - 1) === 0;
-        pi_hasher.in[i] <== disclose_sel[i] * SmileID_data[i];
     }
-
-    pi_hash <== pi_hasher.out;
-   
-    var SUBGROUP_ORDER = 2736030358979909402780800718157159386076813972158567259200215660948447373041;
-    var BASE8[2] = [
-            5299619240641551281634865583518297030282874472190772894086521144482721001553,
-            16950150798460657717958625567821834550301663161624707787222815936182638968203
-        ];
-
-    component computes2bits = Num2Bits(254);
-    computes2bits.in <== s;
-
-    // Check s should be less than SUBGROUPT_ORDER - 1
-    component compConst = CompConstant(SUBGROUP_ORDER - 1);
-    compConst.in <== computes2bits.out;
-    compConst.out === 0;
-
-    // Check if s is not 0
-    signal is_s_zero <== IsZero()(s);
-    is_s_zero === 0;
-
-    signal scalar_mod[4];
-   // SUBGROUP ORDER in limbs
-    scalar_mod[0] <== 7454187305358665457;
-    scalar_mod[1] <== 12339561404529962506;
-    scalar_mod[2] <== 3965992003123030795;
-    scalar_mod[3] <== 435874783350371333;
-
-    //Check is - r_inv < scalar_mod
-    component scalar_range_check = BigLessThan(64,4);
-    scalar_range_check.a <== r_inv;
-    scalar_range_check.b <== scalar_mod;
-    scalar_range_check.out === 1 ;
 
     //Calculate msg_hash
     component msg_hasher = PackBytesAndPoseidon(selfrica_length);
@@ -105,6 +69,7 @@ template VC_AND_DISCLOSE(
         msg_hasher.in[i] <== SmileID_data[i];
     }
 
+    //msg_hash bit decomposition
     component bit_decompose = Num2Bits(256);
     bit_decompose.in <== msg_hasher.out;
     signal msg_hash_bits[256] <== bit_decompose.out;
@@ -122,79 +87,62 @@ template VC_AND_DISCLOSE(
         msg_hash_limbs[i] <== bits2Num[i].out;
     }
 
-     //TODO: find template BigModP
-    //msg_hash % SUBORDER
-    component msgReduced = BigMultModP(64, 4, 4, 4);
-    for(var i = 0; i < 4; i++){
-        msgReduced.in1[i]<== msg_hash_limbs[i];
-        if(i == 0) {
-            msgReduced.in2[i]<== 1;
+    //verify Hash(smiledata) signature
+    component verifyIdCommSig = VERIFY_ECDSA_SIGNATURE();
+    verifyIdCommSig.s <== s;
+    verifyIdCommSig.r_inv <== r_inv;
+    verifyIdCommSig.msg_hash_limbs <== msg_hash_limbs;
+    verifyIdCommSig.Tx <== Tx;
+    verifyIdCommSig.Ty <== Ty; 
+    verifyIdCommSig.pubKeyX <== pubKeyX;
+    verifyIdCommSig.pubKeyY <== pubKeyY;
+
+    //Calculate IDNUMBER hash
+    component id_num_hasher = PackBytesAndPoseidon(ID_NUMBER_LENGTH());
+    var idNumberIdx = ID_NUMBER_INDEX();
+    for (var i = 0; i < ID_NUMBER_LENGTH(); i++) {
+        id_num_hasher.in[i] <== SmileID_data[idNumberIdx +  i];
+    }
+
+    //id_num_hash bit decomposition
+    component id_hash_bit_decompose = Num2Bits(256);
+    id_hash_bit_decompose.in <== id_num_hasher.out;
+    signal id_num_hash_bits[256] <== id_hash_bit_decompose.out;
+
+
+    signal id_num_hash_limbs[4];
+    component id_num_bits2Num[4];
+
+    // Convert id_num_hash_bits (little-endian) to 4 LE limbs
+    for (var i = 0; i < 4; i++) {
+        id_num_bits2Num[i] = Bits2Num(64);
+        for (var j = 0; j < 64; j++) {
+            id_num_bits2Num[i].in[j] <== id_num_hash_bits[i * 64 + j];
         }
-        else{
-            msgReduced.in2[i]<== 0; 
-        }
-        msgReduced.modulus[i]<== scalar_mod[i];
+        id_num_hash_limbs[i] <== id_num_bits2Num[i].out;
     }
 
-    // calculates (-r_inv * msg_hash) % SUBGROUP_ORDER
-    component r_inv_msg_hash = BabyScalarMul();
-    for(var i = 0 ;i < 4 ;i++) {
-        r_inv_msg_hash.in1[i] <== r_inv[i];
-        r_inv_msg_hash.in2[i] <== msgReduced.mod[i];
-    }
+    //verify Hash(IdNumber) signature
+    component verifyNullifierSig = VERIFY_ECDSA_SIGNATURE();
+    verifyNullifierSig.s <== nullifier_s;
+    verifyNullifierSig.r_inv <== r_inv_nullifier;
+    verifyNullifierSig.msg_hash_limbs <== id_num_hash_limbs;
+    verifyNullifierSig.Tx <== nullifier_Tx;
+    verifyNullifierSig.Ty <== nullifier_Ty; 
+    verifyNullifierSig.pubKeyX <== pubKeyX;
+    verifyNullifierSig.pubKeyY <== pubKeyY;
 
-    signal r_inv_msg_hash_bits[256];
-    component num2bits[4];
+ 
+    // Identity Commitment = Hash( IdNumCommit sig )
+    component idCommCal = Poseidon(1);
+    idCommCal.inputs[0] <== s;
+    signal output identity_commitment <== idCommCal.out;
 
-   // convert r_inv_msg_hash limbs to bits
-    for (var i = 0; i < 4; i++){
-        num2bits[i]= Num2Bits(64);
-        num2bits[i].in <==r_inv_msg_hash.out[i];
-        for(var j = 0; j < 64; j++){
-            r_inv_msg_hash_bits[i * 64 +j] <== num2bits[i].out[j];
-        }
-    }
-
-
-    component mulFix = EscalarMulFix(254, BASE8);
-    for (var i = 0; i < 254; i++) {
-        mulFix.e[i] <== r_inv_msg_hash_bits[i];
-    }
-
-    component ecdsa = BabyJubJubECDSA();
-    ecdsa.Tx <== Tx;
-    ecdsa.Ty <== Ty;
-    ecdsa.Ux <== mulFix.out[0];
-    ecdsa.Uy <== mulFix.out[1];
-    ecdsa.s <== s;
-
-
-    ecdsa.pubKeyX === pubKeyX;
-    ecdsa.pubKeyY === pubKeyY;
-
-    signal is_pkx_zero <== IsZero()(pubKeyX);
-    is_pkx_zero === 0;
-
-    component nullifier_ecdsa = BabyJubJubECDSA();
-    nullifier_ecdsa.Tx <== nullifier_Tx;
-    nullifier_ecdsa.Ty <== nullifier_Ty;
-    nullifier_ecdsa.Ux <== nullifier_Ux;
-    nullifier_ecdsa.Uy <== nullifier_Uy;
-    nullifier_ecdsa.s <== nullifier_s;
-
-    nullifier_ecdsa.pubKeyX === pubKeyX;
-    nullifier_ecdsa.pubKeyY === pubKeyY;
-
-    //Nullifier = HASH( nullifier ecdsa sig , scope )
+    //Nullifier = HASH( nullifier sig , scope )
     component nullifierCal = Poseidon(2);
     nullifierCal.inputs[0] <== nullifier_s;
     nullifierCal.inputs[1] <== scope;
     signal output nullifier <== nullifierCal.out;
-
-    // Identity Commitment = Hash( ecdsa sig )
-    component idCommCal = Poseidon(1);
-    idCommCal.inputs[0] <== s;
-    signal output identity_commitment <== idCommCal.out;
 
 
     component disclose_circuit = DISCLOSE_SELFRICA(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, namedobTreeLevels, nameyobTreeLevels);
@@ -219,5 +167,6 @@ template VC_AND_DISCLOSE(
     var forbidden_countries_list_packed_chunk_length = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length);
     signal output forbidden_countries_list_packed[forbidden_countries_list_packed_chunk_length] <== disclose_circuit.forbidden_countries_list_packed;
 }
+
 
 component main = VC_AND_DISCLOSE(3, 64, 64);

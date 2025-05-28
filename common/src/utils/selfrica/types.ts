@@ -115,6 +115,7 @@ export type SelfricaCircuitInput = {
     nullifier_Uy: string,
     scope: string,
     r_inv: string[],
+    r_inv_nullifier: string[],
     forbidden_countries_list: string[],
     ofac_name_dob_smt_leaf_key: string[],
     ofac_name_dob_smt_root: string[],

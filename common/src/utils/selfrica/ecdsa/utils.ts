@@ -1,8 +1,5 @@
 import { Base8, mulPointEscalar, Point, subOrder } from "@zk-kit/baby-jubjub";
-import { poseidon10, poseidon11, poseidon9 } from "poseidon-lite"
 import { Signature } from "../types";
-import { packBytesArray } from "../../bytes";
-import { SELFRICA_MAX_LENGTH } from "../constants";
 import { packBytesAndPoseidon } from "../../hash";
 /**
  * Compute the hash of a message using the ECDSA algorithm

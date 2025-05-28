@@ -80,7 +80,10 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
     console.assert(inCurve(T), "Point T not on curve");
     console.assert(inCurve(U), "Point U not on curve");
 
-    const idNumber = [parseInt(smileData.idNumber, 10)];
+    const rInv = modInv(sig.R[0], subOrder);
+    const rInvLimbs = bigintTo64bitLimbs(modulus(-rInv, subOrder));
+
+    const idNumber = msg.slice(29, 29 + 20);
     const nullifierSig = signECDSA(sk, idNumber);
     console.assert(verifyECDSA(idNumber, nullifierSig, pk) == true, "Invalid signature");
 
@@ -91,9 +94,8 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
     console.assert(inCurve(nullifierT), "Point T not on curve");
     console.assert(inCurve(nullifierU), "Point U not on curve");
 
-    const rInv = modInv(sig.R[0], subOrder);
-
-    const rInvLimbs = bigintTo64bitLimbs(modulus(-rInv, subOrder));
+    const rInvNullfier = modInv(nullifierSig.R[0], subOrder);
+    const rInvNullfierLimbs = bigintTo64bitLimbs(modulus(-rInvNullfier, subOrder));
 
     const circuitInput: SelfricaCircuitInput = {
         SmileID_data: msg.map(String),
@@ -111,6 +113,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         nullifier_Uy: nullifierU[1].toString(),
         scope: '0',
         r_inv: rInvLimbs.map(String),
+        r_inv_nullifier: rInvNullfierLimbs.map(String),
         forbidden_countries_list: ['0', '0', '0', '0', '0', '0',],
         ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
         ofac_name_dob_smt_root: nameDobInputs.smt_root,
