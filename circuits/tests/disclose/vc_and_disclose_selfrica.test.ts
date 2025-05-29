@@ -9,6 +9,7 @@ import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
 import { SELFRICA_MAX_LENGTH } from '../../../common/src/utils/selfrica/constants';
 import { deepEqual } from 'assert';
 import { expect } from 'chai';
+import { getPublicInput } from '../../../common/src/utils/selfrica/types';
 
 describe('should verify signature on random inputs', () => {
     let circuit;

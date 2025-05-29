@@ -46,6 +46,7 @@ template VC_AND_DISCLOSE(
     signal input ofac_name_yob_smt_siblings[nameyobTreeLevels];
 
     signal input selector_ofac;
+    signal input attestation_id;
 
     //Supply -r_inv for identity commitment sig verification
     signal input r_inv[4];
@@ -54,7 +55,7 @@ template VC_AND_DISCLOSE(
 
     component ascii_range_check[selfrica_length];
 
-    for(var i = 0; i <selfrica_length; i++){
+    for(var i = 0; i < selfrica_length; i++){
         // Check if the data is in the ASCII range 0 - 127
         ascii_range_check[i] = Num2Bits(7); 
         ascii_range_check[i].in <== SmileID_data[i];
@@ -169,4 +170,13 @@ template VC_AND_DISCLOSE(
 }
 
 
-component main = VC_AND_DISCLOSE(3, 64, 64);
+component main {
+    public [ 
+        pubKeyX, 
+        pubKeyY,
+        scope, 
+        ofac_name_dob_smt_root, 
+        ofac_name_yob_smt_root,
+        attestation_id
+    ]
+} = VC_AND_DISCLOSE(3, 64, 64);

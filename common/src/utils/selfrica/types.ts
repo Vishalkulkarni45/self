@@ -124,4 +124,25 @@ export type SelfricaCircuitInput = {
     ofac_name_yob_smt_root: string[],
     ofac_name_yob_smt_siblings: string[],
     selector_ofac: string[],
+    attestation_id: string[],
 };
+
+export type SelfricaPublicInput = { 
+    pubKeyX: string,
+    pubKeyY: string,
+    scope: string,
+    ofac_name_dob_smt_root: string[],
+    ofac_name_yob_smt_root: string[],
+    attestation_id: string[],
+}
+
+export const getPublicInput = (input: SelfricaCircuitInput) => {
+    return {
+        pubKeyX: input.pubKeyX,
+        pubKeyY: input.pubKeyY,
+        scope: input.scope,
+        ofac_name_dob_smt_root: input.ofac_name_dob_smt_root,
+        ofac_name_yob_smt_root: input.ofac_name_yob_smt_root,
+        attestation_id: input.attestation_id,
+    }
+}

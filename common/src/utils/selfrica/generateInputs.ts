@@ -122,6 +122,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         ofac_name_yob_smt_root: nameYobInputs.smt_root,
         ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
         selector_ofac: ['0'],
+        attestation_id: ['4'],
     }
 
     return circuitInput;
