@@ -1,25 +1,20 @@
 {
-  "name": "@openpassport/contracts",
-  "version": "0.0.7",
+  "name": "@selfxyz/contracts",
+  "version": "0.0.8",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zk-passport/openpassport"
+    "url": "https://github.com/selfxyz/self"
   },
   "license": "MIT",
   "author": "motemotech <i.am.nicoshark@gmail.com>",
   "files": [
-    "contracts/constants/*",
     "contracts/interfaces/*",
+    "contracts/constants/*",
     "contracts/libraries/*",
-    "contracts/proxy/*",
-    "contracts/registry/*",
-    "contracts/verifiers/*",
-    "contracts/IdentityVerificationHub.sol",
-    "contracts/IdentityVerificationHubImplV1.sol",
-    "contracts/utils/PCR0Manager.sol"
+    "contracts/abstract/*"
   ],
   "scripts": {
-    "compile": "npx hardhat clean && npx hardhat compile",
+    "build": "npx hardhat clean && npx hardhat compile",
     "deploy:all:localhost": "npm run deploy:verifiers:localhost && npm run deploy:registry:localhost && npm run deploy:hub:localhost",
     "deploy:hub:localhost": "npx hardhat ignition deploy ignition/modules/deployHub.ts --network localhost --verify",
     "deploy:registry:localhost": "npx hardhat ignition deploy ignition/modules/deployRegistry.ts --network localhost --verify",
@@ -70,7 +65,9 @@
     "update:hub:celo": "npx hardhat ignition deploy ignition/modules/scripts/updateRegistryHub.ts --network celo --verify",
     "update:ofacroot:celo": "npx hardhat ignition deploy ignition/modules/scripts/updateRegistryOfacRoot.ts --network celo --verify",
     "deploy:pcr0:celo": "npx hardhat ignition deploy ignition/modules/deployPCR0.ts --network celo --verify",
-    "update:pcr0:celo": "PCR0_ACTION=add PCR0_KEY=123 npx hardhat ignition deploy ignition/modules/scripts/updatePCR0.ts --network celo --reset"
+    "update:pcr0:celo": "PCR0_ACTION=add PCR0_KEY=123 npx hardhat ignition deploy ignition/modules/scripts/updatePCR0.ts --network celo --reset",
+    "prettier:write": "prettier --write '**/*.{json,md,yml,sol,ts}'",
+    "prettier:check": "prettier --list-different '**/*.{json,md,yml,sol,ts}'"
   },
   "dependencies": {
     "@ashpect/smt": "https://github.com/ashpect/smt#main",
@@ -114,6 +111,8 @@
     "hardhat": "^2.22.6",
     "hardhat-gas-reporter": "^1.0.10",
     "mochawesome": "^7.1.3",
+    "prettier": "^3.5.3",
+    "prettier-plugin-solidity": "^2.0.0",
     "solidity-coverage": "^0.8.14",
     "ts-node": "^10.9.1",
     "typechain": "^8.3.2",

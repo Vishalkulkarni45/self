@@ -16,7 +16,7 @@ export type PassportData = {
   documentType: DocumentType;
 };
 
-export type DocumentType = "passport" | "mock_passport";
+export type DocumentType = "passport" | "id_card" | "mock_passport" | "mock_id_card";
 
 // Define the signature algorithm in "algorithm_hashfunction_domainPapameter_keyLength"
 export type SignatureAlgorithm =
