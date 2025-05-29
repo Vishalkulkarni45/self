@@ -1,15 +1,15 @@
-import React from 'react';
 import 'react-native-get-random-values';
 
 import { Buffer } from 'buffer';
+import React from 'react';
 import { YStack } from 'tamagui';
 
-import AppNavigation from './src/Navigation';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import AppNavigation from './src/navigation';
 import { initSentry, wrapWithSentry } from './src/Sentry';
-import { AppProvider } from './src/stores/appProvider';
 import { AuthProvider } from './src/stores/authProvider';
+import { DatabaseProvider } from './src/stores/databaseProvider';
 import { PassportProvider } from './src/stores/passportDataProvider';
-import { ProofProvider } from './src/stores/proofProvider';
 
 initSentry();
 
@@ -17,17 +17,17 @@ global.Buffer = Buffer;
 
 function App(): React.JSX.Element {
   return (
-    <YStack f={1} h="100%" w="100%">
-      <AuthProvider>
-        <PassportProvider>
-          <AppProvider>
-            <ProofProvider>
+    <ErrorBoundary>
+      <YStack f={1} h="100%" w="100%">
+        <AuthProvider>
+          <PassportProvider>
+            <DatabaseProvider>
               <AppNavigation />
-            </ProofProvider>
-          </AppProvider>
-        </PassportProvider>
-      </AuthProvider>
-    </YStack>
+            </DatabaseProvider>
+          </PassportProvider>
+        </AuthProvider>
+      </YStack>
+    </ErrorBoundary>
   );
 }
 

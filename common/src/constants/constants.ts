@@ -9,6 +9,8 @@ export const WS_RPC_URL_VC_AND_DISCLOSE = "ws://disclose.proving.self.xyz:8888/"
 export const WS_DB_RELAYER = 'wss://websocket.self.xyz';
 export const WS_DB_RELAYER_STAGING = 'wss://websocket.staging.self.xyz';
 export const API_URL = 'https://api.self.xyz';
+export const TREE_URL = 'https://tree.self.xyz';
+export const TREE_URL_STAGING = 'https://tree.staging.self.xyz';
 export const API_URL_STAGING = 'https://api.staging.self.xyz';
 export const CSCA_TREE_URL = 'https://tree.self.xyz/csca';
 export const DSC_TREE_URL = 'https://tree.self.xyz/dsc';
@@ -29,8 +31,15 @@ export const DEVELOPMENT_MODE = true;
 export const DEFAULT_MAJORITY = '18';
 
 export const hashAlgos = ['sha512', 'sha384', 'sha256', 'sha224', 'sha1'];
+export type hashAlgosTypes = 'sha512' | 'sha384' | 'sha256' | 'sha224' | 'sha1';
 export const saltLengths = [64, 48, 32];
 
+/**
+ * Maximum number of countries in the forbidden countries list.
+ * 
+ * IMPORTANT: This value must match in both backend and frontend SDK.
+ * Any mismatch will result in an INVALID_FORBIDDEN_COUNTRIES error.
+ */
 export const MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH = 40;
 
 export const DEPLOYED_CIRCUITS_REGISTER = [
@@ -214,6 +223,17 @@ export const attributeToPosition = {
   expiry_date: [65, 70],
   older_than: [88, 89],
   ofac: [90, 90],
+};
+export const attributeToPosition_ID = {
+  issuing_state: [2, 4],
+  name: [60, 89],
+  passport_number: [5, 13],
+  nationality: [45, 47],
+  date_of_birth: [30, 35],
+  gender: [37, 37],
+  expiry_date: [38, 43],
+  older_than: [90, 91],
+  ofac: [92, 92],
 };
 
 export const circuitToSelectorMode = {

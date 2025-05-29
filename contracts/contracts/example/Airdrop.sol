@@ -3,19 +3,18 @@ pragma solidity 0.8.28;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {SelfVerificationRoot} from "../abstract/SelfVerificationRoot.sol";
-import {ISelfVerificationRoot} from "../interfaces/ISelfVerificationRoot.sol";
-import {IIdentityVerificationHubV1} from "../interfaces/IIdentityVerificationHubV1.sol";
-import {IVcAndDiscloseCircuitVerifier} from "../interfaces/IVcAndDiscloseCircuitVerifier.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {CircuitConstants} from "../constants/CircuitConstants.sol";
+
+import {ISelfVerificationRoot} from "../interfaces/ISelfVerificationRoot.sol";
+
+import {SelfVerificationRoot} from "../abstract/SelfVerificationRoot.sol";
 
 /**
  * @title Airdrop (Experimental)
  * @notice This contract manages an airdrop campaign by verifying user registrations with zero‐knowledge proofs
  *         and distributing ERC20 tokens. It is provided for testing and demonstration purposes only.
  *         **WARNING:** This contract has not been audited and is NOT intended for production use.
- * @dev Inherits from PassportAirdropRoot for registration logic and Ownable for administrative control.
+ * @dev Inherits from SelfVerificationRoot for registration logic and Ownable for administrative control.
  */
 contract Airdrop is SelfVerificationRoot, Ownable {
     using SafeERC20 for IERC20;
@@ -35,8 +34,11 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     /// @notice Indicates whether the claim phase is active.
     bool public isClaimOpen;
 
-    mapping(uint256 => uint256) internal _nullifiers;
-    mapping(uint256 => bool) internal _registeredUserIdentifiers;
+    /// @notice Maps nullifiers to user identifiers for registration tracking
+    mapping(uint256 nullifier => uint256 userIdentifier) internal _nullifierToUserIdentifier;
+
+    /// @notice Maps user identifiers to registration status
+    mapping(uint256 userIdentifier => bool registered) internal _registeredUserIdentifiers;
 
     // ====================================================
     // Errors
@@ -54,9 +56,12 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     error RegistrationNotClosed();
     /// @notice Reverts when a claim is attempted while claiming is not enabled.
     error ClaimNotOpen();
-
-    error RegisteredNullifier();
+    /// @notice Reverts when an invalid user identifier is provided.
     error InvalidUserIdentifier();
+    /// @notice Reverts when a user identifier has already been registered
+    error UserIdentifierAlreadyRegistered();
+    /// @notice Reverts when a nullifier has already been registered
+    error RegisteredNullifier();
 
     // ====================================================
     // Events
@@ -76,7 +81,11 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     /// @notice Emitted when the claim phase is closed.
     event ClaimClose();
 
+    /// @notice Emitted when a user identifier is registered.
     event UserIdentifierRegistered(uint256 indexed registeredUserIdentifier, uint256 indexed nullifier);
+
+    /// @notice Emitted when the Merkle root is updated.
+    event MerkleRootUpdated(bytes32 newMerkleRoot);
 
     // ====================================================
     // Constructor
@@ -86,41 +95,19 @@ contract Airdrop is SelfVerificationRoot, Ownable {
      * @notice Constructor for the experimental Airdrop contract.
      * @dev Initializes the airdrop parameters, zero-knowledge verification configuration,
      *      and sets the ERC20 token to be distributed.
-     * @param _identityVerificationHub The address of the Identity Verification Hub.
-     * @param _scope The expected proof scope for user registration.
-     * @param _attestationId The expected attestation identifier required in proofs.
-     * @param _token The address of the ERC20 token for airdrop.
-     * @param _olderThanEnabled Flag indicating if 'olderThan' verification is enabled.
-     * @param _olderThan Value for 'olderThan' verification.
-     * @param _forbiddenCountriesEnabled Flag indicating if forbidden countries verification is enabled.
-     * @param _forbiddenCountriesListPacked Packed list of forbidden countries.
-     * @param _ofacEnabled Array of flags indicating which OFAC checks are enabled. [passportNo, nameAndDob, nameAndYob]
+     * @param identityVerificationHubAddress The address of the Identity Verification Hub.
+     * @param scopeValue The expected proof scope for user registration.
+     * @param attestationIds The expected attestation identifiers required in proofs.
+     * @param tokenAddress The address of the ERC20 token for airdrop.
      */
     constructor(
-        address _identityVerificationHub, 
-        uint256 _scope, 
-        uint256 _attestationId,
-        address _token,
-        bool _olderThanEnabled,
-        uint256 _olderThan,
-        bool _forbiddenCountriesEnabled,
-        uint256[4] memory _forbiddenCountriesListPacked,
-        bool[3] memory _ofacEnabled
-    ) 
-        SelfVerificationRoot(
-            _identityVerificationHub, 
-            _scope, 
-            _attestationId, 
-            _olderThanEnabled,
-            _olderThan,
-            _forbiddenCountriesEnabled,
-            _forbiddenCountriesListPacked,
-            _ofacEnabled
-        )
-        Ownable(_msgSender())
-    {
-        token = IERC20(_token);
-    }  
+        address identityVerificationHubAddress,
+        uint256 scopeValue,
+        uint256[] memory attestationIds,
+        address tokenAddress
+    ) SelfVerificationRoot(identityVerificationHubAddress, scopeValue, attestationIds) Ownable(_msgSender()) {
+        token = IERC20(tokenAddress);
+    }
 
     // ====================================================
     // External/Public Functions
@@ -129,10 +116,11 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     /**
      * @notice Sets the Merkle root for claim validation.
      * @dev Only callable by the contract owner.
-     * @param _merkleRoot The new Merkle root.
+     * @param newMerkleRoot The new Merkle root.
      */
-    function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
-        merkleRoot = _merkleRoot;
+    function setMerkleRoot(bytes32 newMerkleRoot) external onlyOwner {
+        merkleRoot = newMerkleRoot;
+        emit MerkleRootUpdated(newMerkleRoot);
     }
 
     /**
@@ -143,7 +131,37 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     function setVerificationConfig(
         ISelfVerificationRoot.VerificationConfig memory newVerificationConfig
     ) external onlyOwner {
-        _verificationConfig = newVerificationConfig;
+        _setVerificationConfig(newVerificationConfig);
+    }
+
+    /**
+     * @notice Updates the scope used for verification.
+     * @dev Only callable by the contract owner.
+     * @param newScope The new scope to set.
+     */
+    function setScope(uint256 newScope) external onlyOwner {
+        _setScope(newScope);
+        emit ScopeUpdated(newScope);
+    }
+
+    /**
+     * @notice Adds a new attestation ID to the allowed list.
+     * @dev Only callable by the contract owner.
+     * @param attestationId The attestation ID to add.
+     */
+    function addAttestationId(uint256 attestationId) external onlyOwner {
+        _addAttestationId(attestationId);
+        emit AttestationIdAdded(attestationId);
+    }
+
+    /**
+     * @notice Removes an attestation ID from the allowed list.
+     * @dev Only callable by the contract owner.
+     * @param attestationId The attestation ID to remove.
+     */
+    function removeAttestationId(uint256 attestationId) external onlyOwner {
+        _removeAttestationId(attestationId);
+        emit AttestationIdRemoved(attestationId);
     }
 
     /**
@@ -152,7 +170,7 @@ contract Airdrop is SelfVerificationRoot, Ownable {
      */
     function openRegistration() external onlyOwner {
         isRegistrationOpen = true;
-        emit RegistrationOpen();    
+        emit RegistrationOpen();
     }
 
     /**
@@ -183,55 +201,6 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     }
 
     /**
-     * @notice Registers a user's address by verifying a provided zero-knowledge proof.
-     * @dev Reverts if the registration phase is not open.
-     * @param proof The VC and Disclose proof data used to verify and register the user.
-     */
-    function verifySelfProof(
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory proof
-    ) 
-        public 
-        override 
-    {
-
-        if (!isRegistrationOpen) {
-            revert RegistrationNotOpen();
-        }
-        
-        if (_scope != proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_SCOPE_INDEX]) {
-            revert InvalidScope();
-        }
-
-        if (_attestationId != proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_ATTESTATION_ID_INDEX]) {
-            revert InvalidAttestationId();
-        }
-
-        if (_nullifiers[proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_NULLIFIER_INDEX]] != 0) {
-            revert RegisteredNullifier();
-        }
-        
-        if (proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX] == 0) {
-            revert InvalidUserIdentifier();
-        }
-
-        IIdentityVerificationHubV1.VcAndDiscloseVerificationResult memory result = _identityVerificationHub.verifyVcAndDisclose(
-            IIdentityVerificationHubV1.VcAndDiscloseHubProof({
-                olderThanEnabled: _verificationConfig.olderThanEnabled,
-                olderThan: _verificationConfig.olderThan,
-                forbiddenCountriesEnabled: _verificationConfig.forbiddenCountriesEnabled,
-                forbiddenCountriesListPacked: _verificationConfig.forbiddenCountriesListPacked,
-                ofacEnabled: _verificationConfig.ofacEnabled,
-                vcAndDiscloseProof: proof
-            })
-        );
-
-        _nullifiers[result.nullifier] = proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX];
-        _registeredUserIdentifiers[proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX]] = true;
-
-        emit UserIdentifierRegistered(proof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX], result.nullifier);
-    }
-
-    /**
      * @notice Retrieves the expected proof scope.
      * @return The scope value used for registration verification.
      */
@@ -240,20 +209,12 @@ contract Airdrop is SelfVerificationRoot, Ownable {
     }
 
     /**
-     * @notice Retrieves the expected attestation identifier.
-     * @return The attestation identifier.
+     * @notice Checks if the specified attestation ID is allowed.
+     * @param attestationId The attestation ID to check.
+     * @return True if the attestation ID is allowed, false otherwise.
      */
-    function getAttestationId() external view returns (uint256) {
-        return _attestationId;
-    }
-
-    /**
-     * @notice Retrieves the stored nullifier for a given key.
-     * @param nullifier The nullifier to query.
-     * @return The user identifier associated with the nullifier.
-     */
-    function getNullifier(uint256 nullifier) external view returns (uint256) {
-        return _nullifiers[nullifier];
+    function isAttestationIdAllowed(uint256 attestationId) external view returns (bool) {
+        return _attestationIdToEnabled[attestationId];
     }
 
     /**
@@ -261,7 +222,7 @@ contract Airdrop is SelfVerificationRoot, Ownable {
      * @return The verification configuration used for registration.
      */
     function getVerificationConfig() external view returns (ISelfVerificationRoot.VerificationConfig memory) {
-        return _verificationConfig;
+        return _getVerificationConfig();
     }
 
     /**
@@ -281,11 +242,7 @@ contract Airdrop is SelfVerificationRoot, Ownable {
      * @param amount The amount of tokens to be claimed.
      * @param merkleProof The Merkle proof verifying the claim.
      */
-    function claim(
-        uint256 index,
-        uint256 amount,
-        bytes32[] memory merkleProof
-    ) external {
+    function claim(uint256 index, uint256 amount, bytes32[] memory merkleProof) external {
         if (isRegistrationOpen) {
             revert RegistrationNotClosed();
         }
@@ -305,9 +262,51 @@ contract Airdrop is SelfVerificationRoot, Ownable {
 
         // Mark as claimed and transfer tokens.
         _setClaimed();
-        IERC20(token).safeTransfer(msg.sender, amount);
+        token.safeTransfer(msg.sender, amount);
 
         emit Claimed(index, msg.sender, amount);
+    }
+
+    // ====================================================
+    // Override Functions from SelfVerificationRoot
+    // ====================================================
+
+    /**
+     * @notice Hook called after successful verification - handles user registration
+     * @dev Validates registration conditions and registers the user
+     * @param userIdentifier The user identifier from the proof
+     * @param nullifier The nullifier from the proof
+     */
+    function onBasicVerificationSuccess(
+        uint256[3] memory /* revealedDataPacked */,
+        uint256 userIdentifier,
+        uint256 nullifier
+    ) internal override {
+        // Check if registration is open
+        if (!isRegistrationOpen) {
+            revert RegistrationNotOpen();
+        }
+
+        // Check if nullifier has already been registered
+        if (_nullifierToUserIdentifier[nullifier] != 0) {
+            revert RegisteredNullifier();
+        }
+
+        // Check if user identifier is valid
+        if (userIdentifier == 0) {
+            revert InvalidUserIdentifier();
+        }
+
+        // Check if user identifier has already been registered
+        if (_registeredUserIdentifiers[userIdentifier]) {
+            revert UserIdentifierAlreadyRegistered();
+        }
+
+        _nullifierToUserIdentifier[nullifier] = userIdentifier;
+        _registeredUserIdentifiers[userIdentifier] = true;
+
+        // Emit registration event
+        emit UserIdentifierRegistered(userIdentifier, nullifier);
     }
 
     // ====================================================
