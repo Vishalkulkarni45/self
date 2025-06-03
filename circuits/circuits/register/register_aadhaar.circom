@@ -2,8 +2,8 @@ pragma circom 2.1.9;
 
 include "circomlib/circuits/bitify.circom";
 include "circomlib/circuits/poseidon.circom";
-//include "annon-aadhaar/packages/circuits/src/helpers/signature.circom";
-include "@anon-aadhaar/circuits/helpers/signature.circom";
+include "anon-aadhaar-circuits/src/helpers/signature.circom";
+
 /// @title: AadhaarRegister
 /// @notice Main circuit — verifies the integrity of the aadhaar data, the signature, and generates commitment and nullifier
 /// @param n RSA pubic key size per chunk
@@ -15,7 +15,6 @@ include "@anon-aadhaar/circuits/helpers/signature.circom";
 /// @input signature RSA signature
 /// @input pubKey RSA public key (of the government)
 
-// TODO: Import SignatureVerifier from @annon-aadhaar/circuits
 
 template REGISTER_AADHAAR(n, k, maxDataLength){
 
@@ -24,7 +23,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input pubKey[k];
     signal input signature[k];
 
-    //signal output pubkeyHash;
+    signal output pubkeyHash;
 
   // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
   //TODO: how to use log2Ceil?
@@ -40,6 +39,14 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     // signatureVerifier.pubKey <== pubKey;
     // signatureVerifier.signature <== signature;
     // pubkeyHash <== signatureVerifier.pubkeyHash;
+
+
+    // Assert data between qrDataPaddedLength and maxDataLength is zero
+    AssertZeroPadding(maxDataLength)(qrDataPadded, qrDataPaddedLength);
+
+    
+
+
 
 
 }

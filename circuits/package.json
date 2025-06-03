@@ -28,6 +28,7 @@
     "test-rsa-pss": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/rsapss.test.ts' --exit"
   },
   "dependencies": {
+    "@anon-aadhaar/core": "^2.4.3",
     "@noble/curves": "^1.4.2",
     "@openpassport/zk-email-circuits": "^6.1.2",
     "@openpassport/zk-kit-imt": "^0.0.4",
@@ -41,7 +42,7 @@
     "@zk-email/zk-regex-circom": "^1.2.1",
     "@zk-kit/binary-merkle-root.circom": "^1.0.0",
     "@zk-kit/circuits": "^1.0.0-beta",
-    "anon-aadhaar": "https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/circuits?main",
+    "anon-aadhaar-circuits": "https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/circuits?main",
     "asn1": "^0.2.6",
     "asn1.js": "^5.4.1",
     "asn1js": "^3.0.5",

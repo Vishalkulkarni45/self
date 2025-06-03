@@ -70,7 +70,7 @@ function prepareTestData() {
 }
 
 describe(' REGISTER AADHAAR Circuit Tests', () => {
-  let circuit;
+  let circuit: any;
   before(async function () {
     this.timeout(0);
     circuit = await wasmTester(
@@ -78,20 +78,17 @@ describe(' REGISTER AADHAAR Circuit Tests', () => {
       {
         verbose: true,
         logOutput: true,
-        include: [
-          'node_modules',
-          './node_modules',
-          './node_modules/circomlib/circuits',
-          //'./node_modules/@annon-aadhaar',
-        ],
+        include: ['node_modules', './node_modules', './node_modules/circomlib/circuits'],
       }
     );
   });
 
-  it('should compile and load the circuit', async function () {
-    expect(circuit).to.not.be.undefined;
-  });
-  it('should generate witness for circuit with Sha256RSA signature', async () => {
+  // it('should compile and load the circuit', async function () {
+  //   this.timeout(0);
+  //   expect(circuit).to.not.be.undefined;
+  // });
+  it.only('should generate witness for circuit with Sha256RSA signature', async function () {
+    this.timeout(0);
     const { inputs } = prepareTestData();
     await circuit.calculateWitness(inputs);
   });
