@@ -1,12 +1,12 @@
 pragma circom 2.1.9;
 
-include "anon-aadhaar-circuits/src/helpers/extractor.circom";
 include "anon-aadhaar-circuits/src/helpers/constants.circom";
 include "anon-aadhaar-circuits/src/utils/pack.circom";
 include "circomlib/circuits/comparators.circom";
 include "circomlib/circuits/bitify.circom";
-include "@zk-email/circuits/utils/array.circom";
-include "@zk-email/circuits/utils/bytes.circom";
+include "circomlib/circuits/poseidon.circom";
+include "../passport/customHashers.circom";
+
 
 /// @title DOBExtractor
 /// @notice Extract date of birth from the Aadhaar QR data
@@ -37,27 +37,22 @@ template DOBExtractor(maxDataLength) {
     signal output month <== DigitBytesToInt(2)([shiftedBytes[4], shiftedBytes[5]]);
     signal output day <== DigitBytesToInt(2)([shiftedBytes[1], shiftedBytes[2]]);
 
-    log("year", year);
-    log("month", month);
-    log("day", day);
-
-
     nDelimitedDataShiftedToDob <== shiftedBytes;
 }
 
 /// @title NameExtractor
-/// @notice Extracts Name and returns PackByte of name
+/// @notice Extracts Name and  returns hash of name
 /// @notice This assumes max name length  62 bytes
 /// @param maxDataLength - Maximum length of the data
 /// @param extractPosition - Position of the data to extract (after which delimiter does the data start)
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input delimiterIndices - indices of the delimiters in the QR data
 /// @output out - 2 field (int) element representing the data in big endian order (reverse string when decoded)
-template NameExtractor(maxDataLength) {
+template NameHashExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input delimiterIndices[18];
 
-    signal output out[2];
+    signal output out;
 
     signal startDelimiterIndex <== delimiterIndices[namePosition() - 1];
     signal endDelimiterIndex <== delimiterIndices[namePosition()];
@@ -82,12 +77,34 @@ template NameExtractor(maxDataLength) {
     endDelimiterSelector.out === (namePosition() + 1) * 255;
 
     // Pack byte[] to int[] where int is field element which take up to 31 bytes
-    component outInt = PackBytes(nameMaxLength);
+    component outInt = PackBytesAndPoseidon(nameMaxLength);
     for (var i = 0; i < nameMaxLength; i ++) {
         outInt.in[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
     }
 
     out <== outInt.out;
+}
+
+
+/// @title GenderExtractor
+/// @notice Extracts the Gender from the Aadhaar QR data and returns as Unix timestamp
+/// @input nDelimitedDataShiftedToDob[maxDataLength] - QR data where each delimiter is 255 * n
+///     where n is order of the data shifted till DOB index
+/// @input startDelimiterIndex - index of the delimiter after
+/// @output out Single byte number representing gender
+template GenderExtractor(maxDataLength) {
+    signal input nDelimitedDataShiftedToDob[maxDataLength];
+
+    signal output out;
+
+    // Gender is always 1 byte and is immediate after DOB
+    // We use nDelimitedDataShiftedToDob and start after 10 + 1 bytes of DOB data
+    // This is more efficient than using ItemAtIndex thrice (for startIndex, gender, endIndex)
+    // saves around 14k constraints
+    nDelimitedDataShiftedToDob[11] === genderPosition() * 255;
+    nDelimitedDataShiftedToDob[13] === (genderPosition() + 1) * 255;
+
+    out <== nDelimitedDataShiftedToDob[12];
 }
 
 
@@ -128,18 +145,19 @@ template EXTRACT_QR_DATA(maxDataLength) {
     }
 
     //Extract name and hash
-    component nameExtractor = NameExtractor(maxDataLength);
-    nameExtractor.nDelimitedData <== nDelimitedData;
-    nameExtractor.delimiterIndices <== delimiterIndices;
-    nameHash <== Poseidon(2)(nameExtractor.out);
+    component nameHashExtractor = NameHashExtractor(maxDataLength);
+    nameHashExtractor.nDelimitedData <== nDelimitedData;
+    nameHashExtractor.delimiterIndices <== delimiterIndices;
+    nameHash <== nameHashExtractor.out;
+
 
     //Extract last 4 digit of Aadhar no
     signal output aadhaar_last_4digits <== DigitBytesToInt(4)([nDelimitedData[5],nDelimitedData[6],nDelimitedData[7],nDelimitedData[8]]);
 
     // Extract date of birth
     component dobExtractor = DOBExtractor(maxDataLength);
-    ageExtractor.nDelimitedData <== nDelimitedData;
-    ageExtractor.startDelimiterIndex <== delimiterIndices[dobPosition() - 1];
+    dobExtractor.nDelimitedData <== nDelimitedData;
+    dobExtractor.startDelimiterIndex <== delimiterIndices[dobPosition() - 1];
 
     dobHash <== Poseidon(3)([
         dobExtractor.year,

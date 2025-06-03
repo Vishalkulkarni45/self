@@ -69,16 +69,16 @@ function prepareTestData() {
   };
 }
 
-describe(' REGISTER AADHAAR Circuit Tests', () => {
+describe(' REGISTER AADHAAR Circuit Tests', function () {
   let circuit: any;
-  before(async function () {
+  this.beforeAll(async function () {
     this.timeout(0);
     circuit = await wasmTester(
       path.join(__dirname, '../../circuits/register/register_aadhaar.circom'),
       {
         verbose: true,
         logOutput: true,
-        include: ['node_modules', './node_modules', './node_modules/circomlib/circuits'],
+        include: ['node_modules'],
       }
     );
   });
@@ -90,6 +90,7 @@ describe(' REGISTER AADHAAR Circuit Tests', () => {
   it.only('should generate witness for circuit with Sha256RSA signature', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
-    await circuit.calculateWitness(inputs);
+    const w = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(w);
   });
 });
