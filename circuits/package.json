@@ -23,10 +23,12 @@
     "test-not-in-list": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/prove_country_is_not_in_list.test.ts' --exit",
     "test-ofac": "yarn ts-mocha --max-old-space-size=8192 'tests/ofac/ofac.test.ts' --exit",
     "test-register": "yarn ts-mocha --max-old-space-size=40960 'tests/register/register.test.ts' --exit",
+    "test-register-aadhaar": "yarn ts-mocha --max-old-space-size=40960 'tests/register/register_aadhaar.test.ts' --exit",
     "test-rsa": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/rsaPkcs1v1_5.test.ts' --exit",
     "test-rsa-pss": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/rsapss.test.ts' --exit"
   },
   "dependencies": {
+    "@anon-aadhaar/core": "^2.4.3",
     "@noble/curves": "^1.4.2",
     "@openpassport/zk-email-circuits": "^6.1.2",
     "@openpassport/zk-kit-imt": "^0.0.4",
@@ -40,6 +42,7 @@
     "@zk-email/zk-regex-circom": "^1.2.1",
     "@zk-kit/binary-merkle-root.circom": "^1.0.0",
     "@zk-kit/circuits": "^1.0.0-beta",
+    "anon-aadhaar": "https://github.com/anon-aadhaar/anon-aadhaar.git#main",
     "asn1": "^0.2.6",
     "asn1.js": "^5.4.1",
     "asn1js": "^3.0.5",
@@ -71,5 +74,6 @@
     "prettier": "^3.3.3",
     "ts-mocha": "^10.0.0",
     "ts-node": "^10.9.2"
-  }
+  },
+  "packageManager": "yarn@4.5.3+sha512.3003a14012e2987072d244c720506549c1aab73ee728208f1b2580a9fd67b92d61ba6b08fe93f6dce68fd771e3af1e59a0afa28dd242dd0940d73b95fedd4e90"
 }

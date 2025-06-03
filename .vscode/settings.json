@@ -1,7 +1,7 @@
 {
   // Formatting & Linting
-  "editor.formatOnSave": false,
-  "editor.formatOnPaste": false,
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
 
   // Path-specific formatting
   "[**/app/**]": {
