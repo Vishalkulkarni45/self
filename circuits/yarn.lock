@@ -974,7 +974,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@zk-email/circuits@npm:^6.3.2":
+"@zk-email/circuits@npm:^6.1.1, @zk-email/circuits@npm:^6.3.2":
   version: 6.3.3
   resolution: "@zk-email/circuits@npm:6.3.3"
   dependencies:
@@ -1085,10 +1085,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"anon-aadhaar@https://github.com/anon-aadhaar/anon-aadhaar.git#main":
+"anon-aadhaar@https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/circuits?main":
   version: 2.4.3
-  resolution: "anon-aadhaar@https://github.com/anon-aadhaar/anon-aadhaar.git#commit=4dad918761cfb1d7d5ed9918dcd796d0cb23ae82"
-  checksum: 10c0/7c52949ac03d9f5e0368f55ccf6f04080eec6dd1ec9e16ace8ed325ebd59903d7555358019feb409665502f9f3922b3e3eaaa34c8ae4e315818b0def96880d39
+  resolution: "anon-aadhaar@https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/circuits?main"
+  dependencies:
+    "@anon-aadhaar/core": "npm:^2.4.3"
+    "@zk-email/circuits": "npm:^6.1.1"
+  checksum: 10c0/e2ca3729d5794f5e7fc5e5788466792ba491ff8e8fca38ae4fb5efc578039a640b46da2c1b949560b8c766cc9e1fd0d039ffc0ab2a79d29879b3d6b9d14eb3fe
   languageName: node
   linkType: hard
 
@@ -1682,7 +1685,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "circom-passport@workspace:."
   dependencies:
-    "@anon-aadhaar/core": "npm:^2.4.3"
     "@noble/curves": "npm:^1.4.2"
     "@openpassport/zk-email-circuits": "npm:^6.1.2"
     "@openpassport/zk-kit-imt": "npm:^0.0.4"
@@ -1700,7 +1702,7 @@ __metadata:
     "@zk-email/zk-regex-circom": "npm:^1.2.1"
     "@zk-kit/binary-merkle-root.circom": "npm:^1.0.0"
     "@zk-kit/circuits": "npm:^1.0.0-beta"
-    anon-aadhaar: "https://github.com/anon-aadhaar/anon-aadhaar.git#main"
+    anon-aadhaar: "https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/circuits?main"
     asn1: "npm:^0.2.6"
     asn1.js: "npm:^5.4.1"
     asn1js: "npm:^3.0.5"
