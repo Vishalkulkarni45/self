@@ -2,7 +2,9 @@ pragma circom 2.1.9;
 
 include "circomlib/circuits/bitify.circom";
 include "circomlib/circuits/poseidon.circom";
-include "anon-aadhaar-circuits/src/helpers/signature.circom";
+include "../utils/aadhaar/extractQrData.circom";
+include "../utils/aadhaar/signature.circom";
+include "../utils/passport/customHashers.circom";
 
 /// @title: AadhaarRegister
 /// @notice Main circuit — verifies the integrity of the aadhaar data, the signature, and generates commitment and nullifier
@@ -15,15 +17,21 @@ include "anon-aadhaar-circuits/src/helpers/signature.circom";
 /// @input signature RSA signature
 /// @input pubKey RSA public key (of the government)
 
+/// @output nullifier Generated nullifier - deterministic on the Aadhaar data
+/// @output commitment Commitment that will be added to the onchain registration tree
 
 template REGISTER_AADHAAR(n, k, maxDataLength){
 
     signal input qrDataPadded[maxDataLength];
     signal input qrDataPaddedLength;
+    signal input delimiterIndices[18];
     signal input pubKey[k];
     signal input signature[k];
 
-    signal output pubkeyHash;
+    signal input secret;
+    // Aadhaar = 6
+    signal input attestation_id;
+
 
   // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
   //TODO: how to use log2Ceil?
@@ -31,23 +39,38 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     component n2bHeaderLength = Num2Bits(11);
     n2bHeaderLength.in <== qrDataPaddedLength;
 
-    // optimize: SigVerify internally hashes the pubkey if not needed we can remove it .
     // Verify the RSA signature
-    // component signatureVerifier = SignatureVerifier(n, k, maxDataLength);
-    // signatureVerifier.qrDataPadded <== qrDataPadded;
-    // signatureVerifier.qrDataPaddedLength <== qrDataPaddedLength;
-    // signatureVerifier.pubKey <== pubKey;
-    // signatureVerifier.signature <== signature;
-    // pubkeyHash <== signatureVerifier.pubkeyHash;
+    component signatureVerifier = SignatureVerifier(n, k, maxDataLength);
+    signatureVerifier.qrDataPadded <== qrDataPadded;
+    signatureVerifier.qrDataPaddedLength <== qrDataPaddedLength;
+    signatureVerifier.pubKey <== pubKey;
+    signatureVerifier.signature <== signature;
+
 
 
     // Assert data between qrDataPaddedLength and maxDataLength is zero
     AssertZeroPadding(maxDataLength)(qrDataPadded, qrDataPaddedLength);
 
-    
+    component qrDataExtractor = EXTRACT_QR_DATA(maxDataLength);
+    qrDataExtractor.data <== qrDataPadded;
+    qrDataExtractor.qrDataPaddedLength <== qrDataPaddedLength;
+    qrDataExtractor.delimiterIndices <== delimiterIndices;
+
+    signal output nullifier <== Poseidon(4)([
+        qrDataExtractor.gender,
+        qrDataExtractor.dobHash,
+        qrDataExtractor.nameHash,
+        qrDataExtractor.aadhaar_last_4digits
+    ]);
 
 
+    signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
+    signal output commitment <== Poseidon(3)([
+        attestation_id,
+        secret,
+        qrDataHash
+    ]);
 
 }
 

@@ -20,6 +20,8 @@ import fs from 'fs';
 import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
+import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
+import { poseidon3, poseidon4 } from 'poseidon-lite';
 
 let QRData: string = testQRData;
 
@@ -52,20 +54,31 @@ function prepareTestData() {
     '0x' + bufferToHex(Buffer.from(pk.export({ format: 'jwk' }).n as string, 'base64url'))
   );
 
+  const paddedName = 'Sumit Kumar'
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
+  const dobHash = poseidon3(['1984', '1', '1']);
+
+  const nullifier = poseidon4([BigInt(77), dobHash, nameHash, BigInt(2697)]);
+  const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
+  const commitment = poseidon3([BigInt(6), BigInt(1234), qrHash]);
+
   const inputs = {
     qrDataPadded: Uint8ArrayToCharArray(qrDataPadded),
     qrDataPaddedLength: qrDataPaddedLen,
+    delimiterIndices: delimiterIndices,
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
+    secret: '1234',
+    attestation_id: '6',
   };
 
   return {
     inputs,
-    qrDataPadded,
-    signedData,
-    decodedData,
-    pubKey,
-    qrDataPaddedLen,
+    nullifier,
+    commitment,
   };
 }
 
@@ -83,14 +96,24 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     );
   });
 
-  // it('should compile and load the circuit', async function () {
-  //   this.timeout(0);
-  //   expect(circuit).to.not.be.undefined;
-  // });
-  it.only('should generate witness for circuit with Sha256RSA signature', async function () {
+  it('should compile and load the circuit', async function () {
+    this.timeout(0);
+    expect(circuit).to.not.be.undefined;
+  });
+  it('should pass constrain check for circuit with Sha256RSA signature', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
+  });
+  it('should pass constrain and output correct nullifier and commitment', async function () {
+    this.timeout(0);
+    const { inputs, nullifier, commitment } = prepareTestData();
+    const w = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(w);
+
+    const out = await circuit.getOutput(w, ['nullifier', 'commitment']);
+    assert(BigInt(out.nullifier) === nullifier);
+    assert(BigInt(out.commitment) === commitment);
   });
 });
