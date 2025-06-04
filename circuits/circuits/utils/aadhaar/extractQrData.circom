@@ -41,18 +41,18 @@ template DOBExtractor(maxDataLength) {
 }
 
 /// @title NameExtractor
-/// @notice Extracts Name and  returns hash of name
+/// @notice Extracts Name
 /// @notice This assumes max name length  62 bytes
 /// @param maxDataLength - Maximum length of the data
 /// @param extractPosition - Position of the data to extract (after which delimiter does the data start)
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input delimiterIndices - indices of the delimiters in the QR data
 /// @output out - 2 field (int) element representing the data in big endian order (reverse string when decoded)
-template NameHashExtractor(maxDataLength) {
+template NameExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input delimiterIndices[18];
 
-    signal output out;
+    signal output out[2];
 
     signal startDelimiterIndex <== delimiterIndices[namePosition() - 1];
     signal endDelimiterIndex <== delimiterIndices[namePosition()];
@@ -77,7 +77,7 @@ template NameHashExtractor(maxDataLength) {
     endDelimiterSelector.out === (namePosition() + 1) * 255;
 
     // Pack byte[] to int[] where int is field element which take up to 31 bytes
-    component outInt = PackBytesAndPoseidon(nameMaxLength);
+    component outInt = PackBytes(nameMaxLength);
     for (var i = 0; i < nameMaxLength; i ++) {
         outInt.in[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
     }
@@ -107,15 +107,78 @@ template GenderExtractor(maxDataLength) {
     out <== nDelimitedDataShiftedToDob[12];
 }
 
+/// @title PinCodeExtractor
+/// @notice Extracts the pin code from the Aadhaar QR data
+/// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
+/// @input startDelimiterIndex - index of the delimiter after which the pin code start
+/// @input endDelimiterIndex - index of the delimiter up to which the pin code is present
+/// @output out - pinCode as integer
+template PinCodeExtractor(maxDataLength) {
+    signal input nDelimitedData[maxDataLength];
+    signal input startDelimiterIndex;
+    signal input endDelimiterIndex;
+
+    signal output out;
+
+    var pinCodeMaxLength = 6;
+    var byteLength = pinCodeMaxLength + 2; // 2 delimiters
+
+    component subArraySelector = SelectSubArray(maxDataLength, byteLength);
+    subArraySelector.in <== nDelimitedData;
+    subArraySelector.startIndex <== startDelimiterIndex;
+    subArraySelector.length <== endDelimiterIndex - startDelimiterIndex + 1;
+
+    signal shiftedBytes[byteLength] <== subArraySelector.out;
+
+    // Assert delimiters around the data is correct
+    shiftedBytes[0] === pinCodePosition() * 255;
+    shiftedBytes[7] === (pinCodePosition() + 1) * 255;
+
+    out <== DigitBytesToInt(6)([shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4], shiftedBytes[5], shiftedBytes[6]]);
+}
+
+function phnoPosition() {
+    return 17;
+}
+
+template PhnoLast4DigitCodeExtractor(maxDataLength) {
+    signal input nDelimitedData[maxDataLength];
+    signal input startDelimiterIndex;
+    signal input endDelimiterIndex;
+
+    signal output out;
+
+    var pinCodeMaxLength = 4;
+    var byteLength = pinCodeMaxLength + 2; // 2 delimiters
+
+    component subArraySelector = SelectSubArray(maxDataLength, byteLength);
+    subArraySelector.in <== nDelimitedData;
+    subArraySelector.startIndex <== startDelimiterIndex;
+    subArraySelector.length <== endDelimiterIndex - startDelimiterIndex + 1;
+
+    signal shiftedBytes[byteLength] <== subArraySelector.out;
+
+    // Assert delimiters around the data is correct
+    shiftedBytes[0] === phnoPosition() * 255;
+    shiftedBytes[5] === (phnoPosition() + 1) * 255;
+
+    out <== DigitBytesToInt(4)([shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]]);
+}
+
 
 template EXTRACT_QR_DATA(maxDataLength) {
     signal input data[maxDataLength];
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
 
-    signal output nameHash;
-    signal output dobHash;
+    signal output name[2];
+    signal output yob;
+    signal output mob;
+    signal output dob;
     signal output gender;
+    signal output pincode;
+    signal output aadhaar_last_4digits;
+    signal output ph_no_last_4digits;
 
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255
@@ -145,25 +208,23 @@ template EXTRACT_QR_DATA(maxDataLength) {
     }
 
     //Extract name and hash
-    component nameHashExtractor = NameHashExtractor(maxDataLength);
-    nameHashExtractor.nDelimitedData <== nDelimitedData;
-    nameHashExtractor.delimiterIndices <== delimiterIndices;
-    nameHash <== nameHashExtractor.out;
+    component nameExtractor = NameExtractor(maxDataLength);
+    nameExtractor.nDelimitedData <== nDelimitedData;
+    nameExtractor.delimiterIndices <== delimiterIndices;
+    name <== nameExtractor.out;
 
 
     //Extract last 4 digit of Aadhar no
-    signal output aadhaar_last_4digits <== DigitBytesToInt(4)([nDelimitedData[5],nDelimitedData[6],nDelimitedData[7],nDelimitedData[8]]);
+    aadhaar_last_4digits <== DigitBytesToInt(4)([nDelimitedData[5],nDelimitedData[6],nDelimitedData[7],nDelimitedData[8]]);
 
     // Extract date of birth
     component dobExtractor = DOBExtractor(maxDataLength);
     dobExtractor.nDelimitedData <== nDelimitedData;
     dobExtractor.startDelimiterIndex <== delimiterIndices[dobPosition() - 1];
 
-    dobHash <== Poseidon(3)([
-        dobExtractor.year,
-        dobExtractor.month,
-        dobExtractor.day
-    ]);
+    yob <== dobExtractor.year;
+    mob <== dobExtractor.month;
+    dob <== dobExtractor.day;
 
     // Extract gender
     // dobExtractor returns data shifted till DOB. Since size for DOB data is fixed,
@@ -171,5 +232,18 @@ template EXTRACT_QR_DATA(maxDataLength) {
     component genderExtractor = GenderExtractor(maxDataLength);
     genderExtractor.nDelimitedDataShiftedToDob <== dobExtractor.nDelimitedDataShiftedToDob;
     gender <== genderExtractor.out;
+
+    component pinCodeExtractor = PinCodeExtractor(maxDataLength);
+    pinCodeExtractor.nDelimitedData <== nDelimitedData;
+    pinCodeExtractor.startDelimiterIndex <== delimiterIndices[pinCodePosition() - 1];
+    pinCodeExtractor.endDelimiterIndex <== delimiterIndices[pinCodePosition()];
+    pincode <== pinCodeExtractor.out;
+
+    // Extract last 4 digits of phone number
+    component phnoLast4DigitCodeExtractor = PhnoLast4DigitCodeExtractor(maxDataLength);
+    phnoLast4DigitCodeExtractor.nDelimitedData <== nDelimitedData;
+    phnoLast4DigitCodeExtractor.startDelimiterIndex <== delimiterIndices[phnoPosition() - 1];
+    phnoLast4DigitCodeExtractor.endDelimiterIndex <== delimiterIndices[phnoPosition()];
+    ph_no_last_4digits <== phnoLast4DigitCodeExtractor.out;
 
 }

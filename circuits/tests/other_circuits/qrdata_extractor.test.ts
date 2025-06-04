@@ -7,7 +7,7 @@ import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format';
 import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@anon-aadhaar/core';
 import { assert } from 'chai';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon3 } from 'poseidon-lite';
+import { poseidon2, poseidon3 } from 'poseidon-lite';
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;
@@ -33,6 +33,7 @@ describe('Aadhaar QR Data Extractor1', function () {
   });
 
   it.only('should extract qr data', async function () {
+    this.timeout(0);
     const QRDataBytes = convertBigIntToByteArray(BigInt(testQRData));
     const QRDataDecode = decompressByteArray(QRDataBytes);
 
@@ -57,14 +58,17 @@ describe('Aadhaar QR Data Extractor1', function () {
     });
 
     const out = await circuit.getOutput(witness, [
+      'name[2]',
+      'yob',
+      'mob',
+      'dob',
       'gender',
-      'nameHash',
-      'dobHash',
+      'pincode',
       'aadhaar_last_4digits',
+      'ph_no_last_4digits',
     ]);
-    await circuit.checkConstraints(witness);
 
-    assert(Number(out.gender) === 77);
+    await circuit.checkConstraints(witness);
 
     const paddedName = 'Sumit Kumar'
       .padEnd(62, '\0')
@@ -72,11 +76,14 @@ describe('Aadhaar QR Data Extractor1', function () {
       .map((char) => char.charCodeAt(0));
 
     const expNameHash = BigInt(packBytesAndPoseidon(paddedName));
-    assert(BigInt(out.nameHash) === expNameHash);
+      assert(poseidon2([out['name[0]'], out['name[1]']]) === expNameHash);
 
-    const expDobHash = poseidon3(['1984', '1', '1']);
-    assert(BigInt(out.dobHash) === expDobHash);
-
+    assert(Number(out.yob) === 1984);
+    assert(Number(out.mob) === 1);
+    assert(Number(out.dob) === 1);
+    assert(Number(out.gender) === 77);
+    assert(Number(out.pincode) === 110051);
     assert(Number(out.aadhaar_last_4digits) === 2697);
+    assert(Number(out.ph_no_last_4digits) === 1234);
   });
 });
