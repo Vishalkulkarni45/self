@@ -1,0 +1,20 @@
+pragma circom 2.1.9;
+
+include "circomlib/circuits/poseidon.circom";
+include "../../crypto/merkle-trees/smt.circom";
+
+template OFAC_NAME_DOB_AADHAAR(nLevels) {
+    signal input name[2];
+
+    signal input YOB;
+    signal input MOB;
+    signal input DOB;
+
+    signal input smt_leaf_key;
+    signal input smt_root;
+    signal input smt_siblings[nLevels];
+
+    signal name_dob_hash <== Poseidon(5)([YOB, MOB, DOB, name[0], name[1]]);
+
+    signal output ofacCheckResult <== SMTVerify(nLevels)(name_dob_hash, smt_leaf_key, smt_root, smt_siblings, 0);
+}

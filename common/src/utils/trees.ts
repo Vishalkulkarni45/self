@@ -3,7 +3,15 @@ import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { ChildNodes, SMT } from '@openpassport/zk-kit-smt';
 import countries from 'i18n-iso-countries';
 import en from 'i18n-iso-countries/langs/en.json';
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon4, poseidon6 } from 'poseidon-lite';
+import {
+  poseidon1,
+  poseidon12,
+  poseidon13,
+  poseidon2,
+  poseidon3,
+  poseidon4,
+  poseidon6,
+} from 'poseidon-lite';
 import {
   CSCA_TREE_DEPTH,
   DSC_TREE_DEPTH,
@@ -460,16 +468,86 @@ export function getDobLeaf(dobMrz: (bigint | number)[], i?: number): bigint {
   }
 }
 
-//TODO: Check how aadhaar does it
-const processNameHashAadhaar = (firstName: string, lastName: string, i: number): bigint => {
-  firstName = firstName.replace(/'/g, '');
-  firstName = firstName.replace(/\./g, '');
-  firstName = firstName.replace(/[- ]/g, '<');
-  lastName = lastName.replace(/'/g, '');
-  lastName = lastName.replace(/[- ]/g, '<');
-  lastName = lastName.replace(/\./g, '');
+//---------------------------
 
-  //TODO: check if smile id does first name and last name || last name and first name
+// AADHAAR
+
+//---------------------------
+
+export function buildAadhaarSMT(field: any[], treetype: string): [number, number, SMT] {
+  let count = 0;
+  let startTime = performance.now();
+
+  const hash2 = (childNodes: ChildNodes) =>
+    childNodes.length === 2 ? poseidon2(childNodes) : poseidon3(childNodes);
+  const tree = new SMT(hash2, true);
+
+  for (let i = 0; i < field.length; i++) {
+    const entry = field[i];
+
+    if (i !== 0) {
+      console.log('Processing', treetype, 'number', i, 'out of', field.length);
+    }
+
+    let leaf = BigInt(0);
+    if (treetype == 'name_and_dob') {
+      leaf = processNameAndDobAadhaar(entry, i);
+    } else if (treetype == 'name_and_yob') {
+      leaf = processNameAndYobAadhaar(entry, i);
+    }
+
+    if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
+      console.log('This entry already exists in the tree, skipping...');
+      continue;
+    }
+
+    count += 1;
+    tree.add(leaf, BigInt(1));
+  }
+
+  console.log('Total', treetype, 'paresed are : ', count, ' over ', field.length);
+  console.log(treetype, 'tree built in', performance.now() - startTime, 'ms');
+  return [count, performance.now() - startTime, tree];
+}
+
+const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
+  const firstName = entry.First_Name;
+  const lastName = entry.Last_Name;
+  const day = entry.day;
+  const month = entry.month;
+  const year = entry.year;
+
+  if (day == null || month == null || year == null) {
+    console.log('dob is null', i, entry);
+    return BigInt(0);
+  }
+
+  const nameHash = processNameHashAadhaar(firstName, lastName);
+  const dobHash = processDobHashAadhaar(year, month, day);
+
+  return generateSmallKey(poseidon2([nameHash, dobHash]));
+};
+
+const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
+  const firstName = entry.First_Name;
+  const lastName = entry.Last_Name;
+  const year = entry.year;
+  if (year == null) {
+    console.log('year is null', i, entry);
+    return BigInt(0);
+  }
+
+  const nameHash = processNameHashAadhaar(firstName, lastName);
+  const yearHash = processYearHashAadhaar(year);
+  return generateSmallKey(poseidon2([nameHash, yearHash]));
+};
+
+const processYearHashAadhaar = (year: string): bigint => {
+  return BigInt(poseidon1([year]));
+};
+
+//TODO: Check how aadhaar does it
+const processNameHashAadhaar = (firstName: string, lastName: string): bigint => {
   const nameArr = (lastName + ' ' + firstName)
     .padEnd(62, '\0')
     .split('')
@@ -498,18 +576,23 @@ const processDobHashAadhaar = (year: string, month: string, day: string): bigint
   return BigInt(poseidon3([year, month, day]));
 };
 
-export const getNameYobLeafSelfrica = (name: string, year: string) => {
+export const getNameDobLeafAadhaar = (name: string, year: string, month: string, day: string) => {
   const paddedName = name
-    .padEnd(40, '\0')
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
+  const dobHash = BigInt(poseidon3([year, month, day]));
+  return generateSmallKey(poseidon2([nameHash, dobHash]));
+};
+
+export const getNameYobLeafAahaar = (name: string, year: string) => {
+  const paddedName = name
+    .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
   const nameHash = BigInt(packBytesAndPoseidon(paddedName));
 
-  const yearHash = processYearSelfrica(year, 0);
-  return generateSmallKey(poseidon2([yearHash, nameHash]));
-};
-
-const processYearSelfrica = (year: string, i: number): bigint => {
-  const yearArr = stringToAsciiBigIntArray(year);
-  return BigInt(poseidon4(yearArr));
+  const yearHash = processYearHashAadhaar(year);
+  return generateSmallKey(poseidon2([nameHash, yearHash]));
 };
