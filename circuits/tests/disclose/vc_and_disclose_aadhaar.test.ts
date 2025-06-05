@@ -21,7 +21,7 @@ import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon12, poseidon2, poseidon3, poseidon7 } from 'poseidon-lite';
+import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon7 } from 'poseidon-lite';
 import { packBytes } from '../../../common/src/utils/bytes';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs';
@@ -64,19 +64,11 @@ function prepareTestData() {
     .split('')
     .map((char) => char.charCodeAt(0));
   const name = packBytes(paddedName);
-  const dobHash = poseidon3(['1984', '1', '1']);
 
-  const nullifier = poseidon7([
-    BigInt(77),
-    BigInt(1984),
-    BigInt(1),
-    BigInt(1),
-    name[0],
-    name[1],
-    BigInt(2697),
-  ]);
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
-  const commitment = poseidon12([
+  const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
+  const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
+  const commitment = poseidon13([
     BigInt(6),
     BigInt(1234),
     qrHash,
@@ -89,7 +81,9 @@ function prepareTestData() {
     BigInt(2697),
     BigInt(110051),
     BigInt(1234),
+    BigInt(photoHash),
   ]);
+
   const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
   tree.insert(BigInt(commitment));
 
@@ -112,6 +106,7 @@ function prepareTestData() {
     aadhaar_last_4digits: '2697',
     pincode: '110051',
     ph_no_last_4digits: '1234',
+    photoHash:formatInput(BigInt(photoHash)),
     merkle_root: formatInput(tree.root),
     leaf_depth: formatInput(leaf_depth),
     path: formatInput(merkle_path),
@@ -120,8 +115,6 @@ function prepareTestData() {
 
   return {
     inputs,
-    nullifier,
-    commitment,
   };
 }
 

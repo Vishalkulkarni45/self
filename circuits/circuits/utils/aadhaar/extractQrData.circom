@@ -165,6 +165,45 @@ template PhnoLast4DigitCodeExtractor(maxDataLength) {
     out <== DigitBytesToInt(4)([shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]]);
 }
 
+/// @title PhotoExtractor
+/// @notice Extracts the photo from the Aadhaar QR data
+/// @dev Not reusing ExtractAndPackAsInt as there is no endDelimiter (photo is last item)
+/// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
+/// @input startDelimiterIndex - index of the delimiter after which the photo start
+/// @input endIndex - index of the last byte of the photo
+/// @output out - int[33] representing the photo in big endian order
+template PhotoExtractor(maxDataLength) {
+    signal input nDelimitedData[maxDataLength];
+    signal input startDelimiterIndex;
+    signal input endIndex;
+
+    signal output out;
+
+    var photoMaxLength = photoPackSize() * maxFieldByteSize();
+    var bytesLength = photoMaxLength + 1;
+
+    // Shift the data to the right to until the photo index
+    component subArraySelector = SelectSubArray(maxDataLength, bytesLength);
+    subArraySelector.in <== nDelimitedData;
+    subArraySelector.startIndex <== startDelimiterIndex; // We want delimiter to be the first byte
+    subArraySelector.length <== endIndex - startDelimiterIndex + 1;
+
+    signal shiftedBytes[bytesLength] <== subArraySelector.out;
+
+    // Assert that the first byte is the delimiter (255 * position of name field)
+    shiftedBytes[0] === photoPosition() * 255;
+
+    // Pack byte[] to int[] where int is field element which take up to 31 bytes
+    // When packing like this the trailing 0s in each chunk would be removed as they are LSB
+    // This is ok for being used in nullifiers as the behaviour would be consistent
+    component outInt = PackBytesAndPoseidon(photoMaxLength);
+    for (var i = 0; i < photoMaxLength; i ++) {
+        outInt.in[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
+    }
+
+    out <== outInt.out;
+}
+
 
 template EXTRACT_QR_DATA(maxDataLength) {
     signal input data[maxDataLength];
@@ -245,5 +284,13 @@ template EXTRACT_QR_DATA(maxDataLength) {
     phnoLast4DigitCodeExtractor.startDelimiterIndex <== delimiterIndices[phnoPosition() - 1];
     phnoLast4DigitCodeExtractor.endDelimiterIndex <== delimiterIndices[phnoPosition()];
     ph_no_last_4digits <== phnoLast4DigitCodeExtractor.out;
+
+    // Extract photo
+    component photoExtractor = PhotoExtractor(maxDataLength);
+    photoExtractor.nDelimitedData <== nDelimitedData;
+    photoExtractor.startDelimiterIndex <== delimiterIndices[photoPosition() - 1];
+    photoExtractor.endIndex <== qrDataPaddedLength - 1;
+    signal output photoHash <== photoExtractor.out;
+
 
 }

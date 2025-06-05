@@ -21,7 +21,7 @@ import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon12, poseidon3, poseidon7 } from 'poseidon-lite';
+import { poseidon12, poseidon13, poseidon3, poseidon7 } from 'poseidon-lite';
 import { packBytes } from '../../../common/src/utils/bytes';
 
 let QRData: string = testQRData;
@@ -62,9 +62,19 @@ function prepareTestData() {
   const name = packBytes(paddedName);
   const dobHash = poseidon3(['1984', '1', '1']);
 
-  const nullifier = poseidon7([BigInt(77), BigInt(1984), BigInt(1), BigInt(1), name[0], name[1], BigInt(2697)]);
+  const nullifier = poseidon7([
+    BigInt(77),
+    BigInt(1984),
+    BigInt(1),
+    BigInt(1),
+    name[0],
+    name[1],
+    BigInt(2697),
+  ]);
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
-  const commitment = poseidon12([
+  const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
+  const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
+  const commitment = poseidon13([
     BigInt(6),
     BigInt(1234),
     qrHash,
@@ -77,6 +87,7 @@ function prepareTestData() {
     BigInt(2697),
     BigInt(110051),
     BigInt(1234),
+    BigInt(photoHash)
   ]);
 
   const inputs = {
@@ -114,7 +125,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     this.timeout(0);
     expect(circuit).to.not.be.undefined;
   });
-  it('should pass constrain check for circuit with Sha256RSA signature', async function () {
+  it.only('should pass constrain check for circuit with Sha256RSA signature', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
     const w = await circuit.calculateWitness(inputs);

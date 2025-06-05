@@ -16,7 +16,6 @@ include "../utils/passport/customHashers.circom";
 /// @input delimiterIndices Indices of delimiters (255) in the QR text data. 18 delimiters including photo
 /// @input signature RSA signature
 /// @input pubKey RSA public key (of the government)
-
 /// @output nullifier Generated nullifier - deterministic on the Aadhaar data
 /// @output commitment Commitment that will be added to the onchain registration tree
 
@@ -71,7 +70,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
 
     //TODO: should i replace gender,yob,name with nullifier ?
-    signal output commitment <== Poseidon(12)([
+    signal output commitment <== Poseidon(13)([
         attestation_id,
         secret,
         qrDataHash,
@@ -83,7 +82,8 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
         qrDataExtractor.name[1],
         qrDataExtractor.aadhaar_last_4digits,
         qrDataExtractor.pincode,
-        qrDataExtractor.ph_no_last_4digits
+        qrDataExtractor.ph_no_last_4digits,
+        qrDataExtractor.photoHash
     ]);
 
 }

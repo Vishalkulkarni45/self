@@ -15,6 +15,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels){
     signal input aadhaar_last_4digits;
     signal input pincode;
     signal input ph_no_last_4digits;
+    signal input photoHash;
 
     signal input merkle_root;
     signal input leaf_depth;
@@ -34,6 +35,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels){
         aadhaar_last_4digits,
         pincode,
         ph_no_last_4digits,
+        photoHash,
         merkle_root,
         leaf_depth,
         path,

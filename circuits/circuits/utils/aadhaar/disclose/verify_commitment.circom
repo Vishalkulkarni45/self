@@ -23,13 +23,14 @@ template VERIFY_COMMITMENT(nLevels) {
     signal input aadhaar_last_4digits;
     signal input pincode;
     signal input ph_no_last_4digits;
+    signal input photoHash;
 
     signal input merkle_root;
     signal input merkletree_size;
     signal input path[nLevels];
     signal input siblings[nLevels];
 
-    signal commitment <== Poseidon(12)([
+    signal commitment <== Poseidon(13)([
         attestation_id,
         secret,
         qrDataHash,
@@ -41,7 +42,8 @@ template VERIFY_COMMITMENT(nLevels) {
         name[1],
         aadhaar_last_4digits,
         pincode,
-        ph_no_last_4digits
+        ph_no_last_4digits,
+        photoHash
     ]);
 
 
