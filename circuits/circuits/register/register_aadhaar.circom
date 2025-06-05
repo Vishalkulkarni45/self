@@ -56,20 +56,34 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     qrDataExtractor.qrDataPaddedLength <== qrDataPaddedLength;
     qrDataExtractor.delimiterIndices <== delimiterIndices;
 
-    signal output nullifier <== Poseidon(4)([
+    signal output nullifier <== Poseidon(7)([
         qrDataExtractor.gender,
-        qrDataExtractor.dobHash,
-        qrDataExtractor.nameHash,
+        qrDataExtractor.yob,
+        qrDataExtractor.mob,
+        qrDataExtractor.dob,
+        qrDataExtractor.name[0],
+        qrDataExtractor.name[1],
         qrDataExtractor.aadhaar_last_4digits
     ]);
 
 
     signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
-    signal output commitment <== Poseidon(3)([
+
+    //TODO: should i replace gender,yob,name with nullifier ?
+    signal output commitment <== Poseidon(12)([
         attestation_id,
         secret,
-        qrDataHash
+        qrDataHash,
+        qrDataExtractor.gender,
+        qrDataExtractor.yob,
+        qrDataExtractor.mob,
+        qrDataExtractor.dob,
+        qrDataExtractor.name[0],
+        qrDataExtractor.name[1],
+        qrDataExtractor.aadhaar_last_4digits,
+        qrDataExtractor.pincode,
+        qrDataExtractor.ph_no_last_4digits
     ]);
 
 }

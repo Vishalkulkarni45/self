@@ -21,7 +21,8 @@ import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon3, poseidon4 } from 'poseidon-lite';
+import { poseidon12, poseidon3, poseidon7 } from 'poseidon-lite';
+import { packBytes } from '../../../common/src/utils/bytes';
 
 let QRData: string = testQRData;
 
@@ -58,12 +59,25 @@ function prepareTestData() {
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
-  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
+  const name = packBytes(paddedName);
   const dobHash = poseidon3(['1984', '1', '1']);
 
-  const nullifier = poseidon4([BigInt(77), dobHash, nameHash, BigInt(2697)]);
+  const nullifier = poseidon7([BigInt(77), BigInt(1984), BigInt(1), BigInt(1), name[0], name[1], BigInt(2697)]);
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
-  const commitment = poseidon3([BigInt(6), BigInt(1234), qrHash]);
+  const commitment = poseidon12([
+    BigInt(6),
+    BigInt(1234),
+    qrHash,
+    BigInt(77),
+    BigInt(1984),
+    BigInt(1),
+    BigInt(1),
+    name[0],
+    name[1],
+    BigInt(2697),
+    BigInt(110051),
+    BigInt(1234),
+  ]);
 
   const inputs = {
     qrDataPadded: Uint8ArrayToCharArray(qrDataPadded),
