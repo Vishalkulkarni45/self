@@ -10,6 +10,7 @@ import {
   poseidon2,
   poseidon3,
   poseidon4,
+  poseidon5,
   poseidon6,
 } from 'poseidon-lite';
 import {
@@ -28,6 +29,7 @@ import {
   DscCertificateMetaData,
   parseDscCertificateData,
 } from './passports/passport_parsing/parseDscCertificateData';
+import { packBytes } from './bytes';
 countries.registerLocale(en);
 
 /** get leaf for DSC and CSCA Trees */
@@ -522,10 +524,10 @@ const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
     return BigInt(0);
   }
 
-  const nameHash = processNameHashAadhaar(firstName, lastName);
-  const dobHash = processDobHashAadhaar(year, month, day);
+  const name = processNameAadhaar(firstName, lastName);
+  const dob = processDobHashAadhaar(year, month, day);
 
-  return generateSmallKey(poseidon2([nameHash, dobHash]));
+  return generateSmallKey(poseidon5([name[0], name[1], dob[0], dob[1], dob[2]]));
 };
 
 const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
@@ -537,25 +539,20 @@ const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
     return BigInt(0);
   }
 
-  const nameHash = processNameHashAadhaar(firstName, lastName);
-  const yearHash = processYearHashAadhaar(year);
-  return generateSmallKey(poseidon2([nameHash, yearHash]));
-};
-
-const processYearHashAadhaar = (year: string): bigint => {
-  return BigInt(poseidon1([year]));
+  const name = processNameAadhaar(firstName, lastName);
+  return generateSmallKey(poseidon3([name[0], name[1], BigInt(year)]));
 };
 
 //TODO: Check how aadhaar does it
-const processNameHashAadhaar = (firstName: string, lastName: string): bigint => {
-  const nameArr = (lastName + ' ' + firstName)
+const processNameAadhaar = (firstName: string, lastName: string): bigint[] => {
+  const nameArr = (firstName + ' ' + lastName)
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
-  return BigInt(packBytesAndPoseidon(nameArr));
+  return packBytes(nameArr);
 };
 
-const processDobHashAadhaar = (year: string, month: string, day: string): bigint => {
+const processDobHashAadhaar = (year: string, month: string, day: string): bigint[] => {
   const monthMap: { [key: string]: string } = {
     jan: '01',
     feb: '02',
@@ -573,7 +570,7 @@ const processDobHashAadhaar = (year: string, month: string, day: string): bigint
 
   month = monthMap[month.toLowerCase()];
 
-  return BigInt(poseidon3([year, month, day]));
+  return [year, month, day].map(BigInt);
 };
 
 export const getNameDobLeafAadhaar = (name: string, year: string, month: string, day: string) => {
@@ -581,9 +578,8 @@ export const getNameDobLeafAadhaar = (name: string, year: string, month: string,
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
-  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
-  const dobHash = BigInt(poseidon3([year, month, day]));
-  return generateSmallKey(poseidon2([nameHash, dobHash]));
+  const namePacked = packBytes(paddedName);
+  return generateSmallKey(poseidon5([namePacked[0], namePacked[1], BigInt(year), BigInt(month), BigInt(day)]));
 };
 
 export const getNameYobLeafAahaar = (name: string, year: string) => {
@@ -591,8 +587,7 @@ export const getNameYobLeafAahaar = (name: string, year: string) => {
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
-  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
+  const namePacked = packBytes(paddedName);
 
-  const yearHash = processYearHashAadhaar(year);
-  return generateSmallKey(poseidon2([nameHash, yearHash]));
+  return generateSmallKey(poseidon3([namePacked[0], namePacked[1], BigInt(year)]));
 };

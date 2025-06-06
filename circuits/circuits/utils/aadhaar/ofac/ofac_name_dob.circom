@@ -14,7 +14,7 @@ template OFAC_NAME_DOB_AADHAAR(nLevels) {
     signal input smt_root;
     signal input smt_siblings[nLevels];
 
-    signal name_dob_hash <== Poseidon(5)([YOB, MOB, DOB, name[0], name[1]]);
+    signal name_dob_hash <== Poseidon(5)([name[0], name[1], YOB, MOB, DOB]);
 
     signal output ofacCheckResult <== SMTVerify(nLevels)(name_dob_hash, smt_leaf_key, smt_root, smt_siblings, 0);
 }
