@@ -5,6 +5,7 @@ include "circomlib/circuits/poseidon.circom";
 include "../utils/aadhaar/extractQrData.circom";
 include "../utils/aadhaar/signature.circom";
 include "../utils/passport/customHashers.circom";
+include "@openpassport/zk-email-circuits/utils/array.circom";
 
 /// @title: AadhaarRegister
 /// @notice Main circuit — verifies the integrity of the aadhaar data, the signature, and generates commitment and nullifier
@@ -34,9 +35,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
 
     // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
-    //TODO: how to use log2Ceil?
-    //  component n2bHeaderLength = Num2Bits(log2Ceil(maxDataLength));
-    component n2bHeaderLength = Num2Bits(11);
+    component n2bHeaderLength = Num2Bits(log2Ceil(maxDataLength));
     n2bHeaderLength.in <== qrDataPaddedLength;
 
     // Verify the RSA signature

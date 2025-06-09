@@ -28,7 +28,7 @@ template ShaBytesDynamic(hashLen, max_num_bytes) {
     if (hashLen == 256) {
         hash_bits <== Sha256Bytes(max_num_bytes)(in_padded, in_len_padded_bytes);
     }
-    if (hashLen == 224) { 
+    if (hashLen == 224) {
         hash_bits <== Sha224Bytes(max_num_bytes)(in_padded, in_len_padded_bytes);
     }
     if (hashLen == 160) {
