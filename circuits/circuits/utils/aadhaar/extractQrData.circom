@@ -7,6 +7,10 @@ include "circomlib/circuits/bitify.circom";
 include "circomlib/circuits/poseidon.circom";
 include "../passport/customHashers.circom";
 
+/// @notice Position of the phone number in the QR data
+function phnoPosition() {
+    return 17;
+}
 
 /// @title DOBExtractor
 /// @notice Extract date of birth from the Aadhaar QR data
@@ -44,7 +48,6 @@ template DOBExtractor(maxDataLength) {
 /// @notice Extracts Name
 /// @notice This assumes max name length  62 bytes
 /// @param maxDataLength - Maximum length of the data
-/// @param extractPosition - Position of the data to extract (after which delimiter does the data start)
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input delimiterIndices - indices of the delimiters in the QR data
 /// @output out - 2 field (int) element representing the data in big endian order (reverse string when decoded)
@@ -87,7 +90,7 @@ template NameExtractor(maxDataLength) {
 
 
 /// @title GenderExtractor
-/// @notice Extracts the Gender from the Aadhaar QR data and returns as Unix timestamp
+/// @notice Extracts the Gender from the Aadhaar QR data
 /// @input nDelimitedDataShiftedToDob[maxDataLength] - QR data where each delimiter is 255 * n
 ///     where n is order of the data shifted till DOB index
 /// @input startDelimiterIndex - index of the delimiter after
@@ -137,10 +140,14 @@ template PinCodeExtractor(maxDataLength) {
     out <== DigitBytesToInt(6)([shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4], shiftedBytes[5], shiftedBytes[6]]);
 }
 
-function phnoPosition() {
-    return 17;
-}
 
+
+/// @title PhnoLast4DigitCodeExtractor
+/// @notice Extracts the last 4 digits of the phone number from the Aadhaar QR data
+/// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
+/// @input startDelimiterIndex - index of the delimiter after which the phone number start
+/// @input endDelimiterIndex - index of the delimiter up to which the phone number is present
+/// @output out - last 4 digits of the phone number as integer
 template PhnoLast4DigitCodeExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input startDelimiterIndex;
@@ -250,7 +257,20 @@ template PhotoExtractor(maxDataLength) {
     out <== outInt.out;
 }
 
-
+/// @title EXTRACT_QR_DATA
+/// @notice Extracts the data from the Aadhaar QR data
+/// @input data[maxDataLength] - QR data without the signature padded
+/// @input qrDataPaddedLength - length of the QR data
+/// @input delimiterIndices - indices of the delimiters in the QR data
+/// @output name[2] - name of the user
+/// @output yob - year of birth
+/// @output mob - month of birth
+/// @output dob - day of birth
+/// @output gender - gender of the user
+/// @output pincode - pincode of the user
+/// @output state - state of the user
+/// @output aadhaar_last_4digits - last 4 digits of the Aadhaar number
+/// @output ph_no_last_4digits - last 4 digits of the phone number
 template EXTRACT_QR_DATA(maxDataLength) {
     signal input data[maxDataLength];
     signal input qrDataPaddedLength;
@@ -319,6 +339,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     genderExtractor.nDelimitedDataShiftedToDob <== dobExtractor.nDelimitedDataShiftedToDob;
     gender <== genderExtractor.out;
 
+    // Extract pin code
     component pinCodeExtractor = PinCodeExtractor(maxDataLength);
     pinCodeExtractor.nDelimitedData <== nDelimitedData;
     pinCodeExtractor.startDelimiterIndex <== delimiterIndices[pinCodePosition() - 1];
@@ -331,6 +352,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     phnoLast4DigitCodeExtractor.startDelimiterIndex <== delimiterIndices[phnoPosition() - 1];
     phnoLast4DigitCodeExtractor.endDelimiterIndex <== delimiterIndices[phnoPosition()];
     ph_no_last_4digits <== phnoLast4DigitCodeExtractor.out;
+
     // Extract state
     component stateExtractor = ExtractAndPackAsInt(maxDataLength, statePosition());
     stateExtractor.nDelimitedData <== nDelimitedData;
@@ -343,6 +365,5 @@ template EXTRACT_QR_DATA(maxDataLength) {
     photoExtractor.startDelimiterIndex <== delimiterIndices[photoPosition() - 1];
     photoExtractor.endIndex <== qrDataPaddedLength - 1;
     signal output photoHash <== photoExtractor.out;
-
 
 }

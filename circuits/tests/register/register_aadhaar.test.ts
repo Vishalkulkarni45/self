@@ -4,7 +4,6 @@ import path from 'path';
 
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils';
 import {
-  bigIntToChunkedBytes,
   bufferToHex,
   Uint8ArrayToCharArray,
 } from '@zk-email/helpers/dist/binary-format';
@@ -13,7 +12,6 @@ import {
   decompressByteArray,
   splitToWords,
   extractPhoto,
-  timestampToUTCUnix,
 } from '@anon-aadhaar/core';
 
 import fs from 'fs';
@@ -21,7 +19,7 @@ import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon12, poseidon13, poseidon14, poseidon3, poseidon7 } from 'poseidon-lite';
+import { poseidon14, poseidon3, poseidon7 } from 'poseidon-lite';
 import { packBytes } from '../../../common/src/utils/bytes';
 
 let QRData: string = testQRData;

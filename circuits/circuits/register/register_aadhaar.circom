@@ -14,11 +14,12 @@ include "../utils/passport/customHashers.circom";
 /// @input qrDataPadded QR data without the signature; assumes elements to be bytes; remaining space is padded with 0
 /// @input qrDataPaddedLength Length of padded QR data
 /// @input delimiterIndices Indices of delimiters (255) in the QR text data. 18 delimiters including photo
-/// @input signature RSA signature
-/// @input pubKey RSA public key (of the government)
+/// @input signature RSA signature split into k chunks of n bits each
+/// @input pubKey RSA public key(of the government) split into k chunks of n bits each
+/// @input secret Secret for commitment generation. Saved by the user to access their commitment
+/// @input attestation_id Attestation ID of the credential used to generate the commitment
 /// @output nullifier Generated nullifier - deterministic on the Aadhaar data
 /// @output commitment Commitment that will be added to the onchain registration tree
-
 template REGISTER_AADHAAR(n, k, maxDataLength){
 
     signal input qrDataPadded[maxDataLength];
@@ -32,9 +33,9 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input attestation_id;
 
 
-  // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
-  //TODO: how to use log2Ceil?
-  //  component n2bHeaderLength = Num2Bits(log2Ceil(maxDataLength));
+    // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
+    //TODO: how to use log2Ceil?
+    //  component n2bHeaderLength = Num2Bits(log2Ceil(maxDataLength));
     component n2bHeaderLength = Num2Bits(11);
     n2bHeaderLength.in <== qrDataPaddedLength;
 
@@ -45,16 +46,16 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signatureVerifier.pubKey <== pubKey;
     signatureVerifier.signature <== signature;
 
-
-
     // Assert data between qrDataPaddedLength and maxDataLength is zero
     AssertZeroPadding(maxDataLength)(qrDataPadded, qrDataPaddedLength);
 
+    // Extract data from QR data
     component qrDataExtractor = EXTRACT_QR_DATA(maxDataLength);
     qrDataExtractor.data <== qrDataPadded;
     qrDataExtractor.qrDataPaddedLength <== qrDataPaddedLength;
     qrDataExtractor.delimiterIndices <== delimiterIndices;
 
+    // Generate nullifier
     signal output nullifier <== Poseidon(7)([
         qrDataExtractor.gender,
         qrDataExtractor.yob,
@@ -68,8 +69,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
     signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
-
-    //TODO: should i replace gender,yob,name with nullifier ?
+    // Generate commitment
     signal output commitment <== Poseidon(14)([
         attestation_id,
         secret,

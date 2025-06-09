@@ -4,24 +4,15 @@ import path from 'path';
 
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils';
 import {
-  bigIntToChunkedBytes,
-  bufferToHex,
-  Uint8ArrayToCharArray,
-} from '@zk-email/helpers/dist/binary-format';
-import {
   convertBigIntToByteArray,
   decompressByteArray,
-  splitToWords,
   extractPhoto,
-  timestampToUTCUnix,
 } from '@anon-aadhaar/core';
 
-import fs from 'fs';
-import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon12, poseidon13, poseidon14, poseidon2, poseidon3, poseidon7 } from 'poseidon-lite';
+import {  poseidon14, poseidon2 } from 'poseidon-lite';
 import { packBytes } from '../../../common/src/utils/bytes';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs';
@@ -213,7 +204,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
   });
 
-  it.only('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
+  it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
     const sel_bits = [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1];
