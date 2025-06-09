@@ -9,6 +9,7 @@ import { assert } from 'chai';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
 import { poseidon2, poseidon3 } from 'poseidon-lite';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
+import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;
@@ -65,11 +66,16 @@ describe('Aadhaar QR Data Extractor1', function () {
       'dob',
       'gender',
       'pincode',
+      'state',
       'aadhaar_last_4digits',
       'ph_no_last_4digits',
     ]);
 
     await circuit.checkConstraints(witness);
+    const exptState = unpackReveal(out.state)
+      .filter(char => char !== '\x00')
+      .join('');
+
 
     const paddedName = 'Sumit Kumar'
       .padEnd(62, '\0')
@@ -86,11 +92,12 @@ describe('Aadhaar QR Data Extractor1', function () {
     assert(Number(out.pincode) === 110051);
     assert(Number(out.aadhaar_last_4digits) === 2697);
     assert(Number(out.ph_no_last_4digits) === 1234);
+    assert(exptState === 'Delhi');
   });
 
   it.only('should extract qr data from the new test data', async function () {
     this.timeout(0);
-    const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Delhi' });
+    const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Karnataka' });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const QRDataDecode = decompressByteArray(QRDataBytes);
 
@@ -120,19 +127,23 @@ describe('Aadhaar QR Data Extractor1', function () {
       'dob',
       'gender',
       'pincode',
+      'state',
       'aadhaar_last_4digits',
       'ph_no_last_4digits',
     ]);
 
     await circuit.checkConstraints(witness);
 
+    const exptState = unpackReveal(out.state)
+      .filter(char => char !== '\x00')
+      .join('');
     assert(Number(out.gender) === 70);
     assert(Number(out.dob) === 15);
     assert(Number(out.mob) === 12);
     assert(Number(out.yob) === 2012);
     assert(Number(out.pincode) === 554587);
+    assert(exptState === 'Karnataka');
 
-    console.log(out);
 
   });
 

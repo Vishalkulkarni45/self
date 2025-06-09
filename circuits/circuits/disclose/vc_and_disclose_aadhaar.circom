@@ -16,6 +16,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input name[2];
     signal input aadhaar_last_4digits;
     signal input pincode;
+    signal input state;
     signal input ph_no_last_4digits;
     signal input photoHash;
 
@@ -36,7 +37,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     signal input selector;
 
-    signal sel_bits[11] <== Num2Bits(11)(selector);
+    signal sel_bits[12] <== Num2Bits(12)(selector);
 
 
     // verify commitment is part of the merkle tree
@@ -51,6 +52,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
         name,
         aadhaar_last_4digits,
         pincode,
+        state,
         ph_no_last_4digits,
         photoHash,
         merkle_root,
@@ -84,10 +86,11 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     reveal_name[1] <== name[1] * sel_bits[4];
     signal output reveal_aadhaar_last_4digits <== aadhaar_last_4digits * sel_bits[5];
     signal output reveal_pincode <== pincode * sel_bits[6];
-    signal output reveal_ph_no_last_4digits <== ph_no_last_4digits * sel_bits[7];
-    signal output reveal_photoHash <== photoHash * sel_bits[8];
-    signal output reveal_ofac_name_dob <== ofac_name_dob.ofacCheckResult * sel_bits[9];
-    signal output reveal_ofac_name_yob <== ofac_name_yob.ofacCheckResult * sel_bits[10];
+    signal output reveal_state <== state * sel_bits[7];
+    signal output reveal_ph_no_last_4digits <== ph_no_last_4digits * sel_bits[8];
+    signal output reveal_photoHash <== photoHash * sel_bits[9];
+    signal output reveal_ofac_name_dob <== ofac_name_dob.ofacCheckResult * sel_bits[10];
+    signal output reveal_ofac_name_yob <== ofac_name_yob.ofacCheckResult * sel_bits[11];
 
 
 }

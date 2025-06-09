@@ -70,7 +70,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
 
     //TODO: should i replace gender,yob,name with nullifier ?
-    signal output commitment <== Poseidon(13)([
+    signal output commitment <== Poseidon(14)([
         attestation_id,
         secret,
         qrDataHash,
@@ -82,6 +82,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
         qrDataExtractor.name[1],
         qrDataExtractor.aadhaar_last_4digits,
         qrDataExtractor.pincode,
+        qrDataExtractor.state,
         qrDataExtractor.ph_no_last_4digits,
         qrDataExtractor.photoHash
     ]);
@@ -89,4 +90,4 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 }
 
 
-component main = REGISTER_AADHAAR(121, 17, 512 * 3);
+component main { public [ pubKey ] }  = REGISTER_AADHAAR(121, 17, 512 * 3);

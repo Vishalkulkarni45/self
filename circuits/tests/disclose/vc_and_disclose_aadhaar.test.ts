@@ -21,7 +21,7 @@ import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon7 } from 'poseidon-lite';
+import { poseidon12, poseidon13, poseidon14, poseidon2, poseidon3, poseidon7 } from 'poseidon-lite';
 import { packBytes } from '../../../common/src/utils/bytes';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs';
@@ -38,11 +38,11 @@ import { SMT } from '@openpassport/zk-kit-smt';
 
 let QRData: string = testQRData;
 
-//Converts 11 selctor to single field
+//Converts 12 selctor to single field
 function selectorToField(bits: number[]): number {
-  if (bits.length !== 11) throw new Error('Input must be 11 bits');
+  if (bits.length !== 12) throw new Error('Input must be 12 bits');
   let result = 0;
-  for (let i = 0; i < 11; i++) {
+  for (let i = 0; i < 12; i++) {
     if (bits[i]) {
       result += 1 << i;
     }
@@ -81,7 +81,7 @@ function prepareTestData() {
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
-  const commitment = poseidon13([
+  const commitment = poseidon14([
     BigInt(6),
     BigInt(1234),
     qrHash,
@@ -93,6 +93,7 @@ function prepareTestData() {
     name[1],
     BigInt(2697),
     BigInt(110051),
+    BigInt(452723500356),
     BigInt(1234),
     BigInt(photoHash),
   ]);
@@ -139,6 +140,7 @@ function prepareTestData() {
     name: formatInput(name.slice(0, 2)),
     aadhaar_last_4digits: '2697',
     pincode: '110051',
+    state: '452723500356',
     ph_no_last_4digits: '1234',
     photoHash: formatInput(BigInt(photoHash)),
     merkle_root: formatInput(tree.root),
@@ -187,7 +189,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
 
-    inputs.selector = formatInput(selectorToField([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))[0];
+    inputs.selector = formatInput(selectorToField([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))[0];
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -211,10 +213,10 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
   });
 
-  it.only('should reveal yob, mob, dob, reveal_ofac_name_dob only', async function () {
+  it.only('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
-    const sel_bits = [0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0];
+    const sel_bits = [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1];
 
     inputs.selector = formatInput(selectorToField(sel_bits))[0];
     const w = await circuit.calculateWitness(inputs);
@@ -228,6 +230,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       'reveal_name[2]',
       'reveal_aadhaar_last_4digits',
       'reveal_pincode',
+      'reveal_state',
       'reveal_ph_no_last_4digits',
       'reveal_photoHash',
       'reveal_ofac_name_dob',
@@ -236,7 +239,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     assert(BigInt(outputs.reveal_yob) === BigInt(1984), 'YOB should be 1984');
     assert(BigInt(outputs.reveal_mob) === BigInt(1), 'MOB should be 1');
     assert(BigInt(outputs.reveal_dob) === BigInt(1), 'DOB should be 1');
-    assert(BigInt(outputs.reveal_ofac_name_dob) === BigInt(1), 'OFAC Name DOB should be 1');
+    assert(BigInt(outputs.reveal_ofac_name_yob) === BigInt(1), 'OFAC Name YOB should be 1');
 
     let i = 0;
     let j = 0;
@@ -261,4 +264,3 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
   });
 });
-
