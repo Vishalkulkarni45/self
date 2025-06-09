@@ -8,6 +8,7 @@ import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@an
 import { assert } from 'chai';
 import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
 import { poseidon2, poseidon3 } from 'poseidon-lite';
+import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;
@@ -32,7 +33,7 @@ describe('Aadhaar QR Data Extractor1', function () {
     expect(circuit).to.not.be.undefined;
   });
 
-  it.only('should extract qr data', async function () {
+  it('should extract qr data', async function () {
     this.timeout(0);
     const QRDataBytes = convertBigIntToByteArray(BigInt(testQRData));
     const QRDataDecode = decompressByteArray(QRDataBytes);
@@ -86,4 +87,53 @@ describe('Aadhaar QR Data Extractor1', function () {
     assert(Number(out.aadhaar_last_4digits) === 2697);
     assert(Number(out.ph_no_last_4digits) === 1234);
   });
+
+  it.only('should extract qr data from the new test data', async function () {
+    this.timeout(0);
+    const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Delhi' });
+    const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+    const QRDataDecode = decompressByteArray(QRDataBytes);
+
+    const signedData = QRDataDecode.slice(0, QRDataDecode.length - 256);
+    const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
+
+    const delimiterIndices: number[] = [];
+    for (let i = 0; i < qrDataPadded.length; i++) {
+      if (qrDataPadded[i] === 255) {
+        delimiterIndices.push(i);
+      }
+      if (delimiterIndices.length === 18) {
+        break;
+      }
+    }
+
+    const witness: any[] = await circuit.calculateWitness({
+      data: Uint8ArrayToCharArray(qrDataPadded),
+      qrDataPaddedLength: qrDataPaddedLen,
+      delimiterIndices: delimiterIndices,
+    });
+
+    const out = await circuit.getOutput(witness, [
+      'name[2]',
+      'yob',
+      'mob',
+      'dob',
+      'gender',
+      'pincode',
+      'aadhaar_last_4digits',
+      'ph_no_last_4digits',
+    ]);
+
+    await circuit.checkConstraints(witness);
+
+    assert(Number(out.gender) === 70);
+    assert(Number(out.dob) === 15);
+    assert(Number(out.mob) === 12);
+    assert(Number(out.yob) === 2012);
+    assert(Number(out.pincode) === 554587);
+
+    console.log(out);
+
+  });
+
 });

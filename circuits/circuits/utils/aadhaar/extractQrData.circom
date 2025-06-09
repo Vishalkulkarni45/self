@@ -32,7 +32,7 @@ template DOBExtractor(maxDataLength) {
     shiftedBytes[11] === (dobPosition() + 1) * 255;
 
     // Convert DOB bytes to unix timestamp.
-    // Get year, month, name as int (DD-MM-YYYY format and starts from shiftedBytes[0])
+    // Get year, month, name as int (DD-MM-YYYY format)
     signal output year <== DigitBytesToInt(4)([shiftedBytes[7], shiftedBytes[8], shiftedBytes[9], shiftedBytes[10]]);
     signal output month <== DigitBytesToInt(2)([shiftedBytes[4], shiftedBytes[5]]);
     signal output day <== DigitBytesToInt(2)([shiftedBytes[1], shiftedBytes[2]]);
