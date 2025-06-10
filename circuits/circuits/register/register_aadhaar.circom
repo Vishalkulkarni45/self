@@ -3,7 +3,7 @@ pragma circom 2.1.9;
 include "circomlib/circuits/bitify.circom";
 include "circomlib/circuits/poseidon.circom";
 include "../utils/aadhaar/extractQrData.circom";
-include "../utils/aadhaar/signature.circom";
+include "../utils/passport/signatureVerifier.circom";
 include "../utils/passport/customHashers.circom";
 include "@openpassport/zk-email-circuits/utils/array.circom";
 
@@ -39,7 +39,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     n2bHeaderLength.in <== qrDataPaddedLength;
 
     // Verify the RSA signature
-    component signatureVerifier = SignatureVerifier(n, k, maxDataLength);
+    component signatureVerifier = SignatureVerifier(1, n, k);
     signatureVerifier.qrDataPadded <== qrDataPadded;
     signatureVerifier.qrDataPaddedLength <== qrDataPaddedLength;
     signatureVerifier.pubKey <== pubKey;
