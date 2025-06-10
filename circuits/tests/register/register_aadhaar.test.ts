@@ -58,7 +58,6 @@ function prepareTestData() {
     .split('')
     .map((char) => char.charCodeAt(0));
   const name = packBytes(paddedName);
-  const dobHash = poseidon3(['1984', '1', '1']);
 
   const nullifier = poseidon7([
     BigInt(77),
@@ -73,7 +72,7 @@ function prepareTestData() {
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
   const commitment = poseidon14([
-    BigInt(6),
+    BigInt(3),
     BigInt(1234),
     qrHash,
     BigInt(77),
@@ -96,7 +95,7 @@ function prepareTestData() {
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
     secret: '1234',
-    attestation_id: '6',
+    attestation_id: '3',
   };
 
   return {

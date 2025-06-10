@@ -73,7 +73,7 @@ function prepareTestData() {
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
   const commitment = poseidon14([
-    BigInt(6),
+    BigInt(3),
     BigInt(1234),
     qrHash,
     BigInt(77),
@@ -121,7 +121,7 @@ function prepareTestData() {
   } = generateSMTProof(nameAndYob_smt, nameyob_leaf);
 
   const inputs = {
-    attestation_id: '6',
+    attestation_id: '3',
     secret: '1234',
     qrDataHash: qrHash,
     gender: '77',

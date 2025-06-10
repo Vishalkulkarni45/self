@@ -30,7 +30,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input signature[k];
 
     signal input secret;
-    // Aadhaar = 6
+    // Aadhaar = 3
     signal input attestation_id;
 
 
