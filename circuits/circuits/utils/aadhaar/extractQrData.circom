@@ -12,11 +12,19 @@ function phnoPosition() {
     return 17;
 }
 
+/// @notice Maximum length (62) of the name in the QR data
+function nameMaxLength() {
+    return 2 * maxFieldByteSize();
+}
+
 /// @title DOBExtractor
 /// @notice Extract date of birth from the Aadhaar QR data
 /// @param maxDataLength - Maximum length of the data
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input startDelimiterIndex - index of the delimiter after which the date of birth start
+/// @output year - year of birth in ascii format
+/// @output month - month of birth in ascii format
+/// @output day - day of birth in ascii format
 template DOBExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input startDelimiterIndex;
@@ -37,9 +45,9 @@ template DOBExtractor(maxDataLength) {
 
     // Convert DOB bytes to unix timestamp.
     // Get year, month, day as int (DD-MM-YYYY format)
-    signal output year <== DigitBytesToInt(4)([shiftedBytes[7], shiftedBytes[8], shiftedBytes[9], shiftedBytes[10]]);
-    signal output month <== DigitBytesToInt(2)([shiftedBytes[4], shiftedBytes[5]]);
-    signal output day <== DigitBytesToInt(2)([shiftedBytes[1], shiftedBytes[2]]);
+    signal output year[4] <== [shiftedBytes[7], shiftedBytes[8], shiftedBytes[9], shiftedBytes[10]];
+    signal output month[2] <== [shiftedBytes[4], shiftedBytes[5]];
+    signal output day[2] <== [shiftedBytes[1], shiftedBytes[2]];
 
     nDelimitedDataShiftedToDob <== shiftedBytes;
 }
@@ -50,18 +58,18 @@ template DOBExtractor(maxDataLength) {
 /// @param maxDataLength - Maximum length of the data
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input delimiterIndices - indices of the delimiters in the QR data
-/// @output out - 2 field (int) element representing the data in big endian order (reverse string when decoded)
+/// @output out - name in ascii format
 template NameExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input delimiterIndices[18];
-
-    signal output out[2];
 
     signal startDelimiterIndex <== delimiterIndices[namePosition() - 1];
     signal endDelimiterIndex <== delimiterIndices[namePosition()];
 
     var nameMaxLength = 2 * maxFieldByteSize();
     var byteLength = nameMaxLength + 1;
+
+    signal output out[nameMaxLength];
 
     // Shift the data to the right till the the delimiter start
     component subArraySelector = SelectSubArray(maxDataLength, byteLength);
@@ -79,13 +87,10 @@ template NameExtractor(maxDataLength) {
     endDelimiterSelector.index <== endDelimiterIndex;
     endDelimiterSelector.out === (namePosition() + 1) * 255;
 
-    // Pack byte[] to int[] where int is field element which take up to 31 bytes
-    component outInt = PackBytes(nameMaxLength);
     for (var i = 0; i < nameMaxLength; i ++) {
-        outInt.in[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
+        out[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
     }
 
-    out <== outInt.out;
 }
 
 
@@ -115,13 +120,13 @@ template GenderExtractor(maxDataLength) {
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input startDelimiterIndex - index of the delimiter after which the pin code start
 /// @input endDelimiterIndex - index of the delimiter up to which the pin code is present
-/// @output out - pinCode as integer
+/// @output out - pinCode in ascii format
 template PinCodeExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input startDelimiterIndex;
     signal input endDelimiterIndex;
 
-    signal output out;
+    signal output out[6];
 
     var pinCodeMaxLength = 6;
     var byteLength = pinCodeMaxLength + 2; // 2 delimiters
@@ -137,7 +142,7 @@ template PinCodeExtractor(maxDataLength) {
     shiftedBytes[0] === pinCodePosition() * 255;
     shiftedBytes[7] === (pinCodePosition() + 1) * 255;
 
-    out <== DigitBytesToInt(6)([shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4], shiftedBytes[5], shiftedBytes[6]]);
+    out <== [shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4], shiftedBytes[5], shiftedBytes[6]];
 }
 
 
@@ -147,13 +152,13 @@ template PinCodeExtractor(maxDataLength) {
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input startDelimiterIndex - index of the delimiter after which the phone number start
 /// @input endDelimiterIndex - index of the delimiter up to which the phone number is present
-/// @output out - last 4 digits of the phone number as integer
+/// @output out - last 4 digits of the phone number in ascii format
 template PhnoLast4DigitCodeExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input startDelimiterIndex;
     signal input endDelimiterIndex;
 
-    signal output out;
+    signal output out[4];
 
     var pinCodeMaxLength = 4;
     var byteLength = pinCodeMaxLength + 2; // 2 delimiters
@@ -169,28 +174,28 @@ template PhnoLast4DigitCodeExtractor(maxDataLength) {
     shiftedBytes[0] === phnoPosition() * 255;
     shiftedBytes[5] === (phnoPosition() + 1) * 255;
 
-    out <== DigitBytesToInt(4)([shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]]);
+    out <== [shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]];
 }
 
-/// @title ExtractAndPackAsInt
-/// @notice Helper function to extract data at a position to a single int (assumes data is less than 31 bytes)
+/// @title ExtractData
+/// @notice Helper function to extract data at a position
 /// @dev This is only used for state now;
 /// @param maxDataLength - Maximum length of the data
 /// @param extractPosition - Position of the data to extract (after which delimiter does the data start)
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input delimiterIndices - indices of the delimiters in the QR data
-/// @output out - single field (int) element representing the data in big endian order (reverse string when decoded)
-template ExtractAndPackAsInt(maxDataLength, extractPosition) {
+/// @output out - data in ascii format
+template ExtractData(maxDataLength, extractPosition) {
     signal input nDelimitedData[maxDataLength];
     signal input delimiterIndices[18];
-
-    signal output out;
 
     signal startDelimiterIndex <== delimiterIndices[extractPosition - 1];
     signal endDelimiterIndex <== delimiterIndices[extractPosition];
 
-    var extractMaxLength = maxFieldByteSize(); // Packing data only as a single int
+    var extractMaxLength = maxFieldByteSize();
     var byteLength = extractMaxLength + 1;
+
+    signal output out[extractMaxLength];
 
     // Shift the data to the right till the the delimiter start
     component subArraySelector = SelectSubArray(maxDataLength, byteLength);
@@ -208,13 +213,10 @@ template ExtractAndPackAsInt(maxDataLength, extractPosition) {
     endDelimiterSelector.index <== endDelimiterIndex;
     endDelimiterSelector.out === (extractPosition + 1) * 255;
 
-    // Pack byte[] to int[] where int is field element which take up to 31 bytes
-    component outInt = PackBytes(extractMaxLength);
     for (var i = 0; i < extractMaxLength; i ++) {
-        outInt.in[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
+        out[i] <== shiftedBytes[i + 1]; // +1 to skip the delimiter
     }
 
-    out <== outInt.out[0];
 }
 
 
@@ -224,7 +226,7 @@ template ExtractAndPackAsInt(maxDataLength, extractPosition) {
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @input startDelimiterIndex - index of the delimiter after which the photo start
 /// @input endIndex - index of the last byte of the photo
-/// @output out - int[33] representing the photo in big endian order
+/// @output out - Hash of the photo
 template PhotoExtractor(maxDataLength) {
     signal input nDelimitedData[maxDataLength];
     signal input startDelimiterIndex;
@@ -276,15 +278,17 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
 
-    signal output name[2];
-    signal output yob;
-    signal output mob;
-    signal output dob;
+    // Outputs are in ascii format
+    signal output name[nameMaxLength()];
+    signal output yob[4];
+    signal output mob[2];
+    signal output dob[2];
     signal output gender;
-    signal output pincode;
-    signal output state;
-    signal output aadhaar_last_4digits;
-    signal output ph_no_last_4digits;
+    signal output pincode[6];
+    signal output state[maxFieldByteSize()];
+    signal output aadhaar_last_4digits[4];
+    signal output ph_no_last_4digits[4];
+    signal output photoHash;
 
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255
@@ -321,7 +325,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
 
 
     //Extract last 4 digit of Aadhar no
-    aadhaar_last_4digits <== DigitBytesToInt(4)([nDelimitedData[5],nDelimitedData[6],nDelimitedData[7],nDelimitedData[8]]);
+    aadhaar_last_4digits <== [nDelimitedData[5],nDelimitedData[6],nDelimitedData[7],nDelimitedData[8]];
 
     // Extract date of birth
     component dobExtractor = DOBExtractor(maxDataLength);
@@ -354,7 +358,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     ph_no_last_4digits <== phnoLast4DigitCodeExtractor.out;
 
     // Extract state
-    component stateExtractor = ExtractAndPackAsInt(maxDataLength, statePosition());
+    component stateExtractor = ExtractData(maxDataLength, statePosition());
     stateExtractor.nDelimitedData <== nDelimitedData;
     stateExtractor.delimiterIndices <== delimiterIndices;
     state <== stateExtractor.out;
@@ -364,6 +368,6 @@ template EXTRACT_QR_DATA(maxDataLength) {
     photoExtractor.nDelimitedData <== nDelimitedData;
     photoExtractor.startDelimiterIndex <== delimiterIndices[photoPosition() - 1];
     photoExtractor.endIndex <== qrDataPaddedLength - 1;
-    signal output photoHash <== photoExtractor.out;
+    photoHash <== photoExtractor.out;
 
 }

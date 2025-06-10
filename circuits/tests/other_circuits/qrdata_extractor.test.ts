@@ -60,42 +60,67 @@ describe('Aadhaar QR Data Extractor1', function () {
     });
 
     const out = await circuit.getOutput(witness, [
-      'name[2]',
-      'yob',
-      'mob',
-      'dob',
+      'name[62]',
+      'yob[4]',
+      'mob[2]',
+      'dob[2]',
       'gender',
-      'pincode',
-      'state',
-      'aadhaar_last_4digits',
-      'ph_no_last_4digits',
+      'pincode[6]',
+      'state[31]',
+      'aadhaar_last_4digits[4]',
+      'ph_no_last_4digits[4]',
     ]);
 
     await circuit.checkConstraints(witness);
-    const exptState = unpackReveal(out.state)
-      .filter(char => char !== '\x00')
-      .join('');
-
 
     const paddedName = 'Sumit Kumar'
       .padEnd(62, '\0')
       .split('')
       .map((char) => char.charCodeAt(0));
 
-    const expNameHash = BigInt(packBytesAndPoseidon(paddedName));
-      assert(poseidon2([out['name[0]'], out['name[1]']]) === expNameHash);
+    for (let i = 0; i < 62; i++) {
+      assert(Number(out[`name[${i}]`]) === paddedName[i], `Name mismatch at index ${i}`);
+    }
 
-    assert(Number(out.yob) === 1984);
-    assert(Number(out.mob) === 1);
-    assert(Number(out.dob) === 1);
+    const yearAscii = '1984'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 4; i++) {
+      assert(Number(out[`yob[${i}]`]) === yearAscii[i], `YOB mismatch at index ${i}`);
+    }
+
+    const monthAscii = '01'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 2; i++) {
+      assert(Number(out[`mob[${i}]`]) === monthAscii[i], `MOB mismatch at index ${i}`);
+    }
+
+    const dayAscii = '01'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 2; i++) {
+      assert(Number(out[`dob[${i}]`]) === dayAscii[i], `DOB mismatch at index ${i}`);
+    }
+
     assert(Number(out.gender) === 77);
-    assert(Number(out.pincode) === 110051);
-    assert(Number(out.aadhaar_last_4digits) === 2697);
-    assert(Number(out.ph_no_last_4digits) === 1234);
-    assert(exptState === 'Delhi');
+
+    const pincodeAscii = '110051'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 6; i++) {
+      assert(Number(out[`pincode[${i}]`]) === pincodeAscii[i], `PINCODE mismatch at index ${i}`);
+    }
+
+    const aadhaarLast4DigitsAscii = '2697'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 4; i++) {
+      assert(Number(out[`aadhaar_last_4digits[${i}]`]) === aadhaarLast4DigitsAscii[i], `AADHAAR mismatch at index ${i}`);
+    }
+
+    const phNoLast4DigitsAscii = '1234'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 4; i++) {
+      assert(Number(out[`ph_no_last_4digits[${i}]`]) === phNoLast4DigitsAscii[i], `PHONE mismatch at index ${i}`);
+    }
+
+    for (let i = 0; i < 31; i++) {
+        assert(Number(out[`state[${i}]`]) === 'Delhi'.padEnd(31, '\0').split('').map((char) => char.charCodeAt(0))[i], `STATE mismatch at index ${i}`);
+    }
+
   });
 
-  it.only('should extract qr data from the new test data', async function () {
+  it('should extract qr data from the new test data', async function () {
     this.timeout(0);
     const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Karnataka' });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
@@ -121,28 +146,44 @@ describe('Aadhaar QR Data Extractor1', function () {
     });
 
     const out = await circuit.getOutput(witness, [
-      'name[2]',
-      'yob',
-      'mob',
-      'dob',
+      'name[62]',
+      'yob[4]',
+      'mob[2]',
+      'dob[2]',
       'gender',
-      'pincode',
-      'state',
-      'aadhaar_last_4digits',
-      'ph_no_last_4digits',
+      'pincode[6]',
+      'state[31]',
+      'aadhaar_last_4digits[4]',
+      'ph_no_last_4digits[4]',
     ]);
 
     await circuit.checkConstraints(witness);
 
-    const exptState = unpackReveal(out.state)
-      .filter(char => char !== '\x00')
-      .join('');
+  const yearAscii = '2012'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 4; i++) {
+      assert(Number(out[`yob[${i}]`]) === yearAscii[i], `YOB mismatch at index ${i}`);
+    }
+
+    const monthAscii = '12'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 2; i++) {
+      assert(Number(out[`mob[${i}]`]) === monthAscii[i], `MOB mismatch at index ${i}`);
+    }
+
+    const dayAscii = '15'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 2; i++) {
+      assert(Number(out[`dob[${i}]`]) === dayAscii[i], `DOB mismatch at index ${i}`);
+    }
+
     assert(Number(out.gender) === 70);
-    assert(Number(out.dob) === 15);
-    assert(Number(out.mob) === 12);
-    assert(Number(out.yob) === 2012);
-    assert(Number(out.pincode) === 554587);
-    assert(exptState === 'Karnataka');
+
+    const pincodeAscii = '554587'.split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 6; i++) {
+      assert(Number(out[`pincode[${i}]`]) === pincodeAscii[i], `PINCODE mismatch at index ${i}`);
+    }
+
+    for (let i = 0; i < 31; i++) {
+        assert(Number(out[`state[${i}]`]) === 'Karnataka'.padEnd(31, '\0').split('').map((char) => char.charCodeAt(0))[i], `STATE mismatch at index ${i}`);
+    }
 
 
   });
