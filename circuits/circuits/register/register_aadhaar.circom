@@ -6,6 +6,7 @@ include "../utils/aadhaar/extractQrData.circom";
 include "../utils/passport/signatureVerifier.circom";
 include "../utils/passport/customHashers.circom";
 include "@openpassport/zk-email-circuits/utils/array.circom";
+include "@openpassport/zk-email-circuits/lib/sha.circom";
 
 /// @title: AadhaarRegister
 /// @notice Main circuit — verifies the integrity of the aadhaar data, the signature, and generates commitment and nullifier
@@ -38,10 +39,14 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     component n2bHeaderLength = Num2Bits(log2Ceil(maxDataLength));
     n2bHeaderLength.in <== qrDataPaddedLength;
 
+    // Hash the data
+    component shaHasher = Sha256Bytes(maxDataLength);
+    shaHasher.paddedIn <== qrDataPadded;
+    shaHasher.paddedInLength <== qrDataPaddedLength;
+
     // Verify the RSA signature
     component signatureVerifier = SignatureVerifier(1, n, k);
-    signatureVerifier.qrDataPadded <== qrDataPadded;
-    signatureVerifier.qrDataPaddedLength <== qrDataPaddedLength;
+    signatureVerifier.hash <== shaHasher.out;
     signatureVerifier.pubKey <== pubKey;
     signatureVerifier.signature <== signature;
 
