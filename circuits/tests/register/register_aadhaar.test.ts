@@ -102,7 +102,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     );
   });
 
-  it.only('should compile and load the circuit', async function () {
+  it('should compile and load the circuit', async function () {
     this.timeout(0);
     expect(circuit).to.not.be.undefined;
   });
