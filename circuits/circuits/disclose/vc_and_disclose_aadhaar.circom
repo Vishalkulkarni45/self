@@ -2,6 +2,8 @@ pragma circom 2.1.9;
 
 include "circomlib/circuits/bitify.circom";
 include "../utils/aadhaar/disclose/verify_commitment.circom";
+include "@openpassport/zk-email-circuits/utils/bytes.circom";
+include "../utils/aadhaar/extractQrData.circom";
 include "../utils/aadhaar/ofac/ofac_name_dob.circom";
 include "../utils/aadhaar/ofac/ofac_name_yob.circom";
 
@@ -39,14 +41,14 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input secret;
     signal input qrDataHash;
     signal input gender;
-    signal input yob;
-    signal input mob;
-    signal input dob;
-    signal input name[2];
-    signal input aadhaar_last_4digits;
-    signal input pincode;
-    signal input state;
-    signal input ph_no_last_4digits;
+    signal input yob[4];
+    signal input mob[2];
+    signal input dob[2];
+    signal input name[nameMaxLength()];
+    signal input aadhaar_last_4digits[4];
+    signal input pincode[6];
+    signal input state[maxFieldByteSize()];
+    signal input ph_no_last_4digits[4];
     signal input photoHash;
 
 
@@ -65,8 +67,8 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input siblings[nLevels];
 
     signal input selector;
-    // convert selector to 12 bits which acts as a bitmap for the fields to reveal
-    signal sel_bits[12] <== Num2Bits(12)(selector);
+    // convert selector to 119 bits which acts as a bitmap for the fields to reveal
+    signal sel_bits[119] <== Num2Bits(119)(selector);
 
 
     // verify commitment is part of the merkle tree
@@ -90,39 +92,89 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
         siblings
     );
 
+
+    signal name_packed[2] <== PackBytes(nameMaxLength())(name);
+    signal yob_integer <== DigitBytesToInt(4)(yob);
+    signal mob_integer <== DigitBytesToInt(2)(mob);
+    signal dob_integer <== DigitBytesToInt(2)(dob);
+
     // verify name-DOB in OFAC list
     component ofac_name_dob = OFAC_NAME_DOB_AADHAAR(namedobTreeLevels);
-    ofac_name_dob.name <== name;
-    ofac_name_dob.YOB <== yob;
-    ofac_name_dob.MOB <== mob;
-    ofac_name_dob.DOB <== dob;
+    ofac_name_dob.name <== name_packed;
+    ofac_name_dob.YOB <== yob_integer;
+    ofac_name_dob.MOB <== mob_integer;
+    ofac_name_dob.DOB <== dob_integer;
     ofac_name_dob.smt_leaf_key <== ofac_name_dob_smt_leaf_key;
     ofac_name_dob.smt_root <== ofac_name_dob_smt_root;
     ofac_name_dob.smt_siblings <== ofac_name_dob_smt_siblings;
 
     // verify name-YOB in OFAC list
     component ofac_name_yob = OFAC_NAME_YOB_AADHAAR(nameyobTreeLevels);
-    ofac_name_yob.name <== name;
-    ofac_name_yob.YOB <== yob;
+    ofac_name_yob.name <== name_packed;
+    ofac_name_yob.YOB <== yob_integer;
     ofac_name_yob.smt_leaf_key <== ofac_name_yob_smt_leaf_key;
     ofac_name_yob.smt_root <== ofac_name_yob_smt_root;
     ofac_name_yob.smt_siblings <== ofac_name_yob_smt_siblings;
 
     // reveal fields based on selector
     signal output reveal_gender <== gender * sel_bits[0];
-    signal output reveal_yob <== yob * sel_bits[1];
-    signal output reveal_mob <== mob * sel_bits[2];
-    signal output reveal_dob <== dob * sel_bits[3];
-    signal output reveal_name[2];
-    reveal_name[0] <== name[0] * sel_bits[4];
-    reveal_name[1] <== name[1] * sel_bits[4];
-    signal output reveal_aadhaar_last_4digits <== aadhaar_last_4digits * sel_bits[5];
-    signal output reveal_pincode <== pincode * sel_bits[6];
-    signal output reveal_state <== state * sel_bits[7];
-    signal output reveal_ph_no_last_4digits <== ph_no_last_4digits * sel_bits[8];
-    signal output reveal_photoHash <== photoHash * sel_bits[9];
-    signal output reveal_ofac_name_dob <== ofac_name_dob.ofacCheckResult * sel_bits[10];
-    signal output reveal_ofac_name_yob <== ofac_name_yob.ofacCheckResult * sel_bits[11];
+
+    signal output reveal_yob[4];
+    signal yob_int[4];
+    for (var i = 0; i < 4; i++){
+        yob_int[i] <== DigitBytesToInt(1)([yob[i]]);
+        reveal_yob[i] <== yob_int[i] * sel_bits[i + 1];
+    }
+
+    signal output reveal_mob[2];
+    signal mob_int[2];
+    for (var i = 0; i < 2; i++){
+        mob_int[i] <== DigitBytesToInt(1)([mob[i]]);
+        reveal_mob[i] <== mob_int[i] * sel_bits[i + 5];
+    }
+
+    signal output reveal_dob[2];
+    signal dob_int[2];
+    for (var i = 0; i < 2; i++){
+        dob_int[i] <== DigitBytesToInt(1)([dob[i]]);
+        reveal_dob[i] <== dob_int[i] * sel_bits[i + 7];
+    }
+
+    signal output reveal_name[nameMaxLength()];
+    for (var i = 0; i < nameMaxLength(); i++){
+        reveal_name[i] <== name[i] * sel_bits[i + 9];
+    }
+
+    signal output reveal_aadhaar_last_4digits[4];
+    signal aadhaar_last_4digits_int[4];
+    for (var i = 0; i < 4; i++){
+        aadhaar_last_4digits_int[i] <== DigitBytesToInt(1)([aadhaar_last_4digits[i]]);
+        reveal_aadhaar_last_4digits[i] <== aadhaar_last_4digits_int[i] * sel_bits[i + 71];
+    }
+
+    signal output reveal_pincode[6];
+    signal pincode_int[6];
+    for (var i = 0; i < 6; i++){
+        pincode_int[i] <== DigitBytesToInt(1)([pincode[i]]);
+        reveal_pincode[i] <== pincode_int[i] * sel_bits[i + 75];
+    }
+
+    signal output reveal_state[maxFieldByteSize()];
+    for (var i = 0; i < maxFieldByteSize(); i++){
+        reveal_state[i] <== state[i] * sel_bits[i + 81];
+    }
+
+    signal output reveal_ph_no_last_4digits[4];
+    signal ph_no_last_4digits_int[4];
+    for (var i = 0; i < 4; i++){
+        ph_no_last_4digits_int[i] <== DigitBytesToInt(1)([ph_no_last_4digits[i]]);
+        reveal_ph_no_last_4digits[i] <== ph_no_last_4digits_int[i] * sel_bits[i + 112];
+    }
+
+    signal output reveal_photoHash <== photoHash * sel_bits[116];
+
+    signal output reveal_ofac_name_dob <== ofac_name_dob.ofacCheckResult * sel_bits[117];
+    signal output reveal_ofac_name_yob <== ofac_name_yob.ofacCheckResult * sel_bits[118];
 
 
 }

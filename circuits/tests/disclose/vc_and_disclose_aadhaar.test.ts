@@ -11,7 +11,7 @@ import {
 
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
-import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
+import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash';
 import {  poseidon14, poseidon2 } from 'poseidon-lite';
 import { packBytes } from '../../../common/src/utils/bytes';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
@@ -26,16 +26,17 @@ import { COMMITMENT_TREE_DEPTH } from '../../../common/src/constants/constants';
 import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobSMT.json';
 import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobSMT.json';
 import { SMT } from '@openpassport/zk-kit-smt';
+import { stringToAsciiArray } from '../utils/aadhaar/utils';
 
 let QRData: string = testQRData;
 
-//Converts 12 selctor to single field
-function selectorToField(bits: number[]): number {
-  if (bits.length !== 12) throw new Error('Input must be 12 bits');
-  let result = 0;
-  for (let i = 0; i < 12; i++) {
+//Converts 119 selctor to single field
+function selectorToField(bits: number[]): bigint {
+  if (bits.length !== 119) throw new Error('Input must be 119 bits');
+  let result = 0n;
+  for (let i = 0; i < 119; i++) {
     if (bits[i]) {
-      result += 1 << i;
+      result += 1n << BigInt(i);
     }
   }
   return result;
@@ -60,34 +61,21 @@ function prepareTestData() {
   }
 
   const yob = '1984';
-  const mob = '1';
-  const dob = '1';
+  const mob = '01';
+  const dob = '01';
 
   const paddedName = 'Sumit Kumar'
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
-  const name = packBytes(paddedName);
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
-  const commitment = poseidon14([
-    BigInt(3),
-    BigInt(1234),
-    qrHash,
-    BigInt(77),
-    BigInt(yob),
-    BigInt(mob),
-    BigInt(dob),
-    name[0],
-    name[1],
-    BigInt(2697),
-    BigInt(110051),
-    BigInt(452723500356),
-    BigInt(1234),
-    BigInt(photoHash),
-  ]);
+
+  const nullifierArgs = [77, ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
+  const commitmentInputs = [3 , 1234, qrHash, ...nullifierArgs, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Delhi'.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
+  const commitment = customHasher(commitmentInputs.map(String));
 
   const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
   tree.insert(BigInt(commitment));
@@ -98,7 +86,7 @@ function prepareTestData() {
   const nameAndYob_smt = new SMT(poseidon2, true);
   nameAndYob_smt.import(nameAndYobAadhaarjson);
 
-  const index = findIndexInTree(tree, commitment);
+  const index = findIndexInTree(tree, BigInt(commitment));
   const {
     siblings,
     path: merkle_path,
@@ -125,14 +113,14 @@ function prepareTestData() {
     secret: '1234',
     qrDataHash: qrHash,
     gender: '77',
-    yob,
-    mob,
-    dob,
-    name: formatInput(name.slice(0, 2)),
-    aadhaar_last_4digits: '2697',
-    pincode: '110051',
-    state: '452723500356',
-    ph_no_last_4digits: '1234',
+    yob:stringToAsciiArray(yob),
+    mob:stringToAsciiArray(mob),
+    dob:stringToAsciiArray(dob),
+    name: formatInput(paddedName),
+    aadhaar_last_4digits: stringToAsciiArray('2697'),
+    pincode: stringToAsciiArray('110051'),
+    state: stringToAsciiArray('Delhi'.padEnd(31, '\0')),
+    ph_no_last_4digits: stringToAsciiArray('1234'),
     photoHash: formatInput(BigInt(photoHash)),
     merkle_root: formatInput(tree.root),
     leaf_depth: formatInput(leaf_depth),
@@ -180,19 +168,22 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
 
-    inputs.selector = formatInput(selectorToField([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))[0];
+    const sel_bits = Array(119).fill(0);
+    sel_bits[0] = 1;
+    inputs.selector = formatInput(selectorToField(sel_bits))[0];
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
     const outputs = await circuit.getOutput(w, [
       'reveal_gender',
-      'reveal_yob',
-      'reveal_mob',
-      'reveal_dob',
-      'reveal_name[2]',
-      'reveal_aadhaar_last_4digits',
-      'reveal_pincode',
-      'reveal_ph_no_last_4digits',
+      'reveal_yob[4]',
+      'reveal_mob[2]',
+      'reveal_dob[2]',
+      'reveal_name[62]',
+      'reveal_aadhaar_last_4digits[4]',
+      'reveal_pincode[6]',
+      'reveal_state[31]',
+      'reveal_ph_no_last_4digits[4]',
       'reveal_photoHash',
       'reveal_ofac_name_dob',
       'reveal_ofac_name_yob',
@@ -207,7 +198,21 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
-    const sel_bits = [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1];
+    const sel_bits = Array(119).fill(0);
+    // year selector
+    sel_bits[1] = 1;
+    sel_bits[2] = 1;
+    sel_bits[3] = 1;
+    sel_bits[4] = 1;
+    // month selector
+    sel_bits[5] = 1;
+    sel_bits[6] = 1;
+    // day selector
+    sel_bits[7] = 1;
+    sel_bits[8] = 1;
+
+    // ofac name yob selector
+    sel_bits[118] = 1;
 
     inputs.selector = formatInput(selectorToField(sel_bits))[0];
     const w = await circuit.calculateWitness(inputs);
@@ -215,43 +220,59 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     const outputs = await circuit.getOutput(w, [
       'reveal_gender',
-      'reveal_yob',
-      'reveal_mob',
-      'reveal_dob',
-      'reveal_name[2]',
-      'reveal_aadhaar_last_4digits',
-      'reveal_pincode',
-      'reveal_state',
-      'reveal_ph_no_last_4digits',
+      'reveal_yob[4]',
+      'reveal_mob[2]',
+      'reveal_dob[2]',
+      'reveal_name[62]',
+      'reveal_aadhaar_last_4digits[4]',
+      'reveal_pincode[6]',
+      'reveal_state[31]',
+      'reveal_ph_no_last_4digits[4]',
       'reveal_photoHash',
       'reveal_ofac_name_dob',
       'reveal_ofac_name_yob',
     ]);
-    assert(BigInt(outputs.reveal_yob) === BigInt(1984), 'YOB should be 1984');
-    assert(BigInt(outputs.reveal_mob) === BigInt(1), 'MOB should be 1');
-    assert(BigInt(outputs.reveal_dob) === BigInt(1), 'DOB should be 1');
+
+    // check if the outputs are correct
+    assert(BigInt(outputs['reveal_yob[0]']) === BigInt(1), 'YOB[0] should be 1');
+    assert(BigInt(outputs['reveal_yob[1]']) === BigInt(9), 'YOB[1] should be 9');
+    assert(BigInt(outputs['reveal_yob[2]']) === BigInt(8), 'YOB[2] should be 8');
+    assert(BigInt(outputs['reveal_yob[3]']) === BigInt(4), 'YOB[3] should be 4');
+
+    assert(BigInt(outputs['reveal_mob[0]']) === BigInt(0), 'MOB[0] should be 0');
+    assert(BigInt(outputs['reveal_mob[1]']) === BigInt(1), 'MOB[1] should be 1');
+
+    assert(BigInt(outputs['reveal_dob[0]']) === BigInt(0), 'DOB[0] should be 0');
+    assert(BigInt(outputs['reveal_dob[1]']) === BigInt(1), 'DOB[1] should be 1');
+
     assert(BigInt(outputs.reveal_ofac_name_yob) === BigInt(1), 'OFAC Name YOB should be 1');
 
-    let i = 0;
-    let j = 0;
-    const outputKeys = Object.keys(outputs);
-    while (i < outputKeys.length) {
-      if (sel_bits[j] == 0) {
-        if (i == 4) {
-          assert(BigInt(outputs[outputKeys[i]]) === BigInt(0), `${outputKeys[i]} should be zero`);
-          assert(
-            BigInt(outputs[outputKeys[i + 1]]) === BigInt(0),
-            `${outputKeys[i]} should be zero`
-          );
-          i += 2;
-        } else {
-          assert(BigInt(outputs[outputKeys[i]]) === BigInt(0), `${outputKeys[i]} should be zero`);
-          i++;
-        }
-      } else {
-        i++;
-      }
-      j++;
+    // check that all other outputs are zero
+    assert(BigInt(outputs.reveal_gender) === 0n, 'reveal_gender should be zero');
+
+    for (let i = 0; i < 62; i++) {
+      assert(BigInt(outputs[`reveal_name[${i}]`]) === 0n, `reveal_name[${i}] should be zero`);
     }
+    for (let i = 0; i < 4; i++) {
+      assert(
+        BigInt(outputs[`reveal_aadhaar_last_4digits[${i}]`]) === 0n,
+        `reveal_aadhaar_last_4digits[${i}] should be zero`,
+      );
+    }
+    for (let i = 0; i < 6; i++) {
+      assert(BigInt(outputs[`reveal_pincode[${i}]`]) === 0n, `reveal_pincode[${i}] should be zero`);
+    }
+    for (let i = 0; i < 31; i++) {
+      assert(BigInt(outputs[`reveal_state[${i}]`]) === 0n, `reveal_state[${i}] should be zero`);
+    }
+    for (let i = 0; i < 4; i++) {
+      assert(
+        BigInt(outputs[`reveal_ph_no_last_4digits[${i}]`]) === 0n,
+        `reveal_ph_no_last_4digits[${i}] should be zero`,
+      );
+    }
+
+    assert(BigInt(outputs.reveal_photoHash) === 0n, 'reveal_photoHash should be zero');
+    assert(BigInt(outputs.reveal_ofac_name_dob) === 0n, 'reveal_ofac_name_dob should be zero');
   });
 });

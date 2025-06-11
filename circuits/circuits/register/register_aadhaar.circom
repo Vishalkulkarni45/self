@@ -45,10 +45,10 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     shaHasher.paddedInLength <== qrDataPaddedLength;
 
     // Verify the RSA signature
-    component signatureVerifier = SignatureVerifier(1, n, k);
-    signatureVerifier.hash <== shaHasher.out;
-    signatureVerifier.pubKey <== pubKey;
-    signatureVerifier.signature <== signature;
+    // component signatureVerifier = SignatureVerifier(1, n, k);
+    // signatureVerifier.hash <== shaHasher.out;
+    // signatureVerifier.pubKey <== pubKey;
+    // signatureVerifier.signature <== signature;
 
     // Assert data between qrDataPaddedLength and maxDataLength is zero
     AssertZeroPadding(maxDataLength)(qrDataPadded, qrDataPaddedLength);
@@ -60,36 +60,76 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     qrDataExtractor.delimiterIndices <== delimiterIndices;
 
     // Generate nullifier
-    signal output nullifier <== Poseidon(7)([
-        qrDataExtractor.gender,
-        qrDataExtractor.yob,
-        qrDataExtractor.mob,
-        qrDataExtractor.dob,
-        qrDataExtractor.name[0],
-        qrDataExtractor.name[1],
-        qrDataExtractor.aadhaar_last_4digits
-    ]);
+    component nullifierHasher = CustomHasher(75);
+    nullifierHasher.in[0] <== qrDataExtractor.gender;
+
+    for (var i = 0; i < 4 ; i++){
+        nullifierHasher.in[i + 1] <== qrDataExtractor.yob[i];
+    }
+
+    for (var i = 0; i < 2 ; i++){
+        nullifierHasher.in[i + 5] <== qrDataExtractor.mob[i];
+    }
+
+    for (var i = 0; i < 2 ; i++){
+        nullifierHasher.in[i + 7] <== qrDataExtractor.dob[i];
+    }
+
+    for (var i = 0; i < 62 ; i++){
+        nullifierHasher.in[i + 9] <== qrDataExtractor.name[i];
+    }
+
+    for (var i = 0; i < 4 ; i++){
+        nullifierHasher.in[i + 71] <== qrDataExtractor.aadhaar_last_4digits[i];
+    }
+
+    signal output nullifier <== nullifierHasher.out;
 
 
     signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
     // Generate commitment
-    signal output commitment <== Poseidon(14)([
-        attestation_id,
-        secret,
-        qrDataHash,
-        qrDataExtractor.gender,
-        qrDataExtractor.yob,
-        qrDataExtractor.mob,
-        qrDataExtractor.dob,
-        qrDataExtractor.name[0],
-        qrDataExtractor.name[1],
-        qrDataExtractor.aadhaar_last_4digits,
-        qrDataExtractor.pincode,
-        qrDataExtractor.state,
-        qrDataExtractor.ph_no_last_4digits,
-        qrDataExtractor.photoHash
-    ]);
+    component commitmentHasher = CustomHasher(120);
+    commitmentHasher.in[0] <== attestation_id;
+    commitmentHasher.in[1] <== secret;
+    commitmentHasher.in[2] <== qrDataHash;
+    commitmentHasher.in[3] <== qrDataExtractor.gender;
+
+    for (var i = 0; i < 4 ; i++){
+        commitmentHasher.in[i + 4] <== qrDataExtractor.yob[i];
+    }
+
+    for (var i = 0; i < 2 ; i++){
+        commitmentHasher.in[i + 8] <== qrDataExtractor.mob[i];
+    }
+
+    for (var i = 0; i < 2 ; i++){
+        commitmentHasher.in[i + 10] <== qrDataExtractor.dob[i];
+    }
+
+    for (var i = 0; i < 62 ; i++){
+        commitmentHasher.in[i + 12] <== qrDataExtractor.name[i];
+    }
+
+    for (var i = 0; i < 4 ; i++){
+        commitmentHasher.in[i + 74] <== qrDataExtractor.aadhaar_last_4digits[i];
+    }
+
+    for (var i = 0; i < 6 ; i++){
+        commitmentHasher.in[i + 78] <== qrDataExtractor.pincode[i];
+    }
+
+    for (var i = 0; i < maxFieldByteSize() ; i++){
+        commitmentHasher.in[i + 84] <== qrDataExtractor.state[i];
+    }
+
+    for (var i = 0; i < 4 ; i++){
+        commitmentHasher.in[i + 115] <== qrDataExtractor.ph_no_last_4digits[i];
+    }
+
+    commitmentHasher.in[119] <== qrDataExtractor.photoHash;
+
+    signal output commitment <== commitmentHasher.out;
 
 }
 

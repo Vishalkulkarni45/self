@@ -1,7 +1,6 @@
 pragma circom 2.1.9;
 
 include "anon-aadhaar-circuits/src/helpers/constants.circom";
-include "anon-aadhaar-circuits/src/utils/pack.circom";
 include "circomlib/circuits/comparators.circom";
 include "circomlib/circuits/bitify.circom";
 include "circomlib/circuits/poseidon.circom";
@@ -258,6 +257,8 @@ template PhotoExtractor(maxDataLength) {
 
     out <== outInt.out;
 }
+
+//TODO: Currently we use state to be 31 bytes , but this can be reduced to MAX LENGTH OF STATE
 
 /// @title EXTRACT_QR_DATA
 /// @notice Extracts the data from the Aadhaar QR data
