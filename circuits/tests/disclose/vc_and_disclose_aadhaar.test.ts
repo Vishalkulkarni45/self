@@ -12,8 +12,7 @@ import {
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import {  poseidon14, poseidon2 } from 'poseidon-lite';
-import { packBytes } from '../../../common/src/utils/bytes';
+import { poseidon2 } from 'poseidon-lite';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs';
 import {
@@ -27,6 +26,7 @@ import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobSM
 import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobSMT.json';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { stringToAsciiArray } from '../utils/aadhaar/utils';
+import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
 
 let QRData: string = testQRData;
 
@@ -42,12 +42,19 @@ function selectorToField(bits: number[]): bigint {
   return result;
 }
 
-function prepareTestData() {
-  const qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
+function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01-01-1984') {
+
+  let qrDataBytes: any;
+
+  if(name){
+    const newTestData = generateTestData({ data: testCustomData, name: name , dob: dateOfBirth});
+    qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+  }else{
+    qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
+  }
+
   const decodedData = decompressByteArray(qrDataBytes);
-
   const signedData = decodedData.slice(0, decodedData.length - 256);
-
   const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
 
   const delimiterIndices: number[] = [];
@@ -60,11 +67,13 @@ function prepareTestData() {
     }
   }
 
-  const yob = '1984';
-  const mob = '01';
-  const dob = '01';
+  const [dob, mob, yob] = dateOfBirth.split('-');
 
-  const paddedName = 'Sumit Kumar'
+  console.log('yob',yob);
+  console.log('mob',mob);
+  console.log('dob',dob);
+
+  const paddedName = name
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
@@ -83,6 +92,8 @@ function prepareTestData() {
   const nameAndDob_smt = new SMT(poseidon2, true);
   nameAndDob_smt.import(nameAndDobAadhaarjson);
 
+  console.log('nameAndDob_smt',nameAndDob_smt);
+
   const nameAndYob_smt = new SMT(poseidon2, true);
   nameAndYob_smt.import(nameAndYobAadhaarjson);
 
@@ -93,8 +104,8 @@ function prepareTestData() {
     leaf_depth,
   } = generateMerkleProof(tree, index, COMMITMENT_TREE_DEPTH);
 
-  const namedob_leaf = getNameDobLeafAadhaar('Sumit Kumar', yob, mob, dob);
-  const nameyob_leaf = getNameYobLeafAahaar('Sumit Kumar', yob);
+  const namedob_leaf = getNameDobLeafAadhaar(name, yob, mob, dob);
+  const nameyob_leaf = getNameYobLeafAahaar(name, yob);
 
   const {
     root: ofac_name_dob_smt_root,
@@ -158,12 +169,14 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     this.timeout(0);
     expect(circuit).to.not.be.undefined;
   });
+
   it('should calculate witness and pass constrain check', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });
+
   it('should reveal gender only', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
@@ -274,5 +287,33 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     assert(BigInt(outputs.reveal_photoHash) === 0n, 'reveal_photoHash should be zero');
     assert(BigInt(outputs.reveal_ofac_name_dob) === 0n, 'reveal_ofac_name_dob should be zero');
+  });
+
+  it.only('reveal_ofac_name_dob should be 0 if exists in ofac_name_dob_smt', async function () {
+    this.timeout(0);
+    const { inputs } = prepareTestData('ABU ABBAS','10-12-1948');
+    const sel_bits = Array(119).fill(0);
+    sel_bits[117] = 1;
+    inputs.selector = formatInput(selectorToField(sel_bits))[0];
+    const w = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(w);
+
+    const outputs = await circuit.getOutput(w, [
+      'reveal_gender',
+      'reveal_yob[4]',
+      'reveal_mob[2]',
+      'reveal_dob[2]',
+      'reveal_name[62]',
+      'reveal_aadhaar_last_4digits[4]',
+      'reveal_pincode[6]',
+      'reveal_state[31]',
+      'reveal_ph_no_last_4digits[4]',
+      'reveal_photoHash',
+      'reveal_ofac_name_dob',
+      'reveal_ofac_name_yob',
+    ]);
+
+    assert(BigInt(outputs.reveal_ofac_name_dob) === BigInt(0), 'reveal_ofac_name_dob should be 0');
+
   });
 });

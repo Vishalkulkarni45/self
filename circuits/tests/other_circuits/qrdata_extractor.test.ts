@@ -6,10 +6,7 @@ import { sha256Pad } from '@zk-email/helpers/dist/sha-utils';
 import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format';
 import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@anon-aadhaar/core';
 import { assert } from 'chai';
-import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon2, poseidon3 } from 'poseidon-lite';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
-import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;

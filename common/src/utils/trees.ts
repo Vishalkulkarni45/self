@@ -488,18 +488,22 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     const entry = field[i];
 
     if (i !== 0) {
-      console.log('Processing', treetype, 'number', i, 'out of', field.length);
+    //  console.log('Processing', treetype, 'number', i, 'out of', field.length);
     }
 
     let leaf = BigInt(0);
     if (treetype == 'name_and_dob') {
       leaf = processNameAndDobAadhaar(entry, i);
+      if (i ==0) {
+        console.log("expt leaf ", leaf );
+
+      }
     } else if (treetype == 'name_and_yob') {
       leaf = processNameAndYobAadhaar(entry, i);
     }
 
     if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
-      console.log('This entry already exists in the tree, skipping...');
+    //  console.log('This entry already exists in the tree, skipping...');
       continue;
     }
 
@@ -507,8 +511,8 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     tree.add(leaf, BigInt(1));
   }
 
-  console.log('Total', treetype, 'paresed are : ', count, ' over ', field.length);
-  console.log(treetype, 'tree built in', performance.now() - startTime, 'ms');
+  // console.log('Total', treetype, 'paresed are : ', count, ' over ', field.length);
+  // console.log(treetype, 'tree built in', performance.now() - startTime, 'ms');
   return [count, performance.now() - startTime, tree];
 }
 
@@ -525,7 +529,7 @@ const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
   }
 
   const name = processNameAadhaar(firstName, lastName);
-  const dob = processDobHashAadhaar(year, month, day);
+  const dob = processDobAadhaar(year, month, day);
 
   return generateSmallKey(poseidon5([name[0], name[1], dob[0], dob[1], dob[2]]));
 };
@@ -552,7 +556,7 @@ const processNameAadhaar = (firstName: string, lastName: string): bigint[] => {
   return packBytes(nameArr);
 };
 
-const processDobHashAadhaar = (year: string, month: string, day: string): bigint[] => {
+const processDobAadhaar = (year: string, month: string, day: string): bigint[] => {
   const monthMap: { [key: string]: string } = {
     jan: '01',
     feb: '02',

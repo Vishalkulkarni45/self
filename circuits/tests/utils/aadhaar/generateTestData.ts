@@ -1,9 +1,14 @@
 import {
   convertBigIntToByteArray,
   decompressByteArray,
-  createCustomV2TestData,
   returnFullId,
   rawDataToCompressedQR,
+  returnNewDateString,
+  replaceBytesBetween,
+  IdFields,
+  extractPhoto,
+  getRandomBytes,
+  getEndIndex,
 } from '@anon-aadhaar/core'
 import crypto from 'crypto'
 import fs from 'fs'
@@ -45,6 +50,7 @@ export const generateTestData = ({
   pincode,
   state,
   photo,
+  name,
 }: {
   data: string
   dob?: string
@@ -52,6 +58,7 @@ export const generateTestData = ({
   pincode?: string
   state?: string
   photo?: boolean
+  name?: string
 }) => {
   const qrDataBytes = convertBigIntToByteArray(BigInt(data))
   const decodedData = decompressByteArray(qrDataBytes)
@@ -82,4 +89,151 @@ export const generateTestData = ({
   }
 
   return newQrData
+}
+// This modify the test data to make it compliant with the secure Aadhaar QR V2 2022
+// - Adds the version specifier at the beginning 'V2'
+// - Mocks last 4 digits of phone number '1234' after VTC
+// - Refresh timestamp data to now
+// - Optionally it can take parameters to change the test data fields (dob, pinCode, gender, state)
+export const createCustomV2TestData = ({
+  signedData,
+  dob,
+  pincode,
+  gender,
+  state,
+  photo,
+  name,
+}: {
+  signedData: Uint8Array
+  dob?: string
+  pincode?: string
+  gender?: string
+  state?: string
+  photo?: boolean
+  name?: string
+}) => {
+  const allDataParsed: number[][] = []
+  const delimiterIndices: number[] = []
+  let countDelimiter = 0
+  let temp: number[] = []
+  for (let i = 0; i < signedData.length; i++) {
+    if (countDelimiter < 16) {
+      if (signedData[i] !== 255) {
+        temp.push(signedData[i])
+      } else {
+        countDelimiter += 1
+        allDataParsed.push(temp)
+        delimiterIndices.push(i)
+        temp = []
+      }
+    } else {
+      break
+    }
+  }
+
+  // Set new timestamp to the time of the signature
+  const newDateString = returnNewDateString()
+  const newTimestamp = new TextEncoder().encode(newDateString)
+  const signedDataWithNewTimestamp = replaceBytesBetween(
+    signedData,
+    newTimestamp,
+    6,
+    5 + newTimestamp.length
+  )
+
+  let modifiedSignedData: Uint8Array = signedDataWithNewTimestamp
+
+  if (dob) {
+    const newDOB = new TextEncoder().encode(dob)
+    modifiedSignedData = replaceBytesBetween(
+      modifiedSignedData,
+      newDOB,
+      delimiterIndices[IdFields.DOB - 1] + 1,
+      delimiterIndices[IdFields.DOB - 1] + allDataParsed[IdFields.DOB].length
+    )
+  }
+
+  if (gender) {
+    const newGender = new TextEncoder().encode(gender)
+    modifiedSignedData = replaceBytesBetween(
+      modifiedSignedData,
+      newGender,
+      delimiterIndices[IdFields.Gender - 1] + 1,
+      delimiterIndices[IdFields.Gender - 1] +
+        allDataParsed[IdFields.Gender].length
+    )
+  }
+
+  if (pincode) {
+    const newPincode = new TextEncoder().encode(pincode)
+    modifiedSignedData = replaceBytesBetween(
+      modifiedSignedData,
+      newPincode,
+      delimiterIndices[IdFields.PinCode - 1] + 1,
+      delimiterIndices[IdFields.PinCode - 1] +
+        allDataParsed[IdFields.PinCode].length
+    )
+  }
+
+  if (state) {
+    const newState = new TextEncoder().encode(state)
+    modifiedSignedData = replaceBytesBetween(
+      modifiedSignedData,
+      newState,
+      delimiterIndices[IdFields.State - 1] + 1,
+      delimiterIndices[IdFields.State - 1] +
+        allDataParsed[IdFields.State].length
+    )
+  }
+
+  if (name) {
+    const newName = new TextEncoder().encode(name)
+    modifiedSignedData = replaceBytesBetween(
+      modifiedSignedData,
+      newName,
+      delimiterIndices[IdFields.Name - 1] + 1,
+      delimiterIndices[IdFields.Name - 1] + allDataParsed[IdFields.Name].length
+    )
+  }
+
+  if (photo) {
+    const { begin, dataLength } = extractPhoto(
+      Array.from(modifiedSignedData),
+      modifiedSignedData.length
+    )
+    const photoLength = dataLength - begin
+
+    modifiedSignedData = replaceBytesBetween(
+      modifiedSignedData,
+      getRandomBytes(photoLength - 1),
+      begin + 1,
+      begin + photoLength - 1
+    )
+  }
+
+  const versionSpecifier = new Uint8Array([86, 50, 255]) // 'V2' in ASCII followed by 255
+  const number1234 = new Uint8Array([49, 50, 51, 52, 255]) // '1234' in ASCII followed by 255
+  const beforeInsertion = new Uint8Array(
+    modifiedSignedData.slice(0, getEndIndex(modifiedSignedData))
+  )
+  const afterInsertion = new Uint8Array(
+    modifiedSignedData.slice(getEndIndex(modifiedSignedData))
+  )
+
+  // Combine all parts together
+  const newData = new Uint8Array(
+    versionSpecifier.length +
+      beforeInsertion.length +
+      number1234.length +
+      afterInsertion.length
+  )
+  newData.set(versionSpecifier, 0)
+  newData.set(beforeInsertion, versionSpecifier.length)
+  newData.set(number1234, versionSpecifier.length + beforeInsertion.length)
+  newData.set(
+    afterInsertion,
+    versionSpecifier.length + beforeInsertion.length + number1234.length
+  )
+
+  return newData
 }
