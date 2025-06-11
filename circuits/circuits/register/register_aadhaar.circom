@@ -45,10 +45,10 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     shaHasher.paddedInLength <== qrDataPaddedLength;
 
     // Verify the RSA signature
-    // component signatureVerifier = SignatureVerifier(1, n, k);
-    // signatureVerifier.hash <== shaHasher.out;
-    // signatureVerifier.pubKey <== pubKey;
-    // signatureVerifier.signature <== signature;
+    component signatureVerifier = SignatureVerifier(1, n, k);
+    signatureVerifier.hash <== shaHasher.out;
+    signatureVerifier.pubKey <== pubKey;
+    signatureVerifier.signature <== signature;
 
     // Assert data between qrDataPaddedLength and maxDataLength is zero
     AssertZeroPadding(maxDataLength)(qrDataPadded, qrDataPaddedLength);

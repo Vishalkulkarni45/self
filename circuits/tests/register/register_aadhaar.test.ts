@@ -20,6 +20,8 @@ import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash';
 import { stringToAsciiArray } from '../utils/aadhaar/utils';
+import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
+import { formatInput } from '../../../common/src/utils/circuits/generateInputs';
 
 
 let QRData: string = testQRData;
@@ -59,15 +61,18 @@ function prepareTestData() {
     .split('')
     .map((char) => char.charCodeAt(0));
 
-  const nullifierInputs = [77, ...stringToAsciiArray('1984'), ...stringToAsciiArray('01'), ...stringToAsciiArray('01'), ...paddedName, ...stringToAsciiArray('2697')];
-  assert(nullifierInputs.length === 75, 'Nullifier inputs length should be 75');
-  const nullifier = customHasher(nullifierInputs.map(String));
+    const yob = '1984';
+  const mob = '01';
+  const dob = '01';
+
+  const nullifierArgs = [77, ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
+  const nullifier = customHasher(nullifierArgs.map(String));
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
-  const commitmentInputs = [3 , 1234, qrHash, ...nullifierInputs, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Karnataka'.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
+  const commitmentInputs = [3 , 1234, qrHash, ...nullifierArgs, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Delhi'.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
   assert(commitmentInputs.length === 120, 'Commitment inputs length should be 120');
   const commitment = customHasher(commitmentInputs.map(String));
 
@@ -87,7 +92,6 @@ function prepareTestData() {
     commitment,
   };
 }
-
 describe(' REGISTER AADHAAR Circuit Tests', function () {
   let circuit: any;
   this.beforeAll(async function () {
@@ -122,4 +126,60 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     assert(BigInt(out.nullifier) === BigInt(nullifier));
     assert(BigInt(out.commitment) === BigInt(commitment));
   });
+
+  it('should not verify the signature of created from different key', async function () {
+    this.timeout(0);
+    const { inputs } = prepareTestData();
+    const newTestData = generateTestData({ data: testCustomData });
+    const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+    const decodedData = decompressByteArray(QRDataBytes);
+
+    const signatureBytes = decodedData.slice(decodedData.length - 256, decodedData.length);
+    const newSignature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
+    inputs.signature = formatInput(newSignature);
+
+    const w = await circuit.calculateWitness(inputs);
+
+    try {
+      await circuit.checkConstraints(w);
+    } catch (error) {
+      expect(error).to.exist;
+    }
+  });
+
+
+  it('should fail when qrdata is tampered', async function () {
+    this.timeout(0);
+     const { inputs } = prepareTestData();
+
+    const newTestData = generateTestData({ data: testCustomData,  gender: 'F' });
+    const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+    const decodedData = decompressByteArray(QRDataBytes);
+
+    const signedData = decodedData.slice(0, decodedData.length - 256);
+
+    const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
+
+    inputs.qrDataPadded = Uint8ArrayToCharArray(qrDataPadded);
+    inputs.qrDataPaddedLength = qrDataPaddedLen;
+
+    const w = await circuit.calculateWitness(inputs);
+
+    try {
+      await circuit.checkConstraints(w);
+    } catch (error) {
+      expect(error).to.exist;
+    }
+  });
+
+  it('should return different commitment when secret is tampered', async function () {
+    this.timeout(0);
+    const { inputs, commitment } = prepareTestData();
+    inputs.secret = '1235';
+    const w = await circuit.calculateWitness(inputs);
+
+    const out = await circuit.getOutput(w, ['commitment']);
+    assert(BigInt(out.commitment) !== BigInt(commitment));
+  });
+
 });
