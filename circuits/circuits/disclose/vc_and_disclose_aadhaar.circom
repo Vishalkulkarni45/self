@@ -176,7 +176,6 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal output reveal_ofac_name_dob <== ofac_name_dob.ofacCheckResult * sel_bits[117];
     signal output reveal_ofac_name_yob <== ofac_name_yob.ofacCheckResult * sel_bits[118];
 
-    log("sel ", sel_bits[117]);
 }
 
 component main { public

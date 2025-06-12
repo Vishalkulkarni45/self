@@ -488,7 +488,7 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     const entry = field[i];
 
     if (i !== 0) {
-    //  console.log('Processing', treetype, 'number', i, 'out of', field.length);
+      console.log('Processing', treetype, 'number', i, 'out of', field.length);
     }
 
     let leaf = BigInt(0);
@@ -503,7 +503,7 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     }
 
     if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
-    //  console.log('This entry already exists in the tree, skipping...');
+      console.log('This entry already exists in the tree, skipping...');
       continue;
     }
 
@@ -511,8 +511,6 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     tree.add(leaf, BigInt(1));
   }
 
-  // console.log('Total', treetype, 'paresed are : ', count, ' over ', field.length);
-  // console.log(treetype, 'tree built in', performance.now() - startTime, 'ms');
   return [count, performance.now() - startTime, tree];
 }
 
@@ -547,7 +545,6 @@ const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
   return generateSmallKey(poseidon3([name[0], name[1], BigInt(year)]));
 };
 
-//TODO: Check how aadhaar does it
 const processNameAadhaar = (firstName: string, lastName: string): bigint[] => {
   const nameArr = (firstName + ' ' + lastName)
     .padEnd(62, '\0')

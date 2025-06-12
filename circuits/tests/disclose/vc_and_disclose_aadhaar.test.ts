@@ -22,8 +22,8 @@ import {
   getNameYobLeafAahaar,
 } from '../../../common/src/utils/trees';
 import { COMMITMENT_TREE_DEPTH } from '../../../common/src/constants/constants';
-import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobSMT.json';
-import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobSMT.json';
+import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json';
+import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { stringToAsciiArray } from '../utils/aadhaar/utils';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
@@ -69,10 +69,6 @@ function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01
 
   const [dob, mob, yob] = dateOfBirth.split('-');
 
-  console.log('yob',yob);
-  console.log('mob',mob);
-  console.log('dob',dob);
-
   const paddedName = name
     .padEnd(62, '\0')
     .split('')
@@ -91,8 +87,6 @@ function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01
 
   const nameAndDob_smt = new SMT(poseidon2, true);
   nameAndDob_smt.import(nameAndDobAadhaarjson);
-
-  console.log('nameAndDob_smt',nameAndDob_smt);
 
   const nameAndYob_smt = new SMT(poseidon2, true);
   nameAndYob_smt.import(nameAndYobAadhaarjson);
@@ -289,11 +283,12 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     assert(BigInt(outputs.reveal_ofac_name_dob) === 0n, 'reveal_ofac_name_dob should be zero');
   });
 
-  it.only('reveal_ofac_name_dob should be 0 if exists in ofac_name_dob_smt', async function () {
+  it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData('ABU ABBAS','10-12-1948');
     const sel_bits = Array(119).fill(0);
     sel_bits[117] = 1;
+    sel_bits[118] = 1;
     inputs.selector = formatInput(selectorToField(sel_bits))[0];
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
@@ -314,6 +309,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     ]);
 
     assert(BigInt(outputs.reveal_ofac_name_dob) === BigInt(0), 'reveal_ofac_name_dob should be 0');
-
+    assert(BigInt(outputs.reveal_ofac_name_yob) === BigInt(0), 'reveal_ofac_name_yob should be 0');
   });
 });
