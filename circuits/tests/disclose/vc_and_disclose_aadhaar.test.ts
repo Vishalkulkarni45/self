@@ -57,16 +57,6 @@ function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01
   const signedData = decodedData.slice(0, decodedData.length - 256);
   const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
 
-  const delimiterIndices: number[] = [];
-  for (let i = 0; i < qrDataPadded.length; i++) {
-    if (qrDataPadded[i] === 255) {
-      delimiterIndices.push(i);
-    }
-    if (delimiterIndices.length === 18) {
-      break;
-    }
-  }
-
   const [dob, mob, yob] = dateOfBirth.split('-');
 
   const paddedName = name

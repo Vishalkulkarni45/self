@@ -119,7 +119,7 @@ describe('Aadhaar QR Data Extractor1', function () {
 
   it('should extract qr data from the new test data', async function () {
     this.timeout(0);
-    const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Karnataka' });
+    const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Karnataka', name: 'KL RAHUL' });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const QRDataDecode = decompressByteArray(QRDataBytes);
 
@@ -156,7 +156,12 @@ describe('Aadhaar QR Data Extractor1', function () {
 
     await circuit.checkConstraints(witness);
 
-  const yearAscii = '2012'.split('').map((char) => char.charCodeAt(0));
+    const nameAscii = 'KL RAHUL'.padEnd(62, '\0').split('').map((char) => char.charCodeAt(0));
+    for (let i = 0; i < 62; i++) {
+      assert(Number(out[`name[${i}]`]) === nameAscii[i], `NAME mismatch at index ${i}`);
+    }
+
+    const yearAscii = '2012'.split('').map((char) => char.charCodeAt(0));
     for (let i = 0; i < 4; i++) {
       assert(Number(out[`yob[${i}]`]) === yearAscii[i], `YOB mismatch at index ${i}`);
     }

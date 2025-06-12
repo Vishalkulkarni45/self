@@ -73,6 +73,7 @@ export const generateTestData = ({
     gender,
     state,
     photo,
+    name,
   })
 
   // Signing the newly generated testData

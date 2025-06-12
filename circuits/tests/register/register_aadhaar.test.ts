@@ -27,12 +27,18 @@ import { formatInput } from '../../../common/src/utils/circuits/generateInputs';
 let QRData: string = testQRData;
 
 
-function prepareTestData() {
-  const qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
+function prepareTestData(name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-01-1984', gender: string= 'M', pincode: string= '110051', state: string= 'Delhi') {
+
+  let qrDataBytes: any;
+  if(name || dateOfBirth || gender || pincode || state){
+    const newTestData = generateTestData({ data: testCustomData, name: name , dob: dateOfBirth, gender: gender, pincode: pincode, state: state});
+    qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+  }else{
+    qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
+  }
+
   const decodedData = decompressByteArray(qrDataBytes);
-
   const signatureBytes = decodedData.slice(decodedData.length - 256, decodedData.length);
-
   const signedData = decodedData.slice(0, decodedData.length - 256);
 
   const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
@@ -56,23 +62,21 @@ function prepareTestData() {
     '0x' + bufferToHex(Buffer.from(pk.export({ format: 'jwk' }).n as string, 'base64url'))
   );
 
-  const paddedName = 'Sumit Kumar'
+  const paddedName = name
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
 
-    const yob = '1984';
-  const mob = '01';
-  const dob = '01';
+  const [dob, mob, yob] = dateOfBirth.split('-');
 
-  const nullifierArgs = [77, ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
+  const nullifierArgs = [stringToAsciiArray(gender)[0], ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
   const nullifier = customHasher(nullifierArgs.map(String));
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
-  const commitmentInputs = [3 , 1234, qrHash, ...nullifierArgs, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Delhi'.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
+  const commitmentInputs = [3 , 1234, qrHash, ...nullifierArgs, ...stringToAsciiArray(pincode), ...stringToAsciiArray(state.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
   assert(commitmentInputs.length === 120, 'Commitment inputs length should be 120');
   const commitment = customHasher(commitmentInputs.map(String));
 
@@ -180,6 +184,18 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
     const out = await circuit.getOutput(w, ['commitment']);
     assert(BigInt(out.commitment) !== BigInt(commitment));
+  });
+  
+  it('should pass for different qr data', async function () {
+    this.timeout(0);
+    const { inputs, nullifier, commitment } = prepareTestData('KL RAHUL', '18-04-1992');
+    const w = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(w);
+
+    const out = await circuit.getOutput(w, ['nullifier', 'commitment']);
+    assert(BigInt(out.nullifier) === BigInt(nullifier));
+    assert(BigInt(out.commitment) === BigInt(commitment));
+
   });
 
 });
