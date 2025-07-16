@@ -1,17 +1,16 @@
-import { PassportData } from '../../types';
-import { parseCertificateSimple } from '../../certificate_parsing/parseCertificateSimple';
+import { hashAlgos } from '../../../constants/constants.js';
+import { findSubarrayIndex } from '../../arrays.js';
 import {
   CertificateData,
   PublicKeyDetailsECDSA,
   PublicKeyDetailsRSA,
-} from '../../certificate_parsing/dataStructure';
-import { hashAlgos } from '../../../constants/constants';
-import { DscCertificateMetaData, parseDscCertificateData } from './parseDscCertificateData';
-import { brutforceSignatureAlgorithm } from './brutForcePassportSignature';
-import { findSubarrayIndex } from '../../arrays';
-import { formatMrz } from '../format';
-import { getHashLen } from '../../hash';
-import { hash } from '../../hash';
+} from '../../certificate_parsing/dataStructure.js';
+import { parseCertificateSimple } from '../../certificate_parsing/parseCertificateSimple.js';
+import { getHashLen, hash } from '../../hash.js';
+import { PassportData } from '../../types.js';
+import { formatMrz } from '../format.js';
+import { brutforceSignatureAlgorithm } from './brutForcePassportSignature.js';
+import { DscCertificateMetaData, parseDscCertificateData } from './parseDscCertificateData.js';
 
 export interface PassportMetadata {
   dataGroups: string;
@@ -90,7 +89,10 @@ export function getCurveOrExponent(certData: CertificateData): string {
   return (certData.publicKeyDetails as PublicKeyDetailsECDSA).curve;
 }
 
-export function parsePassportData(passportData: PassportData): PassportMetadata {
+export function parsePassportData(
+  passportData: PassportData,
+  skiPem: any = null
+): PassportMetadata {
   const dg1HashInfo = passportData.mrz
     ? findDG1HashInEContent(passportData.mrz, passportData.eContent)
     : null;
@@ -119,7 +121,7 @@ export function parsePassportData(passportData: PassportData): PassportMetadata 
     parsedDsc = parseCertificateSimple(passportData.dsc);
     dscSignatureAlgorithmBits = parseInt(parsedDsc.publicKeyDetails?.bits || '0');
 
-    dscMetaData = parseDscCertificateData(parsedDsc);
+    dscMetaData = parseDscCertificateData(parsedDsc, skiPem);
   }
 
   return {

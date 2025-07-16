@@ -1,20 +1,19 @@
-import { ethers } from "hardhat";
 import { Signer } from "ethers";
-import { getSMTs } from "./generateProof";
-import { PassportData } from "../../../common/src/utils/types";
-import { genMockPassportData } from "../../../common/src/utils/passports/genMockPassportData";
-import { RegisterVerifierId, DscVerifierId } from "../../../common/src/constants/constants";
-import { getCscaTreeRoot } from "../../../common/src/utils/trees";
+import { ethers } from "hardhat";
+import { DscVerifierId, RegisterVerifierId } from "@selfxyz/common/constants/constants";
+import { genAndInitMockPassportData } from "@selfxyz/common/utils/passports/genMockPassportData";
+import { getCscaTreeRoot } from "@selfxyz/common/utils/trees";
+import { PassportData } from "@selfxyz/common/utils/types";
 import serialized_csca_tree from "./pubkeys/serialized_csca_tree.json";
 import {
   DeployedActors,
-  VcAndDiscloseVerifier,
-  RegisterVerifier,
   DscVerifier,
-  IdentityVerificationHub,
-  IdentityVerificationHubImplV1,
   IdentityRegistry,
   IdentityRegistryImplV1,
+  IdentityVerificationHub,
+  IdentityVerificationHubImplV1,
+  RegisterVerifier,
+  VcAndDiscloseVerifier,
 } from "./types";
 
 // Verifier artifacts
@@ -46,7 +45,7 @@ export async function deploySystemFixtures(): Promise<DeployedActors> {
   await ethers.provider.send("hardhat_setBalance", [await user1.getAddress(), newBalance]);
   await ethers.provider.send("hardhat_setBalance", [await user2.getAddress(), newBalance]);
 
-  mockPassport = genMockPassportData("sha256", "sha256", "rsa_sha256_65537_4096", "FRA", "940131", "401031");
+  mockPassport = genAndInitMockPassportData("sha256", "sha256", "rsa_sha256_65537_4096", "FRA", "940131", "401031");
 
   // Deploy verifiers
   const vcAndDiscloseVerifierArtifact =
@@ -139,18 +138,13 @@ export async function deploySystemFixtures(): Promise<DeployedActors> {
   // Initialize roots
   const csca_root = getCscaTreeRoot(serialized_csca_tree);
   await registryContract.updateCscaRoot(csca_root, { from: owner });
+  const getSMTs = await import("./generateProof.js").then((mod) => mod.getSMTs);
 
   const { passportNo_smt, nameAndDob_smt, nameAndYob_smt } = getSMTs();
 
-  await registryContract.updatePassportNoOfacRoot(passportNo_smt.root, {
-    from: owner,
-  });
-  await registryContract.updateNameAndDobOfacRoot(nameAndDob_smt.root, {
-    from: owner,
-  });
-  await registryContract.updateNameAndYobOfacRoot(nameAndYob_smt.root, {
-    from: owner,
-  });
+  await registryContract.updatePassportNoOfacRoot(passportNo_smt.root, { from: owner });
+  await registryContract.updateNameAndDobOfacRoot(nameAndDob_smt.root, { from: owner });
+  await registryContract.updateNameAndYobOfacRoot(nameAndYob_smt.root, { from: owner });
 
   return {
     hub: hubContract,

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
+import { ethers } from 'ethers';
 import { useMemo } from 'react';
 import { Platform } from 'react-native';
 import {
@@ -5,8 +8,6 @@ import {
   CloudStorageProvider,
   CloudStorageScope,
 } from 'react-native-cloud-storage';
-
-import { ethers } from 'ethers';
 
 import { name } from '../../../package.json';
 import { Mnemonic } from '../../types/mnemonic';

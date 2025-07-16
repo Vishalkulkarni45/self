@@ -1,34 +1,35 @@
-import { describe } from 'mocha';
-import { assert, expect } from 'chai';
-import path from 'path';
-import { wasm as wasm_tester } from 'circom_tester';
-import {
-  attributeToPosition,
-  PASSPORT_ATTESTATION_ID,
-} from '../../../common/src/constants/constants';
-import { poseidon1, poseidon2 } from 'poseidon-lite';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
-import { generateCircuitInputsVCandDisclose } from '../../../common/src/utils/circuits/generateInputs';
-import crypto from 'crypto';
-import { genMockPassportData } from '../../../common/src/utils/passports/genMockPassportData';
 import { SMT } from '@openpassport/zk-kit-smt';
-import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSMT.json';
-import nameAndYobjson from '../../../common/ofacdata/outputs/nameAndYobSMT.json';
-import passportNojson from '../../../common/ofacdata/outputs/passportNoAndNationalitySMT.json';
+import { assert, expect } from 'chai';
+import { wasm as wasm_tester } from 'circom_tester';
+import crypto from 'crypto';
+import { describe } from 'mocha';
+import path from 'path';
+import { poseidon1, poseidon2 } from 'poseidon-lite';
+import nameAndDobjson from '@selfxyz/common/ofacdata/outputs/nameAndDobSMT.json' with { type: 'json' };
+import nameAndYobjson from '@selfxyz/common/ofacdata/outputs/nameAndYobSMT.json' with { type: 'json' };
+import passportNojson from '@selfxyz/common/ofacdata/outputs/passportNoAndNationalitySMT.json' with { type: 'json' };
+import { attributeToPosition, PASSPORT_ATTESTATION_ID } from '@selfxyz/common/constants/constants';
 import {
-  formatAndUnpackReveal,
   formatAndUnpackForbiddenCountriesList,
+  formatAndUnpackReveal,
   getAttributeFromUnpackedReveal,
-} from '../../../common/src/utils/circuits/formatOutputs';
-import { generateCommitment } from '../../../common/src/utils/passports/passport';
-import { hashEndpointWithScope } from '../../../common/src/utils/scope';
+} from '@selfxyz/common/utils/circuits/formatOutputs';
+import { generateCircuitInputsVCandDisclose } from '@selfxyz/common/utils/circuits/generateInputs';
+import { genAndInitMockPassportData } from '@selfxyz/common/utils/passports/genMockPassportData';
+import { generateCommitment } from '@selfxyz/common/utils/passports/passport';
+import { hashEndpointWithScope } from '@selfxyz/common/utils/scope';
+import { fileURLToPath } from 'url';
+import { castFromUUID } from '@selfxyz/common/utils/circuits/uuid';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Disclose', function () {
   this.timeout(0);
   let inputs: any;
   let circuit: any;
   let w: any;
-  const passportData = genMockPassportData(
+  const passportData = genAndInitMockPassportData(
     'sha256',
     'sha256',
     'rsa_sha256_65537_2048',
@@ -40,7 +41,7 @@ describe('Disclose', function () {
 
   const secret = BigInt(Math.floor(Math.random() * Math.pow(2, 254))).toString();
   const majority = '18';
-  const user_identifier = crypto.randomUUID();
+  const user_identifier = castFromUUID(crypto.randomUUID());
   const selector_dg1 = Array(88).fill('1');
   const selector_older_than = '1';
   const endpoint = 'https://example.com';
@@ -70,9 +71,9 @@ describe('Disclose', function () {
       path.join(__dirname, '../../circuits/disclose/vc_and_disclose.circom'),
       {
         include: [
-          'node_modules',
-          './node_modules/@zk-kit/binary-merkle-root.circom/src',
-          './node_modules/circomlib/circuits',
+          '../node_modules',
+          '../node_modules/@zk-kit/binary-merkle-root.circom/src',
+          '../node_modules/circomlib/circuits',
         ],
       }
     );
@@ -247,7 +248,7 @@ describe('Disclose', function () {
       const testCases = [
         {
           desc: 'No details match',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',
@@ -262,7 +263,7 @@ describe('Disclose', function () {
         },
         {
           desc: 'Only passport number matches',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',
@@ -277,7 +278,7 @@ describe('Disclose', function () {
         },
         {
           desc: 'Only nationality matches',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',
@@ -292,7 +293,7 @@ describe('Disclose', function () {
         },
         {
           desc: 'Only passport number and nationality matches',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',
@@ -307,7 +308,7 @@ describe('Disclose', function () {
         },
         {
           desc: 'Name and DOB matches (so YOB matches too)',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',
@@ -322,7 +323,7 @@ describe('Disclose', function () {
         },
         {
           desc: 'Only name and YOB match',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',
@@ -337,7 +338,7 @@ describe('Disclose', function () {
         },
         {
           desc: 'All details match',
-          data: genMockPassportData(
+          data: genAndInitMockPassportData(
             'sha256',
             'sha256',
             'rsa_sha256_65537_2048',

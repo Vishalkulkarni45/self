@@ -1,4 +1,43 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import { createSegmentClient } from '../Segment';
+
+/**
+ * Generic reasons:
+ * - network_error: Network connectivity issues
+ * - user_cancelled: User cancelled the operation
+ * - permission_denied: Permission not granted
+ * - invalid_input: Invalid user input
+ * - timeout: Operation timed out
+ * - unknown_error: Unspecified error
+ *
+ * Auth specific:
+ * - invalid_credentials: Invalid login credentials
+ * - biometric_unavailable: Biometric authentication unavailable
+ * - invalid_mnemonic: Invalid mnemonic phrase
+ *
+ * Passport specific:
+ * - invalid_format: Invalid passport format
+ * - expired_passport: Passport is expired
+ * - scan_error: Error during scanning
+ * - nfc_error: NFC read error
+ *
+ * Proof specific:
+ * - verification_failed: Proof verification failed
+ * - session_expired: Session expired
+ * - missing_fields: Required fields missing
+ *
+ * Backup specific:
+ * - backup_not_found: Backup not found
+ * - cloud_service_unavailable: Cloud service unavailable
+ */
+
+export interface EventParams {
+  reason?: string | null;
+  duration_seconds?: number;
+  attempt_count?: number;
+  [key: string]: any;
+}
 
 const segmentClient = createSegmentClient();
 
@@ -12,8 +51,36 @@ function cleanParams(params: Record<string, any>) {
   return newParams;
 }
 
+/**
+ * Validates event parameters to ensure they follow standards
+ * - Ensures numeric values are properly formatted
+ */
+function validateParams(
+  properties?: Record<string, any>,
+): Record<string, any> | undefined {
+  if (!properties) return undefined;
+
+  const validatedProps = { ...properties };
+
+  // Ensure duration is formatted as a number with at most 2 decimal places
+  if (validatedProps.duration_seconds !== undefined) {
+    if (typeof validatedProps.duration_seconds === 'string') {
+      validatedProps.duration_seconds = parseFloat(
+        validatedProps.duration_seconds,
+      );
+    }
+    // Format to 2 decimal places
+    validatedProps.duration_seconds = parseFloat(
+      validatedProps.duration_seconds.toFixed(2),
+    );
+  }
+
+  return cleanParams(validatedProps);
+}
+
 /*
-  Recoreds analytics events and screen views
+  Records analytics events and screen views
+  In development mode, events are logged to console instead of being sent to Segment
  */
 const analytics = () => {
   function _track(
@@ -21,6 +88,17 @@ const analytics = () => {
     eventName: string,
     properties?: Record<string, any>,
   ) {
+    // Validate and clean properties
+    const validatedProps = validateParams(properties);
+
+    if (__DEV__) {
+      console.log(`[DEV: Analytics ${type.toUpperCase()}]`, {
+        name: eventName,
+        properties: validatedProps,
+      });
+      return;
+    }
+
     if (!segmentClient) {
       return;
     }
@@ -29,25 +107,27 @@ const analytics = () => {
         ? segmentClient.screen(e, p)
         : segmentClient.track(e, p);
 
-    if (!properties) {
+    if (!validatedProps) {
       // you may need to remove the catch when debugging
       return trackMethod(eventName).catch(console.info);
     }
 
-    if (properties.params) {
-      const newParams = cleanParams(properties.params);
-      properties.params = newParams;
-    }
     // you may need to remove the catch when debugging
-    trackMethod(eventName, properties).catch(console.info);
+    trackMethod(eventName, validatedProps).catch(console.info);
   }
 
   return {
-    trackEvent: (eventName: string, properties?: Record<string, any>) => {
+    // Using LiteralCheck will allow constants but not plain string literals
+    trackEvent: (eventName: string, properties?: EventParams) => {
       _track('event', eventName, properties);
     },
     trackScreenView: (screenName: string, properties?: Record<string, any>) => {
       _track('screen', screenName, properties);
+    },
+    flush: () => {
+      if (!__DEV__ && segmentClient) {
+        segmentClient.flush();
+      }
     },
   };
 };

@@ -15,16 +15,16 @@ runs:
       shell: bash
       run: |
         corepack enable
-        corepack prepare yarn@4.5.0 --activate
+        corepack prepare yarn@4.6.0 --activate
+        yarn set version 4.6.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 20
         cache: 'yarn'
-        cache-dependency-path: ${{ inputs.working_directory }}/yarn.lock
+        cache-dependency-path: yarn.lock
 
     - name: Install dependencies
       shell: bash
       run: yarn install --immutable
-      working-directory: ${{ inputs.working_directory }}

@@ -1,10 +1,14 @@
 import { wasm as wasmTester } from 'circom_tester';
 import * as crypto from 'crypto';
-import { initElliptic } from '../../../common/src/utils/certificate_parsing/elliptic';
+import { initElliptic } from '@selfxyz/common/utils/certificate_parsing/elliptic';
 import * as path from 'path';
-import { splitToWords } from '../../../common/src/utils/bytes';
+import { splitToWords } from '@selfxyz/common/utils/bytes';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const elliptic = initElliptic();
+
 const testSuite = [
   {
     hash: 'sha512',
@@ -87,7 +91,7 @@ describe('ecdsa', () => {
           const circuit = await wasmTester(
             path.join(__dirname, `../../circuits/tests/utils/ecdsa/test_${curve}.circom`),
             {
-              include: ['node_modules', './node_modules/@zk-kit/binary-merkle-root.circom/src'],
+              include: ['../node_modules', '../node_modules/@zk-kit/binary-merkle-root.circom/src'],
             }
           );
 
@@ -115,7 +119,7 @@ describe('ecdsa', () => {
       const circuit = await wasmTester(
         path.join(__dirname, `../../circuits/tests/utils/ecdsa/test_${curve}.circom`),
         {
-          include: ['node_modules', './node_modules/@zk-kit/binary-merkle-root.circom/src'],
+          include: ['../node_modules', '../node_modules/@zk-kit/binary-merkle-root.circom/src'],
         }
       );
 
@@ -140,7 +144,7 @@ describe('ecdsa', () => {
     const circuit = await wasmTester(
       path.join(__dirname, `../../circuits/tests/utils/ecdsa/test_p256.circom`),
       {
-        include: ['node_modules', './node_modules/@zk-kit/binary-merkle-root.circom/src'],
+        include: ['../node_modules', '../node_modules/@zk-kit/binary-merkle-root.circom/src'],
       }
     );
 
@@ -202,7 +206,7 @@ describe('ecdsa', () => {
     const circuit = await wasmTester(
       path.join(__dirname, `../../circuits/tests/utils/ecdsa/test_p256.circom`),
       {
-        include: ['node_modules', './node_modules/@zk-kit/binary-merkle-root.circom/src'],
+        include: ['../node_modules', '../node_modules/@zk-kit/binary-merkle-root.circom/src'],
       }
     );
 
@@ -267,8 +271,8 @@ function sign(message: Uint8Array, curve: string, hash: string, n: number, k: nu
 
   return {
     signature: [
-      ...splitToWords(BigInt(signature.r), k, n),
-      ...splitToWords(BigInt(signature.s), k, n),
+      ...splitToWords(BigInt(signature.r.toString()), k, n),
+      ...splitToWords(BigInt(signature.s.toString()), k, n),
     ],
     pubKey: [
       splitToWords(BigInt(pubkey.getX().toString()), k, n),
@@ -299,13 +303,13 @@ function signOverflow(
     hashParsed.push(...x.toString(2).padStart(8, '0').split(''))
   );
 
-  let r = BigInt(signature.r);
-  let s = BigInt(signature.s);
+  let r = BigInt(signature.r.toString(10));
+  let s = BigInt(signature.s.toString(10));
 
   if (overflowS) {
-    s = s + BigInt(ec.n);
+    s = s + BigInt(ec.n.toString());
   } else {
-    r = r + BigInt(ec.n);
+    r = r + BigInt(ec.n.toString());
   }
 
   return {

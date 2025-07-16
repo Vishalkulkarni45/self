@@ -1,8 +1,8 @@
-import { brutforceSignatureAlgorithmDsc } from './brutForceDscSignature';
-import { CertificateData } from '../../certificate_parsing/dataStructure';
-import { parseCertificateSimple } from '../../certificate_parsing/parseCertificateSimple';
-import { getCSCAFromSKI } from '../../csca';
-import { getCurveOrExponent } from './parsePassportData';
+import { CertificateData } from '../../certificate_parsing/dataStructure.js';
+import { parseCertificateSimple } from '../../certificate_parsing/parseCertificateSimple.js';
+import { getCSCAFromSKI } from '../../csca.js';
+import { brutforceSignatureAlgorithmDsc } from './brutForceDscSignature.js';
+import { getCurveOrExponent } from './parsePassportData.js';
 
 export interface DscCertificateMetaData {
   cscaFound: boolean;
@@ -16,7 +16,10 @@ export interface DscCertificateMetaData {
   cscaBits: number;
 }
 
-export function parseDscCertificateData(dscCert: CertificateData): DscCertificateMetaData {
+export function parseDscCertificateData(
+  dscCert: CertificateData,
+  skiPem: any = null
+): DscCertificateMetaData {
   let csca,
     cscaParsed,
     cscaHashAlgorithm,
@@ -24,11 +27,10 @@ export function parseDscCertificateData(dscCert: CertificateData): DscCertificat
     cscaCurveOrExponent,
     cscaSignatureAlgorithmBits,
     cscaSaltLength;
-
   let cscaFound = false;
   if (dscCert.authorityKeyIdentifier) {
     try {
-      csca = getCSCAFromSKI(dscCert.authorityKeyIdentifier, true);
+      csca = getCSCAFromSKI(dscCert.authorityKeyIdentifier, skiPem);
       if (csca) {
         cscaParsed = parseCertificateSimple(csca);
         const details = brutforceSignatureAlgorithmDsc(dscCert, cscaParsed);
@@ -39,9 +41,8 @@ export function parseDscCertificateData(dscCert: CertificateData): DscCertificat
         cscaSignatureAlgorithmBits = parseInt(cscaParsed.publicKeyDetails.bits);
         cscaSaltLength = details.saltLength;
       }
-    } catch (error) { }
-  }
-  else {
+    } catch (error) {}
+  } else {
     console.log('js: dscCert.authorityKeyIdentifier not found');
   }
   return {

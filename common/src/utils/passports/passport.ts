@@ -1,43 +1,40 @@
+import * as forge from 'node-forge';
 import { poseidon5 } from 'poseidon-lite';
-import { hashAlgos, MAX_PUBKEY_DSC_BYTES } from '../../constants/constants';
+import {
+  hashAlgos,
+  k_csca,
+  k_dsc,
+  k_dsc_3072,
+  k_dsc_4096,
+  k_dsc_ecdsa,
+  n_csca,
+  n_dsc,
+  n_dsc_3072,
+  n_dsc_4096,
+  n_dsc_ecdsa,
+} from '../../constants/constants.js';
+import { bytesToBigDecimal, hexToDecimal, splitToWords } from '../bytes.js';
 import {
   CertificateData,
   PublicKeyDetailsECDSA,
   PublicKeyDetailsRSA,
-} from '../certificate_parsing/dataStructure';
+} from '../certificate_parsing/dataStructure.js';
 import {
   getCertificateFromPem,
   parseCertificateSimple,
-} from '../certificate_parsing/parseCertificateSimple';
-import { parsePassportData } from './passport_parsing/parsePassportData';
-import { shaPad } from '../shaPad';
-import { sha384_512Pad } from '../shaPad';
-import { PassportData, SignatureAlgorithm } from '../types';
-import { customHasher, hash } from '../hash';
-import { bytesToBigDecimal, hexToDecimal } from '../bytes';
-import { packBytesAndPoseidon } from '../hash';
-import * as forge from 'node-forge';
-import {
-  n_dsc,
-  n_dsc_3072,
-  n_dsc_4096,
-  k_dsc,
-  k_dsc_4096,
-  n_dsc_ecdsa,
-  k_dsc_ecdsa,
-  n_csca,
-  k_csca,
-  k_dsc_3072,
-} from '../../constants/constants';
-import { splitToWords } from '../bytes';
-import { formatMrz } from './format';
-import { findStartIndex, findStartIndexEC } from '../csca';
-import { formatInput } from '../circuits/generateInputs';
-import { getLeafDscTree } from '../trees';
+} from '../certificate_parsing/parseCertificateSimple.js';
+import { formatInput } from '../circuits/generateInputs.js';
+import { findStartIndex, findStartIndexEC } from '../csca.js';
+import { hash, packBytesAndPoseidon } from '../hash.js';
+import { sha384_512Pad, shaPad } from '../shaPad.js';
+import { getLeafDscTree } from '../trees.js';
+import { PassportData, SignatureAlgorithm } from '../types.js';
+import { formatMrz } from './format.js';
+import { parsePassportData } from './passport_parsing/parsePassportData.js';
 
 /// @dev will bruteforce passport and dsc signature
-export function initPassportDataParsing(passportData: PassportData) {
-  const passportMetadata = parsePassportData(passportData);
+export function initPassportDataParsing(passportData: PassportData, skiPem: any = null) {
+  const passportMetadata = parsePassportData(passportData, skiPem);
   passportData.passportMetadata = passportMetadata;
   const dscParsed = parseCertificateSimple(passportData.dsc);
   passportData.dsc_parsed = dscParsed;
@@ -184,7 +181,7 @@ export function formatCertificatePubKeyDSC(
 export function extractSignatureFromDSC(dscCertificate: string) {
   const cert = getCertificateFromPem(dscCertificate);
   const dscSignature = cert.signatureValue.valueBlock.valueHexView;
-  return Array.from(forge.util.createBuffer(dscSignature).getBytes(), (char) => char.charCodeAt(0));
+  return Array.from(dscSignature);
 }
 
 export function formatSignatureDSCCircuit(
@@ -242,67 +239,6 @@ export function getSignatureAlgorithmFullName(
     const { exponent } = publicKeyDetails as PublicKeyDetailsRSA;
     return `${signatureAlgorithm}_${hashAlgorithm}_${exponent}_${publicKeyDetails.bits}`;
   }
-}
-
-/*** retrieve pubKey bytes - will be used in generateCircuitsInputsCSCA ***/
-export function getPubKeyBytes(passportData: PassportData, type: 'dsc' | 'csca'): number[] {
-  if (type === 'dsc') {
-    return getDscPubKeyBytes(passportData);
-  } else if (type === 'csca') {
-    return getCscaPubKeyBytes(passportData);
-  } else {
-    throw new Error('Invalid type');
-  }
-}
-
-function getDscPubKeyBytes(passportData: PassportData): number[] {
-  const signatureAlgorithm = passportData.passportMetadata.signatureAlgorithm;
-  if (signatureAlgorithm === 'ecdsa') {
-    return getECDSAPubKeyBytes(passportData.dsc_parsed);
-  }
-  return getRsaPubKeyBytes(passportData.dsc_parsed);
-}
-
-function getCscaPubKeyBytes(passportData: PassportData): number[] {
-  if (!passportData.passportMetadata.cscaFound) {
-    throw new Error('CSCA not found');
-  }
-  const signatureAlgorithm = passportData.passportMetadata.cscaSignatureAlgorithm;
-  if (signatureAlgorithm === 'ecdsa') {
-    throw new Error('ECDSA signature algorithm not supported for CSCA');
-  }
-  return getRsaPubKeyBytes(passportData.dsc);
-}
-
-function getRsaPubKeyBytes(parsedCertificate: any): number[] {
-  const pubKeyHex = (parsedCertificate.publicKeyDetails as PublicKeyDetailsRSA).modulus;
-  return hexToBytes(pubKeyHex);
-}
-
-function getECDSAPubKeyBytes(parsedCertificate: any): number[] {
-  const { x, y } = parsedCertificate.publicKeyDetails as PublicKeyDetailsECDSA;
-  const pubKeyBytes = [...hexToBytes(x), ...hexToBytes(y)];
-  return pubKeyBytes;
-}
-
-function padPubKeyBytes(pubKeyBytes: number[]) {
-  const paddedPubKeyBytes = pubKeyBytes.concat(
-    new Array(MAX_PUBKEY_DSC_BYTES - pubKeyBytes.length).fill(0)
-  );
-  return paddedPubKeyBytes;
-}
-
-function hexToBytes(hex: string) {
-  // Remove '0x' prefix if present
-  const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
-
-  const paddedHex = cleanHex.length % 2 ? '0' + cleanHex : cleanHex;
-
-  const bytes = [];
-  for (let i = 0; i < paddedHex.length; i += 2) {
-    bytes.push(parseInt(paddedHex.slice(i, i + 2), 16));
-  }
-  return bytes;
 }
 
 export function extractRSFromSignature(signatureBytes: number[]): { r: string; s: string } {

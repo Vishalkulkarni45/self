@@ -2,6 +2,7 @@ apply plugin: "com.android.application"
 apply plugin: "com.facebook.react"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: 'kotlin-android'
+apply plugin: 'com.google.gms.google-services'
 
 
 /**
@@ -11,13 +12,13 @@ apply plugin: 'kotlin-android'
 react {
     /* Folders */
     //   The root of your project, i.e. where "package.json" lives. Default is '../..'
-    // root = file("../../")
+    root = file("../..")
     //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
-    // reactNativeDir = file("../../node_modules/react-native")
+    reactNativeDir = file("../../../node_modules/react-native")
     //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen
-    // codegenDir = file("../../node_modules/@react-native/codegen")
+    codegenDir = file("../../../node_modules/@react-native/codegen")
     //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
-    // cliFile = file("../../node_modules/react-native/cli.js")
+    cliFile = file("../../../node_modules/react-native/cli.js")
 
     /* Variants */
     //   The list of variants to that are debuggable. For those we're going to
@@ -46,11 +47,11 @@ react {
     // extraPackagerArgs = []
 
     /* Hermes Commands */
-    //   The hermes compiler command to run. By default it is 'hermesc'
-    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
-    //
-    //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
-    // hermesFlags = ["-O", "-output-source-map"]
+    // The hermes compiler command to run. By default it is 'hermesc'
+    hermesCommand = "../node_modules/react-native/sdks/hermesc/osx-bin/hermesc"
+
+    // The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
+    hermesFlags = ["-O", "-output-source-map"]
 
     /* Autolinking */
     autolinkLibrariesWithApp()
@@ -85,8 +86,8 @@ android {
         applicationId "com.proofofpassportapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 54
-        versionName "2.5.1"
+        versionCode 73
+        versionName "2.5.4"
         externalNativeBuild {
             cmake {
                 cppFlags += "-fexceptions -frtti -std=c++11"
@@ -136,11 +137,15 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation(project(":react-native-passport-reader")) {
         exclude group: 'edu.ucar', module: 'jj2000'
-    }    
+    }
     implementation project(':passportreader')
     implementation 'org.jmrtd:jmrtd:0.7.18'
 
     implementation 'com.github.blikoon:QRCodeScanner:0.1.2'
+
+    // Firebase Dependencies
+    implementation platform('com.google.firebase:firebase-bom:32.7.3')
+    implementation 'com.google.firebase:firebase-messaging'
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
@@ -155,7 +160,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
     implementation 'io.reactivex.rxjava2:rxjava:2.2.21'
-    implementation 'io.fotoapparat:fotoapparat:2.7.0'
+    implementation "com.github.fotoapparat:fotoapparat:2.7.0"
 
     implementation "androidx.concurrent:concurrent-futures:1.1.0"
     implementation "com.google.guava:guava:31.1-android"

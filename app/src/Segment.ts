@@ -1,10 +1,15 @@
-import { SEGMENT_KEY } from '@env';
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import '@ethersproject/shims';
+
+import { SEGMENT_KEY } from '@env';
 import {
+  BackgroundFlushPolicy,
+  createClient,
   EventPlugin,
   PluginType,
   SegmentEvent,
-  createClient,
+  StartupFlushPolicy,
 } from '@segment/analytics-react-native';
 
 let segmentClient: ReturnType<typeof createClient> | null = null;
@@ -42,10 +47,13 @@ export const createSegmentClient = () => {
     return segmentClient;
   }
 
+  const flushPolicies = [new StartupFlushPolicy(), new BackgroundFlushPolicy()];
+
   const client = createClient({
     writeKey: SEGMENT_KEY,
     trackAppLifecycleEvents: true,
-    debug: true,
+    trackDeepLinks: true,
+    debug: __DEV__,
     collectDeviceId: false,
     defaultSettings: {
       integrations: {
@@ -54,6 +62,7 @@ export const createSegmentClient = () => {
         },
       },
     },
+    flushPolicies,
   });
 
   client.add({ plugin: new DisableTrackingPlugin() });

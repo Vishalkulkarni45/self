@@ -2,13 +2,20 @@
   "compilerOptions": {
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "target": "ES2020",
-    "moduleResolution": "node",
-    "module": "CommonJS",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
     "allowJs": true,
     "checkJs": false,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "baseUrl": "."
   },
   "include": ["tests/**/*", "src/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "../common"
+    }
+  ]
 }

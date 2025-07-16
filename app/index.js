@@ -1,16 +1,17 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 /**
  * @format
  */
-import React from 'react';
-import { AppRegistry, LogBox } from 'react-native';
+import './src/utils/ethers';
 
 import { config } from '@tamagui/config/v2-native';
-import { ToastProvider } from '@tamagui/toast';
-import { TamaguiProvider, createTamagui } from 'tamagui';
+import React from 'react';
+import { AppRegistry, LogBox } from 'react-native';
+import { createTamagui, TamaguiProvider } from 'tamagui';
 
 import App from './App';
 import { name as appName } from './app.json';
-import './src/utils/ethers';
 
 const tamaguiConfig = createTamagui(config);
 
@@ -22,9 +23,7 @@ LogBox.ignoreLogs([
 
 const Root = () => (
   <TamaguiProvider config={tamaguiConfig}>
-    <ToastProvider swipeDirection="up">
-      <App />
-    </ToastProvider>
+    <App />
   </TamaguiProvider>
 );
 
