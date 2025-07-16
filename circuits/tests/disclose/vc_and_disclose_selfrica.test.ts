@@ -1,6 +1,6 @@
 import { wasm as wasmTester } from 'circom_tester';
 import * as path from 'path';
-import { generateCircuitInput } from '../../../common/src/utils/selfrica/generateInputs.js';
+import { generateCircuitInput, generateCircuitInputWithRealData } from '../../../common/src/utils/selfrica/generateInputs.js';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { poseidon1, poseidon2 } from 'poseidon-lite';
 import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSelfricaSMT.json' with { type: 'json' };
@@ -36,7 +36,7 @@ describe('should verify signature on random inputs', () => {
             }
         );
     });
-    it.only('should verify for correct Circuit Input and output ', async function () {
+    it('should verify for correct Circuit Input and output ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
         const expNullifier = poseidon2([input.nullifier_s, "0"]);
