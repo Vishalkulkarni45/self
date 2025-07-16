@@ -1,7 +1,7 @@
 import { poseidon2 } from "poseidon-lite";
-import { getECDSAMessageHash, modInv, modulus } from "./utils";
-import { addPoint, Base8, Fr, mulPointEscalar, Point, subOrder } from "@zk-kit/baby-jubjub";
-import { Signature } from "../types";
+import { getECDSAMessageHash, modInv, modulus } from "./utils.js";
+import { addPoint, Base8, mulPointEscalar, Point, subOrder } from "@zk-kit/baby-jubjub";
+import { Signature } from "../types.js";
 
 //TODO: zk-kit/baby-jubjub uses affine which involses Fr.div which makes process slower , try to implement the function using PointProjective
 
