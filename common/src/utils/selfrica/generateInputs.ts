@@ -8,7 +8,7 @@ import { Base8, inCurve, mulPointEscalar, subOrder } from "@zk-kit/baby-jubjub";
 import { SELFRICA_MAX_LENGTH } from "./constants";
 
 export const OFAC_DUMMY_INPUT: SmileData = {
-    country: 'KE',
+    country: 'IND',
     idType: 'NATIONAL ID',
     idNumber: '1234567890',
     issuanceDate: '20200101',
@@ -23,7 +23,7 @@ export const OFAC_DUMMY_INPUT: SmileData = {
 };
 
 export const NON_OFAC_DUMMY_INPUT: SmileData = {
-    country: 'KE',
+    country: 'IND',
     idType: 'NATIONAL ID',
     idNumber: '1234567890',
     issuanceDate: '20200101',
@@ -83,7 +83,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
     const rInv = modInv(sig.R[0], subOrder);
     const rInvLimbs = bigintTo64bitLimbs(modulus(-rInv, subOrder));
 
-    const idNumber = msg.slice(29, 29 + 20);
+    const idNumber = msg.slice(30, 30 + 20);
     const nullifierSig = signECDSA(sk, idNumber);
     console.assert(verifyECDSA(idNumber, nullifierSig, pk) == true, "Invalid signature");
 
@@ -114,7 +114,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         scope: '0',
         r_inv: rInvLimbs.map(String),
         r_inv_nullifier: rInvNullfierLimbs.map(String),
-        forbidden_countries_list: ['0', '0', '0', '0', '0', '0',],
+        forbidden_countries_list: ['0', '0', '0', '0', '0', '0','0', '0', '0'],
         ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
         ofac_name_dob_smt_root: nameDobInputs.smt_root,
         ofac_name_dob_smt_siblings: nameDobInputs.smt_siblings,

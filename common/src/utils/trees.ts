@@ -4,7 +4,7 @@ import { ChildNodes, SMT } from '@openpassport/zk-kit-smt';
 import countries from 'i18n-iso-countries';
 // @ts-ignore
 import en from 'i18n-iso-countries/langs/en.json' with { type: 'json' };
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon6, poseidon10 } from 'poseidon-lite';
+import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon6, poseidon10 ,poseidon8, poseidon4} from 'poseidon-lite';
 import { CertificateData } from './certificate_parsing/dataStructure.js';
 import { parseCertificateSimple } from './certificate_parsing/parseCertificateSimple.js';
 import {
