@@ -1,15 +1,17 @@
 import { wasm as wasmTester } from 'circom_tester';
 import * as path from 'path';
-import { generateCircuitInput } from '../../../common/src/utils/selfrica/generateInputs';
+import { generateCircuitInput } from '../../../common/src/utils/selfrica/generateInputs.js';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { poseidon1, poseidon2 } from 'poseidon-lite';
-import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSelfricaSMT.json';
-import nameAndYobjson from '../../../common/ofacdata/outputs/nameAndYobSelfricaSMT.json';
-import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
-import { SELFRICA_MAX_LENGTH } from '../../../common/src/utils/selfrica/constants';
+import nameAndDobjson from '../../../common/ofacdata/outputs/nameAndDobSelfricaSMT.json' with { type: 'json' };
+import nameAndYobjson from '../../../common/ofacdata/outputs/nameAndYobSelfricaSMT.json' with { type: 'json' };
+import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
+import { SELFRICA_MAX_LENGTH } from '../../../common/src/utils/selfrica/constants.js';
 import { deepEqual } from 'assert';
 import { expect } from 'chai';
-import { getPublicInput } from '../../../common/src/utils/selfrica/types';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('should verify signature on random inputs', () => {
     let circuit;
@@ -27,9 +29,9 @@ describe('should verify signature on random inputs', () => {
                 verbose: true,
                 logOutput: true,
                 include: [
-                    'node_modules',
-                    './node_modules/@zk-kit/binary-merkle-root.circom/src',
-                    './node_modules/circomlib/circuits',
+                    '../node_modules',
+                    '../node_modules/@zk-kit/binary-merkle-root.circom/src',
+                    '../node_modules/circomlib/circuits',
                 ],
             }
         );
@@ -39,7 +41,7 @@ describe('should verify signature on random inputs', () => {
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
         const expNullifier = poseidon2([input.nullifier_s, "0"]);
         const expIdCommit = poseidon1([input.s]);
-   
+
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
@@ -206,7 +208,7 @@ describe('should verify signature on random inputs', () => {
                 revealedData['revealedData_packed[7]'],
                 revealedData['revealedData_packed[8]'],
             ];
-            const revealedDataUnpacked = unpackReveal(revealedData_packed);
+            const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
             const ofac_results = revealedDataUnpacked.slice(SELFRICA_MAX_LENGTH, SELFRICA_MAX_LENGTH + 2);
 
             deepEqual(ofac_results, ['\x00', '\x00']);
@@ -235,7 +237,7 @@ describe('should verify signature on random inputs', () => {
                 revealedData['revealedData_packed[7]'],
                 revealedData['revealedData_packed[8]'],
             ];
-            const revealedDataUnpacked = unpackReveal(revealedData_packed);
+            const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
             const ofac_results = revealedDataUnpacked.slice(SELFRICA_MAX_LENGTH, SELFRICA_MAX_LENGTH + 2);
 
             deepEqual(ofac_results, ['\x01', '\x01']);

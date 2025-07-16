@@ -10,7 +10,7 @@ include "../utils/selfrica/constants.circom";
 include "../utils/selfrica/disclose/disclose.circom";
 
 template VC_AND_DISCLOSE(
-    MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, 
+    MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,
     namedobTreeLevels,
     nameyobTreeLevels
 ) {
@@ -21,19 +21,18 @@ template VC_AND_DISCLOSE(
     signal input disclose_sel[selfrica_length];
     //Args to verify Hash(smiledata) signature
     signal input s;
-    signal input Tx; 
-    signal input Ty; 
+    signal input Tx;
+    signal input Ty;
     signal input pubKeyX;
     signal input pubKeyY;
 
     //Args to verify Hash(IdNumber) signature
     signal input nullifier_s;
-    signal input nullifier_Tx; 
-    signal input nullifier_Ty; 
-    signal input nullifier_Ux; 
-    signal input nullifier_Uy; 
+    signal input nullifier_Tx;
+    signal input nullifier_Ty;
+    signal input nullifier_Ux;
+    signal input nullifier_Uy;
     signal input scope;
-
 
     signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length];
 
@@ -57,7 +56,7 @@ template VC_AND_DISCLOSE(
 
     for(var i = 0; i < selfrica_length; i++){
         // Check if the data is in the ASCII range 0 - 127
-        ascii_range_check[i] = Num2Bits(7); 
+        ascii_range_check[i] = Num2Bits(7);
         ascii_range_check[i].in <== SmileID_data[i];
 
         //Check is selctor binary
@@ -94,7 +93,7 @@ template VC_AND_DISCLOSE(
     verifyIdCommSig.r_inv <== r_inv;
     verifyIdCommSig.msg_hash_limbs <== msg_hash_limbs;
     verifyIdCommSig.Tx <== Tx;
-    verifyIdCommSig.Ty <== Ty; 
+    verifyIdCommSig.Ty <== Ty;
     verifyIdCommSig.pubKeyX <== pubKeyX;
     verifyIdCommSig.pubKeyY <== pubKeyY;
 
@@ -129,11 +128,11 @@ template VC_AND_DISCLOSE(
     verifyNullifierSig.r_inv <== r_inv_nullifier;
     verifyNullifierSig.msg_hash_limbs <== id_num_hash_limbs;
     verifyNullifierSig.Tx <== nullifier_Tx;
-    verifyNullifierSig.Ty <== nullifier_Ty; 
+    verifyNullifierSig.Ty <== nullifier_Ty;
     verifyNullifierSig.pubKeyX <== pubKeyX;
     verifyNullifierSig.pubKeyY <== pubKeyY;
 
- 
+
     // Identity Commitment = Hash( IdNumCommit sig )
     component idCommCal = Poseidon(1);
     idCommCal.inputs[0] <== s;
@@ -171,11 +170,11 @@ template VC_AND_DISCLOSE(
 
 
 component main {
-    public [ 
-        pubKeyX, 
+    public [
+        pubKeyX,
         pubKeyY,
-        scope, 
-        ofac_name_dob_smt_root, 
+        scope,
+        ofac_name_dob_smt_root,
         ofac_name_yob_smt_root,
         attestation_id
     ]
