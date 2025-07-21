@@ -129,8 +129,9 @@ export type SelfricaCircuitInput = {
     ofac_name_yob_smt_siblings: string[],
     selector_ofac: string[],
     attestation_id: string[],
+    user_identifier: string[],
     current_date: string[],
-    majority_age_ASCII: string[],
+    majority_age_ASCII: number[],
     selector_older_than: string[],
 };
 

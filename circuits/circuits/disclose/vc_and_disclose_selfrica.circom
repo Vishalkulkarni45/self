@@ -140,13 +140,11 @@ template VC_AND_DISCLOSE(
     // Identity Commitment = Hash( IdNumCommit sig )
     component idCommCal = Poseidon(1);
     idCommCal.inputs[0] <== s;
-    signal output identity_commitment <== idCommCal.out;
 
     //Nullifier = HASH( nullifier sig , scope )
     component nullifierCal = Poseidon(2);
     nullifierCal.inputs[0] <== nullifier_s;
     nullifierCal.inputs[1] <== scope;
-    signal output nullifier <== nullifierCal.out;
 
     component disclose_circuit = DISCLOSE_SELFRICA(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, namedobTreeLevels, nameyobTreeLevels);
 
@@ -172,8 +170,10 @@ template VC_AND_DISCLOSE(
 
     var forbidden_countries_list_packed_chunk_length = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length);
     signal output forbidden_countries_list_packed[forbidden_countries_list_packed_chunk_length] <== disclose_circuit.forbidden_countries_list_packed;
-}
 
+    signal output identity_commitment <== idCommCal.out;
+    signal output nullifier <== nullifierCal.out;
+}
 
 component main {
     public [
@@ -186,4 +186,4 @@ component main {
         ofac_name_yob_smt_root,
         attestation_id
     ]
-} = VC_AND_DISCLOSE(3, 64, 64);
+} = VC_AND_DISCLOSE(40, 64, 64);

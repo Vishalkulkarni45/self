@@ -36,6 +36,7 @@ describe('should verify signature on random inputs', () => {
             }
         );
     });
+
     it('should verify for correct Circuit Input and output ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);

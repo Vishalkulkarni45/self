@@ -122,7 +122,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         scope: '0',
         r_inv: rInvLimbs.map(String),
         r_inv_nullifier: rInvNullfierLimbs.map(String),
-        forbidden_countries_list: ['0', '0', '0', '0', '0', '0','0', '0', '0'],
+        forbidden_countries_list: [...Array(120)].map((x) => '0'),
         ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
         ofac_name_dob_smt_root: nameDobInputs.smt_root,
         ofac_name_dob_smt_siblings: nameDobInputs.smt_siblings,
@@ -131,8 +131,9 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
         selector_ofac: ['0'],
         attestation_id: ['4'],
-        current_date: ['2', '0', '2', '5', '0', '1', '0', '1'],
-        majority_age_ASCII: ['0', '2', '0'],
+        user_identifier: ['1234567890'],
+        current_date: ['2', '0', '2', '4', '0', '1', '0', '1'],
+        majority_age_ASCII: ['0', '0', '1'].map((x) => x.charCodeAt(0)),
         selector_older_than: ['1'],
     }
 
@@ -146,8 +147,6 @@ export const generateCircuitInputWithRealData = (serializedRealData: string, nam
 
     const fullName = serializedRealData.slice(SELFRICA_FULL_NAME_INDEX, SELFRICA_FULL_NAME_INDEX + SELFRICA_FULL_NAME_LENGTH);
     const dob = serializedRealData.slice(SELFRICA_DOB_INDEX, SELFRICA_DOB_INDEX + SELFRICA_DOB_LENGTH);
-    console.log(fullName);
-    console.log(dob);
 
     const smileData = {
         fullName,
@@ -225,6 +224,10 @@ export const generateCircuitInputWithRealData = (serializedRealData: string, nam
         ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
         selector_ofac: ['0'],
         attestation_id: ['4'],
+        user_identifier: ['1234567890'],
+        current_date: ['2', '0', '2', '4', '0', '1', '0', '1'],
+        majority_age_ASCII: ['0', '2', '0'].map((x) => x.charCodeAt(0)),
+        selector_older_than: ['1'],
     }
 
     return circuitInput;

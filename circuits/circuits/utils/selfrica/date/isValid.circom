@@ -14,10 +14,10 @@ include "./dateIsLess.circom";
 template IsValidFullYear() {
     signal input current_date[8];
     signal input validity_date_ascii[8];
-    
+
     signal validity_date_num[8];
     signal ASCII_rotation <== 48;
-    
+
     for (var i = 0; i < 8; i++) {
         validity_date_num[i] <== validity_date_ascii[i] - ASCII_rotation;
     }
@@ -29,7 +29,7 @@ template IsValidFullYear() {
     signal current_date_year_millenia <== current_date[0] * MILLENIA;
     signal current_date_year_century <== current_date[1] * CENTURY;
     signal current_date_year_decade <== current_date[2] * TEN;
-    signal current_date_year <== current_date_year_millenia + current_date_year_century + current_date_year_decade + current_date[3];   
+    signal current_date_year <== current_date_year_millenia + current_date_year_century + current_date_year_decade + current_date[3];
 
     signal validity_date_year_millenia <== validity_date_num[0] * MILLENIA;
     signal validity_date_year_century <== validity_date_num[1] * CENTURY;
