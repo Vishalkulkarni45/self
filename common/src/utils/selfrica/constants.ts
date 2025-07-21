@@ -36,6 +36,9 @@ export const SELFRICA_ADDRESS_LENGTH = 100;
 
 export const SELFRICA_MAX_LENGTH = SELFRICA_ADDRESS_INDEX + SELFRICA_ADDRESS_LENGTH;
 
+// ------------------------------
+// Public Signals
+// ------------------------------
 export const SELFRICA_PUBLIC_SIGNALS_REVEALED_DATA_PACKED = 0;
 export const SELFRICA_PUBLIC_SIGNALS_REVEALED_DATA_PACKED_LENGTH = 9;
 

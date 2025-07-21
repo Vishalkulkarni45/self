@@ -100,6 +100,21 @@ library CircuitConstantsV2 {
                     userIdentifierIndex: 20,
                     passportNoSmtRootIndex: 99
                 });
+        } else if (attestationId == AttestationId.SELFRICA_ID_CARD) {
+            return
+                DiscloseIndices({
+                    revealedDataPackedIndex: 0,
+                    forbiddenCountriesListPackedIndex: 9,
+                    nullifierIndex: 14,
+                    attestationIdIndex: 20,
+                    merkleRootIndex: 99,
+                    currentDateIndex: 22,
+                    namedobSmtRootIndex: 18,
+                    nameyobSmtRootIndex: 19,
+                    scopeIndex: 17,
+                    userIdentifierIndex: 21,
+                    passportNoSmtRootIndex: 99
+                });
         } else {
             revert("Invalid attestation ID");
         }
