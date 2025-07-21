@@ -6,7 +6,7 @@ import { Signature } from "../types.js";
 //TODO: zk-kit/baby-jubjub uses affine which involses Fr.div which makes process slower , try to implement the function using PointProjective
 
 export function signECDSA(key: bigint, msg: number[]): Signature {
-    //TODO: Replace which safer hash such as sha to calculate nonce
+    key = modulus(key, subOrder);
     const msgHash = getECDSAMessageHash(msg);
     // Deterministically generate the nonce k and reduce it modulo the subgroup order
     const k = modulus(poseidon2([msgHash, key]), subOrder);
@@ -25,7 +25,6 @@ export function signECDSA(key: bigint, msg: number[]): Signature {
 }
 
 export function verifyECDSA(msg: number[], sig: Signature, pk: Point<bigint>): boolean {
-
     const msgHash = getECDSAMessageHash(msg);
 
     const sInv = modInv(sig.s, subOrder);
@@ -53,5 +52,4 @@ export function verifyEffECDSA(s: bigint, T: Point<bigint>, U: Point<bigint>, pk
     const xvalid = calPk[0] == pk[0]
     const yvalid = calPk[1] == pk[1]
     return xvalid && yvalid == true
-
 }

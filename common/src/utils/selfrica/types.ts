@@ -1,4 +1,4 @@
-import * as constants from './constants';
+import * as constants from './constants.js';
 import { Point } from "@zk-kit/baby-jubjub";
 
 export type SmileData = {
@@ -14,6 +14,10 @@ export type SmileData = {
     document: string;
     gender: string;
     address: string;
+    user_identifier: string;
+    current_date: string;
+    majority_age_ASCII: string;
+    selector_older_than: string;
 };
 
 export const serializeSmileData = (smileData: SmileData) => {
@@ -125,9 +129,12 @@ export type SelfricaCircuitInput = {
     ofac_name_yob_smt_siblings: string[],
     selector_ofac: string[],
     attestation_id: string[],
+    current_date: string[],
+    majority_age_ASCII: string[],
+    selector_older_than: string[],
 };
 
-export type SelfricaPublicInput = { 
+export type SelfricaPublicInput = {
     pubKeyX: string,
     pubKeyY: string,
     scope: string,

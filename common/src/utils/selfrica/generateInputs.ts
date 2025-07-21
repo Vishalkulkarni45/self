@@ -20,6 +20,10 @@ export const OFAC_DUMMY_INPUT: SmileData = {
     document: 'ID',
     gender: 'Male',
     address: '1234567890',
+    user_identifier: '1234567890',
+    current_date: '20250101',
+    majority_age_ASCII: '20',
+    selector_older_than: '1',
 };
 
 export const NON_OFAC_DUMMY_INPUT: SmileData = {
@@ -35,7 +39,11 @@ export const NON_OFAC_DUMMY_INPUT: SmileData = {
     document: 'ID',
     gender: 'Male',
     address: '1234567890',
-};
+    user_identifier: '1234567890',
+    current_date: '20250101',
+    majority_age_ASCII: '20',
+    selector_older_than: '1',
+}
 
 export const generateCircuitInputsOfac = (smileData: SmileData, smt: SMT, proofLevel: number) => {
     const name = smileData.fullName;
@@ -123,6 +131,9 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
         selector_ofac: ['0'],
         attestation_id: ['4'],
+        current_date: ['2', '0', '2', '5', '0', '1', '0', '1'],
+        majority_age_ASCII: ['0', '2', '0'],
+        selector_older_than: ['1'],
     }
 
     return circuitInput;

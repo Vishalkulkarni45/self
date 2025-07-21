@@ -46,6 +46,10 @@ template VC_AND_DISCLOSE(
 
     signal input selector_ofac;
     signal input attestation_id;
+    signal input user_identifier;
+    signal input current_date[8];
+    signal input majority_age_ASCII[3];
+    signal input selector_older_than;
 
     //Supply -r_inv for identity commitment sig verification
     signal input r_inv[4];
@@ -144,7 +148,6 @@ template VC_AND_DISCLOSE(
     nullifierCal.inputs[1] <== scope;
     signal output nullifier <== nullifierCal.out;
 
-
     component disclose_circuit = DISCLOSE_SELFRICA(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH, namedobTreeLevels, nameyobTreeLevels);
 
     disclose_circuit.smile_data <== SmileID_data;
@@ -160,8 +163,11 @@ template VC_AND_DISCLOSE(
     disclose_circuit.ofac_name_yob_smt_siblings <== ofac_name_yob_smt_siblings;
 
     disclose_circuit.selector_ofac <== selector_ofac;
+    disclose_circuit.current_date <== current_date;
+    disclose_circuit.majority_age_ASCII <== majority_age_ASCII;
+    disclose_circuit.selector_older_than <== selector_older_than;
 
-    var revealed_data_packed_chunk_length = computeIntChunkLength(selfrica_length + 2);
+    var revealed_data_packed_chunk_length = computeIntChunkLength(selfrica_length + 2 + 3);
     signal output revealedData_packed[revealed_data_packed_chunk_length] <== disclose_circuit.revealedData_packed;
 
     var forbidden_countries_list_packed_chunk_length = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * country_length);
@@ -174,6 +180,8 @@ component main {
         pubKeyX,
         pubKeyY,
         scope,
+        user_identifier,
+        current_date,
         ofac_name_dob_smt_root,
         ofac_name_yob_smt_root,
         attestation_id

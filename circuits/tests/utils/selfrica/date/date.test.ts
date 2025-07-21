@@ -1,9 +1,12 @@
 import { expect } from 'chai';
 import { wasm as wasmTester } from 'circom_tester';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('date', async () => {
-    let circuit; 
+    let circuit;
 
     before(async () => {
         circuit = await wasmTester(
@@ -15,9 +18,7 @@ describe('date', async () => {
     });
 
     it('should return true if the year is less', async () => {
-        
-
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 4, 0, 4, 1, 2],
             validity_date_ascii: "19950412".split("").map((x) => x.charCodeAt(0)),
         }
@@ -31,12 +32,12 @@ describe('date', async () => {
     });
 
     it('should return false if the year is greater', async () => {
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 6, 0, 4, 1, 2],
             validity_date_ascii: "19950412".split("").map((x) => x.charCodeAt(0)),
         }
 
-        try { 
+        try {
             const witness = await circuit.calculateWitness(inputs);
             await circuit.checkConstraints(witness);
 
@@ -47,11 +48,11 @@ describe('date', async () => {
     });
 
     it('should return true if the year is equal and month is less', async () => {
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 6, 0, 3, 1, 2],
             validity_date_ascii: "19960412".split("").map((x) => x.charCodeAt(0)),
         }
-        
+
         const witness = await circuit.calculateWitness(inputs);
         await circuit.checkConstraints(witness);
 
@@ -59,12 +60,12 @@ describe('date', async () => {
     });
 
     it('should return false if the year is equal and month is greater', async () => {
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 6, 0, 5, 1, 2],
             validity_date_ascii: "19960412".split("").map((x) => x.charCodeAt(0)),
         }
-        
-        try { 
+
+        try {
             const witness = await circuit.calculateWitness(inputs);
             await circuit.checkConstraints(witness);
 
@@ -75,11 +76,11 @@ describe('date', async () => {
     });
 
     it('should return true if the year is equal and month is equal and day is less', async () => {
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 6, 0, 4, 0, 2],
             validity_date_ascii: "19960412".split("").map((x) => x.charCodeAt(0)),
         }
-        
+
         const witness = await circuit.calculateWitness(inputs);
         await circuit.checkConstraints(witness);
 
@@ -87,12 +88,12 @@ describe('date', async () => {
     });
 
     it('should return false if the year is equal and month is equal and day is greater', async () => {
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 6, 0, 4, 0, 3],
             validity_date_ascii: "19960412".split("").map((x) => x.charCodeAt(0)),
         }
-        
-        try { 
+
+        try {
             const witness = await circuit.calculateWitness(inputs);
             await circuit.checkConstraints(witness);
 
@@ -103,12 +104,12 @@ describe('date', async () => {
     });
 
     it ('should return false if the year is equal and month is equal and day is equal', async () => {
-        const inputs = { 
+        const inputs = {
             current_date: [1, 9, 9, 6, 0, 4, 0, 2],
             validity_date_ascii: "19960412".split("").map((x) => x.charCodeAt(0)),
         }
-        
-        try { 
+
+        try {
             const witness = await circuit.calculateWitness(inputs);
             await circuit.checkConstraints(witness);
 
