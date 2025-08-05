@@ -99,3 +99,11 @@ function ADDRESS_LENGTH() {
 function SELFRICA_MAX_LENGTH() {
     return ADDRESS_INDEX() + ADDRESS_LENGTH();
 }
+
+function SMILE_DATA_PADDED() {
+    return 320;
+}
+
+function SMILE_ID_PADDED() {
+    return 64;
+}

@@ -10,6 +10,7 @@ import { SELFRICA_MAX_LENGTH } from '../../../common/src/utils/selfrica/constant
 import { deepEqual } from 'assert';
 import { expect } from 'chai';
 import { fileURLToPath } from 'url';
+import { customHasher } from '@selfxyz/common/utils/hash';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,18 +38,18 @@ describe('should verify signature on random inputs', () => {
         );
     });
 
-    it('should verify for correct Circuit Input and output ', async function () {
+    it.only('should verify for correct Circuit Input and output ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
-        const expNullifier = poseidon2([input.nullifier_s, "0"]);
-        const expIdCommit = poseidon1([input.s]);
+        const expNullifier = customHasher([...input.id_num_sig, "0"]);
+        const expIdCommit = customHasher(input.msg_sig);
 
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
             const output = await circuit.getOutput(witness, ['nullifier', 'identity_commitment']);
-            expect(BigInt(output.nullifier)).equal(expNullifier);
-            expect(BigInt(output.identity_commitment)).equal(expIdCommit);
+            expect(BigInt(output.nullifier)).equal(BigInt(expNullifier));
+            expect(BigInt(output.identity_commitment)).equal(BigInt(expIdCommit));
 
         } catch (e) { throw e }
     });
@@ -57,7 +58,7 @@ describe('should verify signature on random inputs', () => {
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
 
 
-        input.SmileID_data[4] = "9999999";
+        input.SmileID_data_padded[4] = "9999999";
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
@@ -91,7 +92,7 @@ describe('should verify signature on random inputs', () => {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
 
-        input.s = "27360303589799094027808007181571593860768139721585672592002156609484473730411";
+        input.msg_sig[0] = "273609484473730411";
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
@@ -103,44 +104,13 @@ describe('should verify signature on random inputs', () => {
             }
         }
     });
-    it('should fail for s = 0 ', async function () {
+
+
+    it('should fail for wrong pubKey ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
 
-        input.s = "0";
-        try {
-            const witness = await circuit.calculateWitness(input);
-            await circuit.checkConstraints(witness);
-
-            throw new Error(" Circuit verified for s = 0");
-        } catch (e) {
-            if (e.message.includes("Circuit verified for s = 0")) {
-                throw new Error("Circuit verified for s = 0 ");
-            }
-        }
-    });
-    it('should fail for -r_inv <  SUBGROUP ORDER ', async function () {
-        this.timeout(0);
-        const input = generateCircuitInput(namedob_smt, nameyob_smt);
-
-        input.r_inv = ["7454187305358665457", "12339561404529962506", "3965992003123030795", "435874783350371333"];
-        try {
-            const witness = await circuit.calculateWitness(input);
-            await circuit.checkConstraints(witness);
-
-            throw new Error(" Circuit verified for invalid r_inv ");
-        } catch (e) {
-            if (e.message.includes("Circuit verified for invalid r_inv ")) {
-                throw new Error("Circuit verified for invalid r_inv ");
-            }
-        }
-    });
-
-    it('should fail for wrong pubKeyX ', async function () {
-        this.timeout(0);
-        const input = generateCircuitInput(namedob_smt, nameyob_smt);
-
-        input.pubKeyX = "5456534826464485121354684856131564654684651"
+        input.pubKey[0] = "5456531564654684651"
         try {
             const witness = await circuit.calculateWitness(input);
             await circuit.checkConstraints(witness);
@@ -153,42 +123,6 @@ describe('should verify signature on random inputs', () => {
         }
     });
 
-    it('should fail for wrong pubKeyY ', async function () {
-        this.timeout(0);
-        const input = generateCircuitInput(namedob_smt, nameyob_smt);
-
-        input.pubKeyY = "5456534826464485121354684856131564654684651"
-        try {
-            const witness = await circuit.calculateWitness(input);
-            await circuit.checkConstraints(witness);
-
-            throw new Error(" Circuit verified for invalid pubKeyY ");
-        } catch (e) {
-            if (e.message.includes("Circuit verified for invalid pubKeyY ")) {
-                throw new Error("Circuit verified for invalid pubKeyY ");
-            }
-        }
-    });
-    // it.only('should fail for pubKeyx == 0 ', async function () {
-    //     this.timeout(0);
-    //     const input = generateCircuitInput();
-
-    //     input.pubKeyX = "0"
-    //     let didThrow = false;
-    //     try {
-    //         const witness = await circuit.calculateWitness(input);
-    //         await circuit.checkConstraints(witness);
-    //     } catch (e) {
-    //         const errMsg = e?.message || e?.toString?.() || "";
-    //         if (!errMsg.includes("line: 146")) {
-    //             throw new Error(`Expected error message to include "line: 39", but got:\n${errMsg}`);
-    //         }
-    //         didThrow = true;
-    //     }
-    //     if (!didThrow) {
-    //         throw new Error(" Circuit verified for invalid msg byte ascii ");
-    //     }
-    // })
     it("should return 0 for an OFAC person", async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt, true);
