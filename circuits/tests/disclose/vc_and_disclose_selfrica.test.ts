@@ -38,7 +38,7 @@ describe('should verify signature on random inputs', () => {
         );
     });
 
-    it.only('should verify for correct Circuit Input and output ', async function () {
+    it('should verify for correct Circuit Input and output ', async function () {
         this.timeout(0);
         const input = generateCircuitInput(namedob_smt, nameyob_smt);
         const expNullifier = customHasher([...input.id_num_sig, "0"]);

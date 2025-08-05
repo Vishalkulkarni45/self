@@ -3,9 +3,13 @@ import { generateSMTProof, getNameDobLeafSelfrica, getNameYobLeafSelfrica } from
 import { SelfricaCircuitInput, serializeSmileData, SmileData } from "./types.js";
 import { formatInput } from "../circuits/generateInputs.js";
 import { bigintTo64bitLimbs, getEffECDSAArgs, modInv, modulus } from "./ecdsa/utils.js";
-import { signECDSA, verifyECDSA, verifyEffECDSA } from "./ecdsa/ecdsa.js";
-import { Base8, inCurve, mulPointEscalar, subOrder } from "@zk-kit/baby-jubjub";
+import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import { SELFRICA_DOB_INDEX, SELFRICA_DOB_LENGTH, SELFRICA_FULL_NAME_INDEX, SELFRICA_FULL_NAME_LENGTH, SELFRICA_MAX_LENGTH } from "./constants.js";
+import { generateRSAKeyPair, signRSA, verifyRSA } from "./rsa.js";
+import { bufferToUint8Array } from "@zk-email/helpers";
+import crypto from "crypto";
+import { splitToWords } from "../bytes.js";
+
 
 export const OFAC_DUMMY_INPUT: SmileData = {
     country: 'KEN',
@@ -71,57 +75,48 @@ export const generateCircuitInputsOfac = (smileData: SmileData, smt: SMT, proofL
 
 export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: boolean) => {
     let smileData = ofac ? OFAC_DUMMY_INPUT : NON_OFAC_DUMMY_INPUT;
-    const msg = serializeSmileData(smileData).split('').map((x) => x.charCodeAt(0));
-    const sk = BigInt(subOrder - BigInt(Math.floor(Math.random() * 90098)));
-    const pk = mulPointEscalar(Base8, sk);
+    const msg = Buffer.from(serializeSmileData(smileData), 'utf8');
+    const msgArray = Array.from(msg);
+
+    // Generate RSA key pair
+    const { publicKey, privateKey } = generateRSAKeyPair();
 
     const nameDobInputs = generateCircuitInputsOfac(smileData, nameDobSmt, 2);
     const nameYobInputs = generateCircuitInputsOfac(smileData, nameYobSmt, 1);
 
-    const sig = signECDSA(sk, msg)
-    console.assert(verifyECDSA(msg, sig, pk) == true, "Invalid signature");
+    const [msgPadded, msgPaddedLen]= sha256Pad(msg, 320);
 
-    let { T, U } = getEffECDSAArgs(msg, sig);
-    console.assert(verifyEffECDSA(sig.s, T, U, pk) == true, "Invalid signature");
+    // Sign with RSA
+    const msg_rsaSig = signRSA(msg, privateKey);
+    console.assert(verifyRSA(msg, msg_rsaSig, publicKey) == true, "Invalid RSA signature");
 
-    console.assert(sig.s < subOrder, " s is greater than scalar field");
-    console.assert(inCurve(T), "Point T not on curve");
-    console.assert(inCurve(U), "Point U not on curve");
+    // Convert RSA signature to limbs for circuit input
+    const sigBigInt = BigInt('0x' + msg_rsaSig.toString('hex'));
 
-    const rInv = modInv(sig.R[0], subOrder);
-    const rInvLimbs = bigintTo64bitLimbs(modulus(-rInv, subOrder));
+    // Sign nullifier with RSA
+    const idNumber = Buffer.from(msgArray.slice(30, 30 + 20));
+    const [idNumberPadded, idNumberPaddedLen]= sha256Pad(idNumber, 64);
 
-    const idNumber = msg.slice(30, 30 + 20);
-    const nullifierSig = signECDSA(sk, idNumber);
-    console.assert(verifyECDSA(idNumber, nullifierSig, pk) == true, "Invalid signature");
 
-    let { T: nullifierT, U: nullifierU } = getEffECDSAArgs(idNumber, nullifierSig);
-    console.assert(verifyEffECDSA(nullifierSig.s, nullifierT, nullifierU, pk) == true, "Invalid signature");
+    const id_num_rsaSig = signRSA(idNumber, privateKey);
+    console.assert(verifyRSA(idNumber, id_num_rsaSig, publicKey) == true, "Invalid nullifier RSA signature");
 
-    console.assert(nullifierSig.s < subOrder, " s is greater than scalar field");
-    console.assert(inCurve(nullifierT), "Point T not on curve");
-    console.assert(inCurve(nullifierU), "Point U not on curve");
+    // Convert nullifier RSA signature to limbs
+    const nullifierSigBigInt = BigInt('0x' + id_num_rsaSig.toString('hex'));
 
-    const rInvNullfier = modInv(nullifierSig.R[0], subOrder);
-    const rInvNullfierLimbs = bigintTo64bitLimbs(modulus(-rInvNullfier, subOrder));
+    // Extract RSA modulus and exponent from PEM formatted public key
+    const publicKeyObject = crypto.createPublicKey(publicKey);
+    const jwk = publicKeyObject.export({ format: 'jwk' });
+    const rsaModulus = BigInt('0x' + Buffer.from(jwk.n as string, 'base64url').toString('hex'));
 
     const circuitInput: SelfricaCircuitInput = {
-        SmileID_data: msg.map(String),
+        SmileID_data_padded: formatInput(msgPadded),
         // disclose_sel: Array.from({ length: SELFRICA_MAX_LENGTH }, () => (Math.floor(Math.random() * (2))).toString()),
         disclose_sel: Array(SELFRICA_MAX_LENGTH).fill('1'),
-        s: sig.s.toString(),
-        Tx: T[0].toString(),
-        Ty: T[1].toString(),
-        pubKeyX: pk[0].toString(),
-        pubKeyY: pk[1].toString(),
-        nullifier_s: nullifierSig.s.toString(),
-        nullifier_Tx: nullifierT[0].toString(),
-        nullifier_Ty: nullifierT[1].toString(),
-        nullifier_Ux: nullifierU[0].toString(),
-        nullifier_Uy: nullifierU[1].toString(),
+        pubKey: splitToWords(rsaModulus, 121, 17),
+        msg_sig: splitToWords(sigBigInt, 121, 17),
         scope: '0',
-        r_inv: rInvLimbs.map(String),
-        r_inv_nullifier: rInvNullfierLimbs.map(String),
+        id_num_sig: splitToWords(nullifierSigBigInt, 121, 17),
         forbidden_countries_list: [...Array(120)].map((x) => '0'),
         ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
         ofac_name_dob_smt_root: nameDobInputs.smt_root,
@@ -131,7 +126,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
         ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
         selector_ofac: ['0'],
         attestation_id: ['4'],
-        user_identifier: ['1234567890'],
+        user_identifier: '1234567890',
         current_date: ['2', '0', '2', '4', '0', '1', '0', '1'],
         majority_age_ASCII: ['0', '0', '1'].map((x) => x.charCodeAt(0)),
         selector_older_than: ['1'],
@@ -141,9 +136,11 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
 }
 
 export const generateCircuitInputWithRealData = (serializedRealData: string, nameDobSmt: SMT, nameYobSmt: SMT, ofac?: boolean) => {
-    const msg = serializedRealData.split('').map((x) => x.charCodeAt(0));
-    const sk = BigInt(0x9053a34c294dc0eb08753613048fbbae1151939f05730995c72b18260b7b2e01n);
-    const pk = mulPointEscalar(Base8, sk);
+    const msg = Buffer.from(serializedRealData, 'utf8');
+    const msgArray = Array.from(msg); // Convert buffer to array of bytes for circuit input
+
+    // Generate RSA key pair for real data (or use fixed key for deterministic results)
+    const { publicKey, privateKey } = generateRSAKeyPair();
 
     const fullName = serializedRealData.slice(SELFRICA_FULL_NAME_INDEX, SELFRICA_FULL_NAME_INDEX + SELFRICA_FULL_NAME_LENGTH);
     const dob = serializedRealData.slice(SELFRICA_DOB_INDEX, SELFRICA_DOB_INDEX + SELFRICA_DOB_LENGTH);
@@ -156,66 +153,38 @@ export const generateCircuitInputWithRealData = (serializedRealData: string, nam
     const nameDobInputs = generateCircuitInputsOfac(smileData, nameDobSmt, 2);
     const nameYobInputs = generateCircuitInputsOfac(smileData, nameYobSmt, 1);
 
-    const sig = signECDSA(sk, msg)
-    console.assert(verifyECDSA(msg, sig, pk) == true, "Invalid signature");
+    // Sign with RSA
+    const rsaSig = signRSA(msg, privateKey);
+    console.assert(verifyRSA(msg, rsaSig, publicKey) == true, "Invalid RSA signature");
 
-    let { T, U } = getEffECDSAArgs(msg, sig);
-    console.assert(verifyEffECDSA(sig.s, T, U, pk) == true, "Invalid signature");
+    // Convert RSA signature to limbs for circuit input
+    const sigBigInt = BigInt('0x' + rsaSig.toString('hex'));
 
-    console.assert(sig.s < subOrder, " s is greater than scalar field");
-    console.assert(inCurve(T), "Point T not on curve");
-    console.assert(inCurve(U), "Point U not on curve");
+    // Sign nullifier with RSA
+    const idNumber = Buffer.from(msgArray.slice(30, 30 + 20));
+    const nullifierRsaSig = signRSA(idNumber, privateKey);
+    console.assert(verifyRSA(idNumber, nullifierRsaSig, publicKey) == true, "Invalid nullifier RSA signature");
 
-    const rInv = modInv(sig.R[0], subOrder);
-    const rInvLimbs = bigintTo64bitLimbs(modulus(-rInv, subOrder));
+    // Convert nullifier RSA signature to limbs
+    const nullifierSigBigInt = BigInt('0x' + nullifierRsaSig.toString('hex'));
 
-    const idNumber = msg.slice(30, 30 + 20);
-    const nullifierSig = signECDSA(sk, idNumber);
-    console.assert(verifyECDSA(idNumber, nullifierSig, pk) == true, "Invalid signature");
+    // Extract RSA modulus and exponent from PEM formatted public key
+    const publicKeyObject = crypto.createPublicKey(publicKey);
+    const jwk = publicKeyObject.export({ format: 'jwk' });
+    const realRsaModulus = BigInt('0x' + Buffer.from(jwk.n as string, 'base64url').toString('hex'));
 
-    let { T: nullifierT, U: nullifierU } = getEffECDSAArgs(idNumber, nullifierSig);
-    console.assert(verifyEffECDSA(nullifierSig.s, nullifierT, nullifierU, pk) == true, "Invalid signature");
-
-    console.assert(nullifierSig.s < subOrder, " s is greater than scalar field");
-    console.assert(inCurve(nullifierT), "Point T not on curve");
-    console.assert(inCurve(nullifierU), "Point U not on curve");
-
-    const rInvNullfier = modInv(nullifierSig.R[0], subOrder);
-    const rInvNullfierLimbs = bigintTo64bitLimbs(modulus(-rInvNullfier, subOrder));
-
-    console.log("nullifierSig");
-    console.log(nullifierSig.s);
-    console.log(BigInt(nullifierSig.R[0]).toString(16));
-    console.log(BigInt(nullifierSig.R[1]).toString(16));
-    console.log("disclose sig");
-    console.log(sig.s);
-    console.log(BigInt(sig.R[0]).toString(16));
-    console.log(BigInt(sig.R[1]).toString(16));
-    console.log("nullifierT");
-    console.log(BigInt(nullifierT[0]).toString(16));
-    console.log(BigInt(nullifierT[1]).toString(16));
-    console.log("T");
-    console.log(BigInt(T[0]).toString(16));
-    console.log(BigInt(T[1]).toString(16));
+    const [msgPadded, msgPaddedLen] = sha256Pad(msg, 320);
 
     const circuitInput: SelfricaCircuitInput = {
-        SmileID_data: msg.map(String),
+        SmileID_data_padded: formatInput(msgPadded),
         // disclose_sel: Array.from({ length: SELFRICA_MAX_LENGTH }, () => (Math.floor(Math.random() * (2))).toString()),
         disclose_sel: Array(SELFRICA_MAX_LENGTH).fill('1'),
-        s: sig.s.toString(),
-        Tx: T[0].toString(),
-        Ty: T[1].toString(),
-        pubKeyX: pk[0].toString(),
-        pubKeyY: pk[1].toString(),
-        nullifier_s: nullifierSig.s.toString(),
-        nullifier_Tx: nullifierT[0].toString(),
-        nullifier_Ty: nullifierT[1].toString(),
-        nullifier_Ux: nullifierU[0].toString(),
-        nullifier_Uy: nullifierU[1].toString(),
+        // RSA signature components
+        pubKey: splitToWords(realRsaModulus, 121, 17),
+        msg_sig: splitToWords(sigBigInt, 121, 17),
+        id_num_sig: splitToWords(nullifierSigBigInt, 121, 17),
         scope: '0',
-        r_inv: rInvLimbs.map(String),
-        r_inv_nullifier: rInvNullfierLimbs.map(String),
-        forbidden_countries_list: ['0', '0', '0', '0', '0', '0','0', '0', '0'],
+        forbidden_countries_list: [...Array(120)].map((x) => '0'),
         ofac_name_dob_smt_leaf_key: nameDobInputs.smt_leaf_key,
         ofac_name_dob_smt_root: nameDobInputs.smt_root,
         ofac_name_dob_smt_siblings: nameDobInputs.smt_siblings,
@@ -224,7 +193,7 @@ export const generateCircuitInputWithRealData = (serializedRealData: string, nam
         ofac_name_yob_smt_siblings: nameYobInputs.smt_siblings,
         selector_ofac: ['0'],
         attestation_id: ['4'],
-        user_identifier: ['1234567890'],
+        user_identifier: '1234567890',
         current_date: ['2', '0', '2', '4', '0', '1', '0', '1'],
         majority_age_ASCII: ['0', '2', '0'].map((x) => x.charCodeAt(0)),
         selector_older_than: ['1'],

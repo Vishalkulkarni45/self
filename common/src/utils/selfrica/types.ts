@@ -105,21 +105,12 @@ export type Signature = {
 };
 
 export type SelfricaCircuitInput = {
-    SmileID_data: string[],
+    SmileID_data_padded: string[],
     disclose_sel: string[],
-    s: string,
-    Tx: string,
-    Ty: string,
-    pubKeyX: string,
-    pubKeyY: string,
-    nullifier_s: string,
-    nullifier_Tx: string,
-    nullifier_Ty: string,
-    nullifier_Ux: string,
-    nullifier_Uy: string,
+    pubKey: string[],
+    msg_sig: string[],
+    id_num_sig: string[],
     scope: string,
-    r_inv: string[],
-    r_inv_nullifier: string[],
     forbidden_countries_list: string[],
     ofac_name_dob_smt_leaf_key: string[],
     ofac_name_dob_smt_root: string[],
@@ -129,7 +120,7 @@ export type SelfricaCircuitInput = {
     ofac_name_yob_smt_siblings: string[],
     selector_ofac: string[],
     attestation_id: string[],
-    user_identifier: string[],
+    user_identifier: string,
     current_date: string[],
     majority_age_ASCII: number[],
     selector_older_than: string[],
@@ -146,9 +137,9 @@ export type SelfricaPublicInput = {
 
 export const getPublicInput = (input: SelfricaCircuitInput) => {
     return {
-        pubKeyX: input.pubKeyX,
-        pubKeyY: input.pubKeyY,
-        scope: input.scope,
+        pubKey: input.pubKey,
+        msg_sig: input.msg_sig,
+        id_num_sig: input.id_num_sig,
         ofac_name_dob_smt_root: input.ofac_name_dob_smt_root,
         ofac_name_yob_smt_root: input.ofac_name_yob_smt_root,
         attestation_id: input.attestation_id,
