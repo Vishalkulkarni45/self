@@ -1,10 +1,11 @@
 
 import crypto from "crypto";
 
-// Generate a new RSA key pair
+// Generate a new RSA key pair (rsa_sha256_65537_2048)
 function generateRSAKeyPair() {
   return crypto.generateKeyPairSync("rsa", {
-    modulusLength: 2048,
+    modulusLength: 2048, // 2048-bit key
+    publicExponent: 65537, // Standard exponent for RSA-65537
     publicKeyEncoding: {
       type: "spki",
       format: "pem",
@@ -19,10 +20,11 @@ function generateRSAKeyPair() {
 
 
 function signRSA(message: Buffer, privateKey: string) {
-  // Sign the message directly with the private key
+
+  // Sign the message using RSA-SHA256 with PKCS#1 v1.5 padding (rsa_sha256_65537_2048 - algorithm 1)
   const signature = crypto.sign("RSA-SHA256", message, {
     key: privateKey,
-    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+    padding: crypto.constants.RSA_PKCS1_PADDING, // PKCS#1 v1.5 padding, not PSS
   });
 
   // Example of how to display signature. Because the signature is in a binary
@@ -40,10 +42,10 @@ function verifyRSA(message: Buffer, signatureBuffer: Buffer, publicKey: string) 
   verify.update(message);
   verify.end();
 
-  // Build the key object
+  // Build the key object with PKCS#1 v1.5 padding
   const key = {
     key: publicKey,
-    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+    padding: crypto.constants.RSA_PKCS1_PADDING, // PKCS#1 v1.5 padding to match signing
   };
 
   // Verify the signature using the public key

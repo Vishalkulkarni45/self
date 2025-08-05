@@ -27,8 +27,12 @@ template SignatureVerifier(signatureAlgorithm, n, k) {
 
     var msg_len = (HASH_LEN_BITS + n - 1) \ n;
 
+    for (var i = 0; i < HASH_LEN_BITS; i++) {
+        log(hash[i]);
+    }
+
     signal hashParsed[msg_len] <== HashParser(signatureAlgorithm, n, k)(hash);
-   
+
     if (
         signatureAlgorithm == 1
         || signatureAlgorithm == 3
@@ -38,7 +42,7 @@ template SignatureVerifier(signatureAlgorithm, n, k) {
         || signatureAlgorithm == 15
         || signatureAlgorithm == 31
         || signatureAlgorithm == 34
-    ) { 
+    ) {
         component rsa65537 = VerifyRsa65537Pkcs1v1_5(n, k, HASH_LEN_BITS);
         for (var i = 0; i < msg_len; i++) {
             rsa65537.message[i] <== hashParsed[i];
@@ -64,7 +68,7 @@ template SignatureVerifier(signatureAlgorithm, n, k) {
         rsa3.modulus <== pubKey;
         rsa3.signature <== signature;
     } else if (
-        signatureAlgorithm == 4 
+        signatureAlgorithm == 4
         || signatureAlgorithm == 12
         || signatureAlgorithm == 18
         || signatureAlgorithm == 19
@@ -98,11 +102,11 @@ template SignatureVerifier(signatureAlgorithm, n, k) {
         rsaPss3ShaVerification.hashed <== hash; // send the raw hash
 
     } else if (
-        signatureAlgorithm == 9 
-        || signatureAlgorithm == 7 
-        || signatureAlgorithm == 8 
-        || signatureAlgorithm == 9 
-        || signatureAlgorithm == 21 
+        signatureAlgorithm == 9
+        || signatureAlgorithm == 7
+        || signatureAlgorithm == 8
+        || signatureAlgorithm == 9
+        || signatureAlgorithm == 21
         || signatureAlgorithm == 22
         || signatureAlgorithm == 23
         || signatureAlgorithm == 24

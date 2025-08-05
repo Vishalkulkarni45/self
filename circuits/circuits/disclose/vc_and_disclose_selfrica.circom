@@ -69,7 +69,7 @@ template VC_AND_DISCLOSE(
     msg_hasher.paddedInLength <== SMILE_DATA_PADDED();
 
     //verify Hash(smiledata) signatur
-    component msg_sig_verify = SignatureVerifier(4, n, k);
+    component msg_sig_verify = SignatureVerifier(1, n, k);
     msg_sig_verify.hash <== msg_hasher.out;
     msg_sig_verify.pubKey <== pubKey;
     msg_sig_verify.signature <== msg_sig;
@@ -105,7 +105,7 @@ template VC_AND_DISCLOSE(
     id_num_hasher.paddedInLength <== SMILE_ID_PADDED();
 
     //verify Hash(IdNumber) signature
-    component id_num_sig_verify = SignatureVerifier(4, n, k);
+    component id_num_sig_verify = SignatureVerifier(1, n, k);
     id_num_sig_verify.hash <== id_num_hasher.out;
     id_num_sig_verify.pubKey <== pubKey;
     id_num_sig_verify.signature <== id_num_sig;
