@@ -3,12 +3,9 @@ pragma circom 2.1.9;
 include "circomlib/circuits/poseidon.circom";
 include "circomlib/circuits/bitify.circom";
 include "../utils/selfrica/verifySignature.circom";
-
 include "../utils/passport/signatureVerifier.circom";
-include "@openpassport/zk-email-circuits/lib/sha.circom";
-
 include "../utils/passport/customHashers.circom";
-include "../utils/selfrica/babyEcdsa.circom";
+include "@openpassport/zk-email-circuits/lib/sha.circom";
 include "@openpassport/zk-email-circuits/lib/bigint.circom";
 include "../utils/selfrica/constants.circom";
 include "../utils/selfrica/disclose/disclose.circom";
@@ -50,14 +47,9 @@ template VC_AND_DISCLOSE(
     signal input selector_older_than;
 
 
-    //component ascii_range_check[selfrica_length];
 
     //range check not needed for SmileID_data_padded to be ascii
     for(var i = 0; i < selfrica_length; i++){
-        // Check if the data is in the ASCII range 0 - 127
-        // ascii_range_check[i] = Num2Bits(7);
-        // ascii_range_check[i].in <== SmileID_data_padded[i];
-
         //Check is selctor binary
         disclose_sel[i] * (disclose_sel[i] - 1) === 0;
     }

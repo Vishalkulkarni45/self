@@ -2,11 +2,9 @@ import { SMT } from "@openpassport/zk-kit-smt";
 import { generateSMTProof, getNameDobLeafSelfrica, getNameYobLeafSelfrica } from "../trees.js";
 import { SelfricaCircuitInput, serializeSmileData, SmileData } from "./types.js";
 import { formatInput } from "../circuits/generateInputs.js";
-import { bigintTo64bitLimbs, getEffECDSAArgs, modInv, modulus } from "./ecdsa/utils.js";
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import { SELFRICA_DOB_INDEX, SELFRICA_DOB_LENGTH, SELFRICA_FULL_NAME_INDEX, SELFRICA_FULL_NAME_LENGTH, SELFRICA_MAX_LENGTH } from "./constants.js";
 import { generateRSAKeyPair, signRSA, verifyRSA } from "./rsa.js";
-import { bufferToUint8Array } from "@zk-email/helpers";
 import crypto from "crypto";
 import { splitToWords } from "../bytes.js";
 
@@ -84,7 +82,7 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
     const nameDobInputs = generateCircuitInputsOfac(smileData, nameDobSmt, 2);
     const nameYobInputs = generateCircuitInputsOfac(smileData, nameYobSmt, 1);
 
-    const [msgPadded, msgPaddedLen]= sha256Pad(msg, 320);
+    const [msgPadded, _]= sha256Pad(msg, 320);
 
     // Sign with RSA
     const msg_rsaSig = signRSA(msg, privateKey);
@@ -95,8 +93,6 @@ export const generateCircuitInput = (nameDobSmt: SMT, nameYobSmt: SMT, ofac?: bo
 
     // Sign nullifier with RSA
     const idNumber = Buffer.from(msgArray.slice(30, 30 + 20));
-    const [idNumberPadded, idNumberPaddedLen]= sha256Pad(idNumber, 64);
-
 
     const id_num_rsaSig = signRSA(idNumber, privateKey);
     console.assert(verifyRSA(idNumber, id_num_rsaSig, publicKey) == true, "Invalid nullifier RSA signature");
@@ -173,7 +169,7 @@ export const generateCircuitInputWithRealData = (serializedRealData: string, nam
     const jwk = publicKeyObject.export({ format: 'jwk' });
     const realRsaModulus = BigInt('0x' + Buffer.from(jwk.n as string, 'base64url').toString('hex'));
 
-    const [msgPadded, msgPaddedLen] = sha256Pad(msg, 320);
+    const [msgPadded, _] = sha256Pad(msg, 320);
 
     const circuitInput: SelfricaCircuitInput = {
         SmileID_data_padded: formatInput(msgPadded),

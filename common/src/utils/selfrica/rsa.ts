@@ -27,12 +27,6 @@ function signRSA(message: Buffer, privateKey: string) {
     padding: crypto.constants.RSA_PKCS1_PADDING, // PKCS#1 v1.5 padding, not PSS
   });
 
-  // Example of how to display signature. Because the signature is in a binary
-  // format, you need to encode the output before printing it to a console or
-  // displaying it on a screen.
-  const encoded = signature.toString("base64");
-  console.log(`Signature: ${encoded}`);
-
   return signature;
 }
 
