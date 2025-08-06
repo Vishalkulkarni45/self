@@ -2,7 +2,6 @@ pragma circom 2.1.9;
 
 include "circomlib/circuits/poseidon.circom";
 include "circomlib/circuits/bitify.circom";
-include "../utils/selfrica/verifySignature.circom";
 include "../utils/passport/signatureVerifier.circom";
 include "../utils/passport/customHashers.circom";
 include "@openpassport/zk-email-circuits/lib/sha.circom";

@@ -229,9 +229,9 @@ describe('should verify signature on random inputs', () => {
             // Check age verification results (should show majority age since selector_older_than is 1)
             const age_results = revealedDataUnpacked.slice(SELFRICA_MAX_LENGTH + 2, SELFRICA_MAX_LENGTH + 5);
             // Age verification should return the majority age characters when person is older than that age
-            // expect(age_results[0]).to.equal('0'); // First char of '20'
-            // expect(age_results[1]).to.equal('0'); // Second char mapped from '0'
-            // expect(age_results[2]).to.equal('1'); // Third char mapped from '1'
+            expect(age_results[0]).to.equal('0'); // First char of '20'
+            expect(age_results[1]).to.equal('0'); // Second char mapped from '0'
+            expect(age_results[2]).to.equal('1'); // Third char mapped from '1'
 
         } catch (e) {
             console.log('Error in test:', e.message);
