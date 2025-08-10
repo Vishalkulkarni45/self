@@ -2,6 +2,7 @@ pragma circom 2.1.9;
 
 include "@openpassport/zk-email-circuits/utils/bytes.circom";
 include "@zk-kit/binary-merkle-root.circom/src/binary-merkle-root.circom";
+include "circomlib/circuits/poseidon.circom";
 include "../../passport/customHashers.circom";
 include "../extractQrData.circom";
 
@@ -34,45 +35,52 @@ template VERIFY_COMMITMENT(nLevels) {
     signal input siblings[nLevels];
 
 
-    component commitmentHasher = CustomHasher(120);
-    commitmentHasher.in[0] <== attestation_id;
-    commitmentHasher.in[1] <== secret;
-    commitmentHasher.in[2] <== qrDataHash;
-    commitmentHasher.in[3] <== gender;
+    component nullifierHasher = PackBytesAndPoseidon(75);
+    nullifierHasher.in[0] <== gender;
 
     for (var i = 0; i < 4 ; i++){
-        commitmentHasher.in[i + 4] <== yob[i];
+        nullifierHasher.in[i + 1] <== yob[i];
     }
 
     for (var i = 0; i < 2 ; i++){
-        commitmentHasher.in[i + 8] <== mob[i];
+        nullifierHasher.in[i + 5] <== mob[i];
     }
 
     for (var i = 0; i < 2 ; i++){
-        commitmentHasher.in[i + 10] <== dob[i];
+        nullifierHasher.in[i + 7] <== dob[i];
     }
 
     for (var i = 0; i < 62 ; i++){
-        commitmentHasher.in[i + 12] <== name[i];
+        nullifierHasher.in[i + 9] <== name[i];
     }
 
     for (var i = 0; i < 4 ; i++){
-        commitmentHasher.in[i + 74] <== aadhaar_last_4digits[i];
+        nullifierHasher.in[i + 71] <== aadhaar_last_4digits[i];
     }
 
+    signal nullifier <== nullifierHasher.out;
+
+    component packedCommitment = PackBytesAndPoseidon(42);
+    packedCommitment.in[0] <== attestation_id;
+
     for (var i = 0; i < 6 ; i++){
-        commitmentHasher.in[i + 78] <== pincode[i];
+        packedCommitment.in[i + 1] <== pincode[i];
     }
 
     for (var i = 0; i < maxFieldByteSize() ; i++){
-        commitmentHasher.in[i + 84] <== state[i];
+        packedCommitment.in[i + 7] <== state[i];
     }
 
     for (var i = 0; i < 4 ; i++){
-        commitmentHasher.in[i + 115] <== ph_no_last_4digits[i];
+        packedCommitment.in[i + 38] <== ph_no_last_4digits[i];
     }
 
-    commitmentHasher.in[119] <== photoHash;
+    component commitmentHasher = Poseidon(5);
+    commitmentHasher.inputs[0] <== secret;
+    commitmentHasher.inputs[1] <== qrDataHash;
+    commitmentHasher.inputs[2] <== nullifier;
+    commitmentHasher.inputs[3] <== packedCommitment.out;
+    commitmentHasher.inputs[4] <== photoHash;
 
     signal commitment <== commitmentHasher.out;
 

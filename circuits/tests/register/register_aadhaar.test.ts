@@ -19,6 +19,7 @@ import crypto from 'crypto';
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
 import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash';
+import { poseidon5 } from 'poseidon-lite';
 import { stringToAsciiArray } from '../utils/aadhaar/utils';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
 import { formatInput } from '../../../common/src/utils/circuits/generateInputs';
@@ -70,15 +71,17 @@ function prepareTestData(name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-0
   const [dob, mob, yob] = dateOfBirth.split('-');
 
   const nullifierArgs = [stringToAsciiArray(gender)[0], ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
-  const nullifier = customHasher(nullifierArgs.map(String));
+  const nullifier = packBytesAndPoseidon(nullifierArgs);
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
-  const commitmentInputs = [3 , 1234, qrHash, ...nullifierArgs, ...stringToAsciiArray(pincode), ...stringToAsciiArray(state.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
-  assert(commitmentInputs.length === 120, 'Commitment inputs length should be 120');
-  const commitment = customHasher(commitmentInputs.map(String));
+  const packedCommitmentArgs = [3, ...stringToAsciiArray(pincode), ...stringToAsciiArray(state.padEnd(31, '\0')), ...stringToAsciiArray('1234')];
+  const packedCommitment = packBytesAndPoseidon(packedCommitmentArgs);
+
+  // Final commitment hash using Poseidon(5) - matches circuit structure
+  const commitment = poseidon5([BigInt(1234), BigInt(qrHash), BigInt(nullifier), BigInt(packedCommitment), BigInt(photoHash)]);
 
   const inputs = {
     qrDataPadded: Uint8ArrayToCharArray(qrDataPadded),
@@ -140,7 +143,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
     const signatureBytes = decodedData.slice(decodedData.length - 256, decodedData.length);
     const newSignature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
-    inputs.signature = formatInput(newSignature);
+    inputs.signature = splitToWords(newSignature, BigInt(121), BigInt(17));
 
     const w = await circuit.calculateWitness(inputs);
 
@@ -185,7 +188,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     const out = await circuit.getOutput(w, ['commitment']);
     assert(BigInt(out.commitment) !== BigInt(commitment));
   });
-  
+
   it('should pass for different qr data', async function () {
     this.timeout(0);
     const { inputs, nullifier, commitment } = prepareTestData('KL RAHUL', '18-04-1992');

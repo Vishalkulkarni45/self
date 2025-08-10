@@ -11,8 +11,8 @@ import {
 
 import assert from 'assert';
 import { testQRData } from '../assets/dataInput.json';
-import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash';
-import { poseidon2 } from 'poseidon-lite';
+import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
+import { poseidon2, poseidon5 } from 'poseidon-lite';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs';
 import {
@@ -69,8 +69,13 @@ function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
   const nullifierArgs = [77, ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
-  const commitmentInputs = [3 , 1234, qrHash, ...nullifierArgs, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Delhi'.padEnd(31, '\0')), ...stringToAsciiArray('1234'), photoHash];
-  const commitment = customHasher(commitmentInputs.map(String));
+  const nullifier = packBytesAndPoseidon(nullifierArgs);
+
+
+  const packedCommitmentArgs = [3, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Delhi'.padEnd(31, '\0')), ...stringToAsciiArray('1234')];
+  const packedCommitment = packBytesAndPoseidon(packedCommitmentArgs);
+
+  const commitment = poseidon5([BigInt(1234), BigInt(qrHash), BigInt(nullifier), BigInt(packedCommitment), BigInt(photoHash)]);
 
   const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
   tree.insert(BigInt(commitment));

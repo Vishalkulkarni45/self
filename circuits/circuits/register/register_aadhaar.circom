@@ -31,7 +31,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input signature[k];
 
     signal input secret;
-    // Aadhaar = 3
+
     signal input attestation_id;
 
 
@@ -60,7 +60,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     qrDataExtractor.delimiterIndices <== delimiterIndices;
 
     // Generate nullifier
-    component nullifierHasher = CustomHasher(75);
+    component nullifierHasher = PackBytesAndPoseidon(75);
     nullifierHasher.in[0] <== qrDataExtractor.gender;
 
     for (var i = 0; i < 4 ; i++){
@@ -89,45 +89,29 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
     // Generate commitment
-    component commitmentHasher = CustomHasher(120);
-    commitmentHasher.in[0] <== attestation_id;
-    commitmentHasher.in[1] <== secret;
-    commitmentHasher.in[2] <== qrDataHash;
-    commitmentHasher.in[3] <== qrDataExtractor.gender;
+    component packedCommitment = PackBytesAndPoseidon(42);
+     packedCommitment.in[0] <== attestation_id;
 
-    for (var i = 0; i < 4 ; i++){
-        commitmentHasher.in[i + 4] <== qrDataExtractor.yob[i];
-    }
-
-    for (var i = 0; i < 2 ; i++){
-        commitmentHasher.in[i + 8] <== qrDataExtractor.mob[i];
-    }
-
-    for (var i = 0; i < 2 ; i++){
-        commitmentHasher.in[i + 10] <== qrDataExtractor.dob[i];
-    }
-
-    for (var i = 0; i < 62 ; i++){
-        commitmentHasher.in[i + 12] <== qrDataExtractor.name[i];
-    }
-
-    for (var i = 0; i < 4 ; i++){
-        commitmentHasher.in[i + 74] <== qrDataExtractor.aadhaar_last_4digits[i];
-    }
 
     for (var i = 0; i < 6 ; i++){
-        commitmentHasher.in[i + 78] <== qrDataExtractor.pincode[i];
+        packedCommitment.in[i + 1] <== qrDataExtractor.pincode[i];
     }
 
     for (var i = 0; i < maxFieldByteSize() ; i++){
-        commitmentHasher.in[i + 84] <== qrDataExtractor.state[i];
+        packedCommitment.in[i + 7] <== qrDataExtractor.state[i];
     }
 
     for (var i = 0; i < 4 ; i++){
-        commitmentHasher.in[i + 115] <== qrDataExtractor.ph_no_last_4digits[i];
+        packedCommitment.in[i + 38] <== qrDataExtractor.ph_no_last_4digits[i];
     }
 
-    commitmentHasher.in[119] <== qrDataExtractor.photoHash;
+    component commitmentHasher = Poseidon(5);
+
+    commitmentHasher.inputs[0] <== secret;
+    commitmentHasher.inputs[1] <== qrDataHash;
+    commitmentHasher.inputs[2] <== nullifier;
+    commitmentHasher.inputs[3] <== packedCommitment.out;
+    commitmentHasher.inputs[4] <== qrDataExtractor.photoHash;
 
     signal output commitment <== commitmentHasher.out;
 
