@@ -1,8 +1,12 @@
 package utils
 
+import (
+	"self-sdk-go/internal/types"
+)
+
 const (
-	AttestationId1 AttestationId = 1
-	AttestationId2 AttestationId = 2
+	AttestationId1 types.AttestationId = 1
+	AttestationId2 types.AttestationId = 2
 )
 
 type DiscloseIndicesEntry struct {
@@ -19,7 +23,7 @@ type DiscloseIndicesEntry struct {
 	PassportNoSmtRootIndex            int
 }
 
-var DiscloseIndices = map[AttestationId]DiscloseIndicesEntry{
+var DiscloseIndices = map[types.AttestationId]DiscloseIndicesEntry{
 	AttestationId1: {
 		RevealedDataPackedIndex:           0,
 		ForbiddenCountriesListPackedIndex: 3,
@@ -81,7 +85,7 @@ type RevealedDataIndicesEntry struct {
 	OfacEnd           int
 }
 
-var RevealedDataIndices = map[AttestationId]RevealedDataIndicesEntry{
+var RevealedDataIndices = map[types.AttestationId]RevealedDataIndicesEntry{
 	AttestationId1: {
 		IssuingStateStart: 2,
 		IssuingStateEnd:   4,
@@ -124,7 +128,7 @@ var RevealedDataIndices = map[AttestationId]RevealedDataIndicesEntry{
 	},
 }
 
-var AllIds = map[AttestationId]bool{
+var AllIds = map[types.AttestationId]bool{
 	AttestationId1: true,
 	AttestationId2: true,
 }

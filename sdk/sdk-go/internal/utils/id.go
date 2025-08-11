@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"regexp"
+	. "self-sdk-go/internal/types"
 	"strings"
 )
 
@@ -69,7 +70,7 @@ func FormatRevealedDataPacked(attestationID AttestationId, publicSignals PublicS
 	ofacBytes := revealedDataPackedBytes[revealedDataIndices.OfacStart : revealedDataIndices.OfacEnd+1]
 	ofac := make([]bool, len(ofacBytes))
 	for i, b := range ofacBytes {
-		ofac[i] = b != 0 // Convert byte to boolean (non-zero = true)
+		ofac[i] = b != 0
 	}
 
 	// Return the structured output

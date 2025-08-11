@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	. "self-sdk-go/internal/types"
 )
 
 // PublicSignals represents an array of numeric strings, equivalent to snarkjs PublicSignals
