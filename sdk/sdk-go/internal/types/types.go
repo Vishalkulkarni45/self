@@ -58,3 +58,10 @@ type VerificationResult struct {
 	DiscloseOutput         GenericDiscloseOutput `json:"discloseOutput"`
 	UserData               UserData              `json:"userData"`
 }
+
+type UserIDType string
+
+const (
+	UserIDTypeHex  UserIDType = "hex"
+	UserIDTypeUUID UserIDType = "uuid"
+)
