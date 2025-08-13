@@ -42,57 +42,69 @@ func (m *MockConfigStore) GetActionId(ctx context.Context, userIdentifier string
 	return "", nil
 }
 
-// Test data based on the provided inputs
+// Real proof data from Self app generation
 var testProof = types.VcAndDiscloseProof{
 	A: [2]*big.Int{
-		mustParseBigInt("19978035591559142190701827820645990013414633793180672686938226685776304489564"),
-		mustParseBigInt("5729195691952204724157922378821526527130089592215448275678040621795037604051"),
+		parseBigInt("19978035591559142190701827820645990013414633793180672686938226685776304489564"),
+		parseBigInt("5729195691952204724157922378821526527130089592215448275678040621795037604051"),
 	},
 	B: [2][2]*big.Int{
 		{
-			mustParseBigInt("11751985993692270888240656856501733091634778410910150825443605743432104365496"),
-			mustParseBigInt("4452136363546266459130979435587765558483594623092208966946297079596510893605"),
+			parseBigInt("11751985993692270888240656856501733091634778410910150825443605743432104365496"),
+			parseBigInt("4452136363546266459130979435587765558483594623092208966946297079596510893605"),
 		},
 		{
-			mustParseBigInt("3810657409440735818003229201852551662656469950107499750244154014975554267923"),
-			mustParseBigInt("10470222606272472527954481346783037896628046865041659088202192358643101806862"),
+			parseBigInt("3810657409440735818003229201852551662656469950107499750244154014975554267923"),
+			parseBigInt("10470222606272472527954481346783037896628046865041659088202192358643101806862"),
 		},
 	},
 	C: [2]*big.Int{
-		mustParseBigInt("15884364794774631813944040023461646992309624876334078534233455116862274883339"),
-		mustParseBigInt("20393368791665166818799823852194418481289576790771157544865526424140268474306"),
+		parseBigInt("15884364794774631813944040023461646992309624876334078534233455116862274883339"),
+		parseBigInt("20393368791665166818799823852194418481289576790771157544865526424140268474306"),
 	},
 }
 
 var testPublicSignals = []*big.Int{
 	big.NewInt(0),
-	mustParseBigInt("88695642300982331844063832786964092168707990538423248083901435067469135872"),
-	mustParseBigInt("5917645764266387229099807922771871753544163856784761583567435202615"),
+	parseBigInt("88695642300982331844063832786964092168707990538423248083901435067469135872"),
+	parseBigInt("5917645764266387229099807922771871753544163856784761583567435202615"),
 	big.NewInt(4936272),
 	big.NewInt(0),
 	big.NewInt(0),
 	big.NewInt(0),
-	mustParseBigInt("13444167391765850209653844241387268774183214285042803350347364004811481522835"),
+	parseBigInt("13444167391765850209653844241387268774183214285042803350347364004811481522835"),
 	big.NewInt(1),
-	mustParseBigInt("3128220823265944096261447595696332812503333375431456287926106302900687520341"),
+	parseBigInt("3128220823265944096261447595696332812503333375431456287926106302900687520341"),
 	big.NewInt(2),
 	big.NewInt(5),
 	big.NewInt(0),
 	big.NewInt(8),
 	big.NewInt(1),
 	big.NewInt(2),
-	mustParseBigInt("17359956125106148146828355805271472653597249114301196742546733402427978706344"),
-	mustParseBigInt("7420120618403967585712321281997181302561301414016003514649937965499789236588"),
-	mustParseBigInt("16836358042995742879630198413873414945978677264752036026400967422611478610995"),
-	mustParseBigInt("13934606664243914063643606771911468856671016933765586820821710153612586828695"),
-	mustParseBigInt("333950092602874832043713879344132078365835356296"),
+	parseBigInt("17359956125106148146828355805271472653597249114301196742546733002427978706344"),
+	parseBigInt("7420120618403967585712321281997181302561301414016003514649937965499789236588"),
+	parseBigInt("16836358042995742879630198413873414945978677264752036026400967422611478610995"),
+	parseBigInt("13934606664243914063643606771911468856671016933765586820821710153612586828695"),
+	parseBigInt("333950092602874832043713879344132078365835356296"),
 }
 
 // Helper function to parse big integers
-func mustParseBigInt(s string) *big.Int {
+func parseBigInt(s string) *big.Int {
 	bi := new(big.Int)
 	bi.SetString(s, 10)
 	return bi
+}
+
+// Helper function to convert big integer to UUID format (matching the main implementation)
+func castToUUID(bigInt *big.Int) string {
+	hexStr := bigInt.Text(16) // Convert to hex without 0x prefix
+	// Pad to 32 characters (16 bytes = 32 hex chars)
+	if len(hexStr) < 32 {
+		hexStr = fmt.Sprintf("%032s", hexStr)
+	}
+	// Format as UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		hexStr[0:8], hexStr[8:12], hexStr[12:16], hexStr[16:20], hexStr[20:32])
 }
 
 // Helper function to create test verification config
@@ -106,33 +118,22 @@ func createTestVerificationConfig() types.VerificationConfig {
 	}
 }
 
-// Helper function to create properly formatted test user context data
+// Helper function to create real user context data from Self playground
 func createTestUserContextData() string {
-	// Correct format: configId(32 bytes) + destChainId(32 bytes) + userIdentifier(32 bytes) + userDefinedData
-	// This matches the format expected by the smart contracts and verification logic
-
-	// 32 bytes configId (64 hex chars)
-	configId := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-
-	// 32 bytes destChainId (64 hex chars) - Celo testnet chain ID (42220 = 0xa4ec)
-	destChainId := "000000000000000000000000000000000000000000000000000000000000a4ec"
-
-	// 32 bytes userIdentifier (64 hex chars)
-	userIdentifier := "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
-
-	// User defined data (hex encoded)
-	userDefinedData := hex.EncodeToString([]byte("test-user-data"))
-
-	return configId + destChainId + userIdentifier + userDefinedData
+	// Real userContextData from Self app generation that matches the proof
+	// Format: destChainId(32 bytes) + userIdentifier(32 bytes) + userDefinedData
+	// This is the ACTUAL data used to generate the test proof
+	return "000000000000000000000000000000000000000000000000000000000000a4ec0000000000000000000000000000000057843deaacba4fe9bdcccc6e3c356d0168656c6c6f2066726f6d2074686520706c617967726f756e64"
 }
 
-// Helper function to extract user identifier from properly formatted userContextData
+// Helper function to extract user identifier from real userContextData
 func extractUserIdentifierFromContextData(userContextData string) string {
-	// userIdentifier is at bytes 64-96 (hex chars 128-192)
-	if len(userContextData) < 192 {
+	// Real format: destChainId(32 bytes) + userIdentifier(32 bytes) + userDefinedData
+	// userIdentifier is at bytes 32-64 (hex chars 64-128)
+	if len(userContextData) < 128 {
 		return ""
 	}
-	userIdentifierHex := userContextData[128:192] // Extract userIdentifier hex
+	userIdentifierHex := userContextData[64:128] // Extract userIdentifier hex
 	userIdentifierBigInt := new(big.Int)
 	userIdentifierBigInt.SetString(userIdentifierHex, 16)
 
@@ -144,13 +145,13 @@ func extractUserIdentifierFromContextData(userContextData string) string {
 	return "0x" + hexStr
 }
 
-// Helper function to extract user defined data from properly formatted userContextData
+// Helper function to extract user defined data from real userContextData
 func extractUserDefinedDataFromContextData(userContextData string) string {
-	// userDefinedData starts at byte 96 (hex char 192)
-	if len(userContextData) < 192 {
+	// userDefinedData starts at byte 64 (hex char 128)
+	if len(userContextData) < 128 {
 		return ""
 	}
-	userDefinedDataHex := userContextData[192:] // Everything after userIdentifier
+	userDefinedDataHex := userContextData[128:] // Everything after userIdentifier
 	userDefinedDataBytes, err := hex.DecodeString(userDefinedDataHex)
 	if err != nil {
 		return ""
@@ -158,7 +159,7 @@ func extractUserDefinedDataFromContextData(userContextData string) string {
 	return string(userDefinedDataBytes)
 }
 
-func TestSelfBackendVerifier_Verify_ValidAttestationId(t *testing.T) {
+func TestSelfBackendVerifier_Verify_WithUUIDUserIDType(t *testing.T) {
 	userContextData := createTestUserContextData()
 
 	// Extract the actual values that will be used for config lookup
@@ -169,28 +170,38 @@ func TestSelfBackendVerifier_Verify_ValidAttestationId(t *testing.T) {
 	t.Logf("Extracted UserIdentifier: %s", extractedUserIdentifier)
 	t.Logf("Extracted UserDefinedData: %s", extractedUserDefinedData)
 
+	// Convert userIdentifier to UUID format since we're using UserIDTypeUUID
+	userIdentifierBigInt := new(big.Int)
+	userIdentifierHex := extractedUserIdentifier[2:] // Remove 0x prefix
+	userIdentifierBigInt.SetString(userIdentifierHex, 16)
+	userIdentifierUUID := castToUUID(userIdentifierBigInt)
+	t.Logf("UserIdentifier in UUID format: %s", userIdentifierUUID)
+	t.Logf("Mock key will be: '%s'", userIdentifierUUID+extractedUserDefinedData)
+
 	mockConfigStore := &MockConfigStore{
 		configs: map[string]types.VerificationConfig{
 			"test-config-id": createTestVerificationConfig(),
 		},
 		actionIds: map[string]string{
-			// Use the correctly extracted values for the lookup key
-			extractedUserIdentifier + extractedUserDefinedData: "test-config-id",
+			// Use UUID format for the lookup key since we're using UserIDTypeUUID
+			userIdentifierUUID + extractedUserDefinedData: "test-config-id",
 		},
 	}
 
 	allowedIds := map[types.AttestationId]bool{
-		types.AttestationId(1): true, // Allow attestation ID 1
+		types.AttestationId(1): true,
+		types.AttestationId(2): true,
 	}
 
 	verifier, err := NewSelfBackendVerifier(
-		"test-scope",
-		"https://example.com",
-		true, // Use testnet for testing
+		"self-playground",
+		"https://playground.self.xyz/api/verify",
+		true,
 		allowedIds,
 		mockConfigStore,
-		types.UserIDTypeHex,
+		types.UserIDTypeUUID,
 	)
+
 	if err != nil {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
@@ -222,7 +233,6 @@ func TestSelfBackendVerifier_Verify_ValidAttestationId(t *testing.T) {
 	}
 }
 
-// Test specifically for userContextHash validation
 func TestUserContextHashValidation(t *testing.T) {
 	userContextData := createTestUserContextData()
 
@@ -256,10 +266,17 @@ func TestUserContextHashValidation(t *testing.T) {
 		}
 	}
 
-	t.Logf("UserContextData format validation:")
+	t.Logf("Real UserContextData format validation:")
 	t.Logf("  Total length: %d chars (%d bytes)", len(userContextData), len(userContextData)/2)
-	t.Logf("  ConfigId: %s", userContextData[0:64])
-	t.Logf("  DestChainId: %s", userContextData[64:128])
-	t.Logf("  UserIdentifier: %s", userContextData[128:192])
-	t.Logf("  UserDefinedData: %s", userContextData[192:])
+	t.Logf("  DestChainId: %s (Celo testnet: 42220)", userContextData[0:64])
+	t.Logf("  UserIdentifier: %s", userContextData[64:128])
+	t.Logf("  UserDefinedData (hex): %s", userContextData[128:])
+
+	// Decode and show the user defined data
+	if len(userContextData) > 128 {
+		userDefinedDataBytes, err := hex.DecodeString(userContextData[128:])
+		if err == nil {
+			t.Logf("  UserDefinedData (decoded): '%s'", string(userDefinedDataBytes))
+		}
+	}
 }
