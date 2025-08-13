@@ -145,13 +145,10 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     const newSignature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
     inputs.signature = splitToWords(newSignature, BigInt(121), BigInt(17));
 
-    const w = await circuit.calculateWitness(inputs);
-
     try {
-      await circuit.checkConstraints(w);
-      expect.fail('Expected circuit.checkConstraints to throw an error, but it succeeded');
+      await circuit.calculateWitness(inputs);
+      expect.fail('Expected circuit.calculateWitness to throw an error, but it succeeded');
     } catch (error) {
-
       expect(error).to.exist;
     }
   });
@@ -172,11 +169,9 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     inputs.qrDataPadded = Uint8ArrayToCharArray(qrDataPadded);
     inputs.qrDataPaddedLength = qrDataPaddedLen;
 
-    const w = await circuit.calculateWitness(inputs);
-
     try {
-      await circuit.checkConstraints(w);
-      expect.fail('Expected circuit.checkConstraints to throw an error, but it succeeded');
+      await circuit.calculateWitness(inputs);
+      expect.fail('Expected circuit.calculateWitness to throw an error, but it succeeded');
     } catch (error) {
       expect(error).to.exist;
     }
