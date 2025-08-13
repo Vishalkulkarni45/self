@@ -117,64 +117,52 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     ofac_name_yob.smt_siblings <== ofac_name_yob_smt_siblings;
 
     // reveal fields based on selector
-    signal output reveal_gender <== gender * sel_bits[0];
 
-    signal output reveal_yob[4];
-    signal yob_int[4];
+    signal revealData[118];
+    revealData[0] <== gender * sel_bits[0];
+
+
     for (var i = 0; i < 4; i++){
-        yob_int[i] <== DigitBytesToInt(1)([yob[i]]);
-        reveal_yob[i] <== yob_int[i] * sel_bits[i + 1];
+        revealData[i + 1] <== yob[i] * sel_bits[i + 1];
     }
 
-    signal output reveal_mob[2];
-    signal mob_int[2];
+
     for (var i = 0; i < 2; i++){
-        mob_int[i] <== DigitBytesToInt(1)([mob[i]]);
-        reveal_mob[i] <== mob_int[i] * sel_bits[i + 5];
+        revealData[i + 5] <== mob[i] * sel_bits[i + 5];
     }
 
-    signal output reveal_dob[2];
-    signal dob_int[2];
+
     for (var i = 0; i < 2; i++){
-        dob_int[i] <== DigitBytesToInt(1)([dob[i]]);
-        reveal_dob[i] <== dob_int[i] * sel_bits[i + 7];
+        revealData[i + 7] <== dob[i] * sel_bits[i + 7];
     }
 
-    signal output reveal_name[nameMaxLength()];
     for (var i = 0; i < nameMaxLength(); i++){
-        reveal_name[i] <== name[i] * sel_bits[i + 9];
+        revealData[i + 9] <== name[i] * sel_bits[i + 9];
     }
 
-    signal output reveal_aadhaar_last_4digits[4];
-    signal aadhaar_last_4digits_int[4];
     for (var i = 0; i < 4; i++){
-        aadhaar_last_4digits_int[i] <== DigitBytesToInt(1)([aadhaar_last_4digits[i]]);
-        reveal_aadhaar_last_4digits[i] <== aadhaar_last_4digits_int[i] * sel_bits[i + 71];
+        revealData[i + 71] <== aadhaar_last_4digits[i] * sel_bits[i + 71];
     }
 
-    signal output reveal_pincode[6];
-    signal pincode_int[6];
     for (var i = 0; i < 6; i++){
-        pincode_int[i] <== DigitBytesToInt(1)([pincode[i]]);
-        reveal_pincode[i] <== pincode_int[i] * sel_bits[i + 75];
+        revealData[i + 75] <== pincode[i] * sel_bits[i + 75];
     }
 
-    signal output reveal_state[maxFieldByteSize()];
     for (var i = 0; i < maxFieldByteSize(); i++){
-        reveal_state[i] <== state[i] * sel_bits[i + 81];
+        revealData[i + 81] <== state[i] * sel_bits[i + 81];
     }
 
-    signal output reveal_ph_no_last_4digits[4];
-    signal ph_no_last_4digits_int[4];
     for (var i = 0; i < 4; i++){
-        ph_no_last_4digits_int[i] <== DigitBytesToInt(1)([ph_no_last_4digits[i]]);
-        reveal_ph_no_last_4digits[i] <== ph_no_last_4digits_int[i] * sel_bits[i + 112];
+        revealData[i + 112] <== ph_no_last_4digits[i] * sel_bits[i + 112];
     }
 
     signal output reveal_photoHash <== photoHash * sel_bits[116];
 
-    signal output reveal_ofac_name_dob <== ofac_name_dob.ofacCheckResult * sel_bits[117];
-    signal output reveal_ofac_name_yob <== ofac_name_yob.ofacCheckResult * sel_bits[118];
+    revealData[116] <== ofac_name_dob.ofacCheckResult * sel_bits[117];
+    revealData[117] <== ofac_name_yob.ofacCheckResult * sel_bits[118];
+
+    var revealed_data_packed_chunk_length = computeIntChunkLength(118);
+    signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(118)(revealData);
 
 }
 

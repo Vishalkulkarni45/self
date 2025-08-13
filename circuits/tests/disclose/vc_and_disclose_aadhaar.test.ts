@@ -27,6 +27,7 @@ import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAa
 import { SMT } from '@openpassport/zk-kit-smt';
 import { stringToAsciiArray } from '../utils/aadhaar/utils';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
+import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
 
 let QRData: string = testQRData;
 
@@ -176,25 +177,19 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const outputs = await circuit.getOutput(w, [
-      'reveal_gender',
-      'reveal_yob[4]',
-      'reveal_mob[2]',
-      'reveal_dob[2]',
-      'reveal_name[62]',
-      'reveal_aadhaar_last_4digits[4]',
-      'reveal_pincode[6]',
-      'reveal_state[31]',
-      'reveal_ph_no_last_4digits[4]',
-      'reveal_photoHash',
-      'reveal_ofac_name_dob',
-      'reveal_ofac_name_yob',
+    const revealedData = await circuit.getOutput(w, [
+      `revealData_packed[4]`
     ]);
-    assert(BigInt(outputs.reveal_gender) === BigInt(77), 'Gender should be Male');
-    const outputKeys = Object.keys(outputs);
-    for (let i = 1; i < outputKeys.length; i++) {
-      assert(BigInt(outputs[outputKeys[i]]) === BigInt(0), `${outputKeys[i]} should be zero`);
-    }
+    const revealedData_packed = [
+                revealedData['revealData_packed[0]'],
+                revealedData['revealData_packed[1]'],
+                revealedData['revealData_packed[2]'],
+                revealedData['revealData_packed[3]'],
+            ];
+    const revealedDataUnpacked = unpackReveal(revealedData_packed);
+
+    assert(revealedDataUnpacked[0] === 'M', 'Gender should be Male');
+
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
@@ -220,62 +215,35 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const outputs = await circuit.getOutput(w, [
-      'reveal_gender',
-      'reveal_yob[4]',
-      'reveal_mob[2]',
-      'reveal_dob[2]',
-      'reveal_name[62]',
-      'reveal_aadhaar_last_4digits[4]',
-      'reveal_pincode[6]',
-      'reveal_state[31]',
-      'reveal_ph_no_last_4digits[4]',
-      'reveal_photoHash',
-      'reveal_ofac_name_dob',
-      'reveal_ofac_name_yob',
+    const revealedData = await circuit.getOutput(w, [
+      `revealData_packed[4]`,
+      'reveal_photoHash'
     ]);
+    const revealedData_packed = [
+                revealedData['revealData_packed[0]'],
+                revealedData['revealData_packed[1]'],
+                revealedData['revealData_packed[2]'],
+                revealedData['revealData_packed[3]'],
+            ];
+    const revealedDataUnpacked = unpackReveal(revealedData_packed);
 
-    // check if the outputs are correct
-    assert(BigInt(outputs['reveal_yob[0]']) === BigInt(1), 'YOB[0] should be 1');
-    assert(BigInt(outputs['reveal_yob[1]']) === BigInt(9), 'YOB[1] should be 9');
-    assert(BigInt(outputs['reveal_yob[2]']) === BigInt(8), 'YOB[2] should be 8');
-    assert(BigInt(outputs['reveal_yob[3]']) === BigInt(4), 'YOB[3] should be 4');
+    assert(revealedDataUnpacked[1] === '1', 'YOB should be 1');
+    assert(revealedDataUnpacked[2] === '9', 'YOB should be 9');
+    assert(revealedDataUnpacked[3] === '8', 'YOB should be 8');
+    assert(revealedDataUnpacked[4] === '4', 'YOB should be 4');
 
-    assert(BigInt(outputs['reveal_mob[0]']) === BigInt(0), 'MOB[0] should be 0');
-    assert(BigInt(outputs['reveal_mob[1]']) === BigInt(1), 'MOB[1] should be 1');
+    assert(revealedDataUnpacked[5] === '0', 'MOB should be 1');
+    assert(revealedDataUnpacked[6] === '1', 'MOB should be 2');
 
-    assert(BigInt(outputs['reveal_dob[0]']) === BigInt(0), 'DOB[0] should be 0');
-    assert(BigInt(outputs['reveal_dob[1]']) === BigInt(1), 'DOB[1] should be 1');
+    assert(revealedDataUnpacked[7] === '0', 'DOB should be 1');
+    assert(revealedDataUnpacked[8] === '1', 'DOB should be 1');
 
-    assert(BigInt(outputs.reveal_ofac_name_yob) === BigInt(1), 'OFAC Name YOB should be 1');
+    assert(revealedDataUnpacked[117].charCodeAt(0) === 1, 'OFAC Name YOB should be 1 (not in OFAC list)');
 
-    // check that all other outputs are zero
-    assert(BigInt(outputs.reveal_gender) === 0n, 'reveal_gender should be zero');
-
-    for (let i = 0; i < 62; i++) {
-      assert(BigInt(outputs[`reveal_name[${i}]`]) === 0n, `reveal_name[${i}] should be zero`);
+    for (let i = 9; i < 116; i++) {
+      assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
     }
-    for (let i = 0; i < 4; i++) {
-      assert(
-        BigInt(outputs[`reveal_aadhaar_last_4digits[${i}]`]) === 0n,
-        `reveal_aadhaar_last_4digits[${i}] should be zero`,
-      );
-    }
-    for (let i = 0; i < 6; i++) {
-      assert(BigInt(outputs[`reveal_pincode[${i}]`]) === 0n, `reveal_pincode[${i}] should be zero`);
-    }
-    for (let i = 0; i < 31; i++) {
-      assert(BigInt(outputs[`reveal_state[${i}]`]) === 0n, `reveal_state[${i}] should be zero`);
-    }
-    for (let i = 0; i < 4; i++) {
-      assert(
-        BigInt(outputs[`reveal_ph_no_last_4digits[${i}]`]) === 0n,
-        `reveal_ph_no_last_4digits[${i}] should be zero`,
-      );
-    }
-
-    assert(BigInt(outputs.reveal_photoHash) === 0n, 'reveal_photoHash should be zero');
-    assert(BigInt(outputs.reveal_ofac_name_dob) === 0n, 'reveal_ofac_name_dob should be zero');
+    assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
@@ -288,22 +256,23 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const outputs = await circuit.getOutput(w, [
-      'reveal_gender',
-      'reveal_yob[4]',
-      'reveal_mob[2]',
-      'reveal_dob[2]',
-      'reveal_name[62]',
-      'reveal_aadhaar_last_4digits[4]',
-      'reveal_pincode[6]',
-      'reveal_state[31]',
-      'reveal_ph_no_last_4digits[4]',
-      'reveal_photoHash',
-      'reveal_ofac_name_dob',
-      'reveal_ofac_name_yob',
+    const revealedData = await circuit.getOutput(w, [
+      `revealData_packed[4]`,
     ]);
 
-    assert(BigInt(outputs.reveal_ofac_name_dob) === BigInt(0), 'reveal_ofac_name_dob should be 0');
-    assert(BigInt(outputs.reveal_ofac_name_yob) === BigInt(0), 'reveal_ofac_name_yob should be 0');
+    const revealedData_packed = [
+                revealedData['revealData_packed[0]'],
+                revealedData['revealData_packed[1]'],
+                revealedData['revealData_packed[2]'],
+                revealedData['revealData_packed[3]'],
+            ];
+    const revealedDataUnpacked = unpackReveal(revealedData_packed);
+
+    for (let i = 0; i < 115; i++) {
+      assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
+    }
+
+    assert(revealedDataUnpacked[117].charCodeAt(0) === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(revealedDataUnpacked[116].charCodeAt(0) === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
   });
 });
