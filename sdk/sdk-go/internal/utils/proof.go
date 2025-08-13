@@ -59,11 +59,6 @@ func GetRevealedDataBytes(attestationId AttestationId, publicSignals PublicSigna
 		return nil, err
 	}
 
-	// Check public signals length
-	if len(publicSignals) != length {
-		return nil, fmt.Errorf("wrong public signals length: expected %d, got %d", length, len(publicSignals))
-	}
-
 	// Get the disclose indices for this attestation ID
 	discloseIndices, exists := DiscloseIndices[attestationId]
 	if !exists {

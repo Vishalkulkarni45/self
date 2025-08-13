@@ -193,6 +193,7 @@ func (s *SelfBackendVerifier) Verify(
 		} else {
 			userContextHashStr := utils.CalculateUserIdentifierHash(userContextDataBytes)
 			userContextHash := new(big.Int)
+			userContextHashStr = strings.TrimPrefix(userContextHashStr, "0x")
 			userContextHash.SetString(userContextHashStr, 16)
 
 			if userContextHashInCircuit.Cmp(userContextHash) != 0 {

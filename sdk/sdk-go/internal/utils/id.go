@@ -10,7 +10,6 @@ import (
 // FormatRevealedDataPacked extracts and formats revealed data from public signals
 
 func FormatRevealedDataPacked(attestationID AttestationId, publicSignals PublicSignals) (GenericDiscloseOutput, error) {
-
 	revealedDataPacked, err := GetRevealedDataBytes(attestationID, publicSignals)
 
 	if err != nil {
@@ -38,8 +37,8 @@ func FormatRevealedDataPacked(attestationID AttestationId, publicSignals PublicS
 	nullifier := publicSignals[discloseIndices.NullifierIndex]
 
 	// Extract forbidden countries list packed
-	startIndex := discloseIndices.ForbiddenCountriesListPackedIndex
-	forbiddenCountriesListPacked := publicSignals[startIndex : startIndex+3]
+	fcStartIndex := discloseIndices.ForbiddenCountriesListPackedIndex
+	forbiddenCountriesListPacked := publicSignals[fcStartIndex : fcStartIndex+3]
 
 	// Extract issuing state
 	issuingState := string(revealedDataPackedBytes[revealedDataIndices.IssuingStateStart : revealedDataIndices.IssuingStateEnd+1])
