@@ -149,7 +149,9 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
     try {
       await circuit.checkConstraints(w);
+      expect.fail('Expected circuit.checkConstraints to throw an error, but it succeeded');
     } catch (error) {
+
       expect(error).to.exist;
     }
   });
@@ -174,6 +176,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
     try {
       await circuit.checkConstraints(w);
+      expect.fail('Expected circuit.checkConstraints to throw an error, but it succeeded');
     } catch (error) {
       expect(error).to.exist;
     }
