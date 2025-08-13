@@ -6,6 +6,7 @@ toolchain go1.23.12
 
 require (
 	github.com/ethereum/go-ethereum v1.16.2
+	github.com/iden3/go-iden3-crypto v0.0.17
 	golang.org/x/crypto v0.36.0
 )
 

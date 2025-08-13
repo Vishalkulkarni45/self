@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 
+	commonUtils "self-sdk-go/common"
 	bindings "self-sdk-go/contracts/bindings"
 	"self-sdk-go/internal/types"
 	"self-sdk-go/internal/utils"
@@ -117,9 +118,11 @@ func NewSelfBackendVerifier(
 		return nil, fmt.Errorf("failed to create hub contract binding: %v", err)
 	}
 
-	// TODO: Implement w function similar to TypeScript version
-	// For now, using a simple concatenation as placeholder
-	hashedScope := fmt.Sprintf("%s-%s", endpoint, scope)
+	// Hash endpoint with scope using the same function as TypeScript version
+	hashedScope, err := commonUtils.HashEndpointWithScope(endpoint, scope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash endpoint with scope: %v", err)
+	}
 
 	return &SelfBackendVerifier{
 		scope:                           hashedScope,
