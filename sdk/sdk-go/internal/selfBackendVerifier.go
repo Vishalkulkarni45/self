@@ -117,7 +117,7 @@ func NewSelfBackendVerifier(
 		return nil, fmt.Errorf("failed to create hub contract binding: %v", err)
 	}
 
-	// TODO: Implement hashEndpointWithScope function similar to TypeScript version
+	// TODO: Implement w function similar to TypeScript version
 	// For now, using a simple concatenation as placeholder
 	hashedScope := fmt.Sprintf("%s-%s", endpoint, scope)
 
