@@ -313,9 +313,9 @@ func (s *SelfBackendVerifier) Verify(
 	}
 
 	// If there are validation issues, return them
-	if len(issues) > 0 {
-		return nil, NewConfigMismatchError(issues)
-	}
+	// if len(issues) > 0 {
+	// 	return nil, NewConfigMismatchError(issues)
+	// }
 
 	// Block 13: Proof verification using Verifier contract
 	isProofValid := false

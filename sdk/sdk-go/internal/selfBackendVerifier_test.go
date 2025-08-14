@@ -36,8 +36,8 @@ func (m *MockConfigStore) SetConfig(ctx context.Context, id string, config types
 
 func (m *MockConfigStore) GetActionId(ctx context.Context, userIdentifier string, actionId string) (string, error) {
 	key := userIdentifier + actionId
-	if actionId, exists := m.actionIds[key]; exists {
-		return actionId, nil
+	if configId, exists := m.actionIds[key]; exists {
+		return configId, nil
 	}
 	return "", nil
 }
@@ -109,11 +109,11 @@ func castToUUID(bigInt *big.Int) string {
 
 // Helper function to create test verification config
 func createTestVerificationConfig() types.VerificationConfig {
-	minimumAge := 20
-	ofac := true
+	minimumAge := 18
+	ofac := false
 	return types.VerificationConfig{
 		MinimumAge:        &minimumAge,
-		ExcludedCountries: []common.Country3LetterCode{"AFG", "ALB"}, // Afghanistan, Albania
+		ExcludedCountries: []common.Country3LetterCode{"PRK"},
 		Ofac:              &ofac,
 	}
 }
@@ -166,9 +166,13 @@ func TestSelfBackendVerifier_Verify_WithUUIDUserIDType(t *testing.T) {
 	extractedUserIdentifier := extractUserIdentifierFromContextData(userContextData)
 	extractedUserDefinedData := extractUserDefinedDataFromContextData(userContextData)
 
+	// Get the hex-encoded version of userDefinedData (as used by the main verifier)
+	extractedUserDefinedDataHex := userContextData[128:] // This is the hex string version
+
 	t.Logf("UserContextData: %s", userContextData)
 	t.Logf("Extracted UserIdentifier: %s", extractedUserIdentifier)
-	t.Logf("Extracted UserDefinedData: %s", extractedUserDefinedData)
+	t.Logf("Extracted UserDefinedData (decoded): %s", extractedUserDefinedData)
+	t.Logf("Extracted UserDefinedData (hex): %s", extractedUserDefinedDataHex)
 
 	// Convert userIdentifier to UUID format since we're using UserIDTypeUUID
 	userIdentifierBigInt := new(big.Int)
@@ -176,15 +180,15 @@ func TestSelfBackendVerifier_Verify_WithUUIDUserIDType(t *testing.T) {
 	userIdentifierBigInt.SetString(userIdentifierHex, 16)
 	userIdentifierUUID := castToUUID(userIdentifierBigInt)
 	t.Logf("UserIdentifier in UUID format: %s", userIdentifierUUID)
-	t.Logf("Mock key will be: '%s'", userIdentifierUUID+extractedUserDefinedData)
+	t.Logf("Mock key will be: '%s'", userIdentifierUUID+extractedUserDefinedDataHex)
 
 	mockConfigStore := &MockConfigStore{
 		configs: map[string]types.VerificationConfig{
 			"test-config-id": createTestVerificationConfig(),
 		},
 		actionIds: map[string]string{
-			// Use UUID format for the lookup key since we're using UserIDTypeUUID
-			userIdentifierUUID + extractedUserDefinedData: "test-config-id",
+			// Use UUID format + hex-encoded userDefinedData for the lookup key since we're using UserIDTypeUUID
+			userIdentifierUUID + extractedUserDefinedDataHex: "test-config-id",
 		},
 	}
 
@@ -196,7 +200,7 @@ func TestSelfBackendVerifier_Verify_WithUUIDUserIDType(t *testing.T) {
 	verifier, err := NewSelfBackendVerifier(
 		"self-playground",
 		"https://playground.self.xyz/api/verify",
-		true,
+		false,
 		allowedIds,
 		mockConfigStore,
 		types.UserIDTypeUUID,
