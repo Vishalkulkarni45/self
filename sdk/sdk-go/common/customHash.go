@@ -78,13 +78,12 @@ func HashEndpointWithScope(endpoint, scope string) (string, error) {
 	var endpointChunks []string
 	remaining := formattedEndpoint
 	for len(remaining) > 0 {
-		// Take up to 31 characters (safe slicing)
+		// Take up to 31 characters (safe slicing)	
 		if len(remaining) > 31 {
 			chunk := remaining[:31]
 			endpointChunks = append(endpointChunks, chunk)
 			remaining = remaining[31:]
 		} else {
-			// Take all remaining characters
 			endpointChunks = append(endpointChunks, remaining)
 			remaining = ""
 		}
@@ -94,7 +93,6 @@ func HashEndpointWithScope(endpoint, scope string) (string, error) {
 		return "", fmt.Errorf("endpoint must be less than 496 characters")
 	}
 
-	// Convert chunks to big.Int
 	chunkedEndpointBigInts := make([]*big.Int, len(endpointChunks))
 	for i, chunk := range endpointChunks {
 		bigInt, err := StringToBigInt(chunk)
@@ -104,19 +102,17 @@ func HashEndpointWithScope(endpoint, scope string) (string, error) {
 		chunkedEndpointBigInts[i] = bigInt
 	}
 
-	// Hash the endpoint chunks
 	endpointHash, err := FlexiblePoseidon(chunkedEndpointBigInts)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash endpoint chunks: %w", err)
 	}
 
-	// Convert scope to big.Int
+
 	scopeBigInt, err := StringToBigInt(scope)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert scope to BigInt: %w", err)
 	}
 
-	// Final hash with endpoint hash and scope
 	finalResult, err := poseidon.Hash([]*big.Int{endpointHash, scopeBigInt})
 	if err != nil {
 		return "", fmt.Errorf("failed to hash endpoint with scope: %w", err)

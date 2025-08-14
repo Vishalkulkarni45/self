@@ -118,7 +118,6 @@ func NewSelfBackendVerifier(
 		return nil, fmt.Errorf("failed to create hub contract binding: %v", err)
 	}
 
-	// Hash endpoint with scope using the same function as TypeScript version
 	hashedScope, err := commonUtils.HashEndpointWithScope(endpoint, scope)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash endpoint with scope: %v", err)
@@ -142,7 +141,6 @@ func (s *SelfBackendVerifier) Verify(
 	pubSignals []*big.Int,
 	userContextData string,
 ) (*types.VerificationResult, error) {
-	// Check if attestation id is allowed
 	allowedId, exists := s.allowedIDs[attestationId]
 	var issues []ConfigIssue
 
@@ -157,7 +155,6 @@ func (s *SelfBackendVerifier) Verify(
 	publicSignals := make([]string, len(pubSignals))
 	for i, signal := range pubSignals {
 		signalStr := signal.String()
-		// Check if string contains hex characters and has length > 0
 		if len(signalStr) > 0 && containsHexChars(signalStr) {
 			publicSignals[i] = "0x" + signalStr
 		} else {
@@ -165,7 +162,6 @@ func (s *SelfBackendVerifier) Verify(
 		}
 	}
 
-	// Pre-calculate attestation ID in hex format (reused multiple times throughout function)
 	attestationIdHex := fmt.Sprintf("%064x", attestationId)
 	attestationIdBytes32 := [32]byte{}
 	copy(attestationIdBytes32[:], common.FromHex("0x"+attestationIdHex))
@@ -216,7 +212,6 @@ func (s *SelfBackendVerifier) Verify(
 		}
 
 		// Check the root (reusing pre-calculated attestationIdBytes32)
-
 		registryAddress, err := s.identityVerificationHubContract.Registry(nil, attestationIdBytes32)
 		if err != nil || registryAddress == (common.Address{}) {
 			issues = append(issues, ConfigIssue{
@@ -224,7 +219,6 @@ func (s *SelfBackendVerifier) Verify(
 				Message: "Registry contract not found",
 			})
 		} else {
-			// Create Registry contract binding
 			registryContract, err := bindings.NewRegistry(registryAddress, s.provider)
 			if err != nil {
 				issues = append(issues, ConfigIssue{
@@ -232,7 +226,6 @@ func (s *SelfBackendVerifier) Verify(
 					Message: fmt.Sprintf("Failed to create registry contract binding: %v", err),
 				})
 			} else {
-				// Convert merkle root to big.Int
 				merkleRoot := new(big.Int)
 				merkleRoot.SetString(publicSignals[discloseIndices.MerkleRootIndex], 10)
 
@@ -313,32 +306,28 @@ func (s *SelfBackendVerifier) Verify(
 	}
 
 	// If there are validation issues, return them
-	// if len(issues) > 0 {
-	// 	return nil, NewConfigMismatchError(issues)
-	// }
+	if len(issues) > 0 {
+		return nil, NewConfigMismatchError(issues)
+	}
 
-	// Block 13: Proof verification using Verifier contract
+
 	isProofValid := false
 
 	// Use the pre-calculated attestationIdBytes32 from above
 	verifierAddress, err := s.identityVerificationHubContract.DiscloseVerifier(nil, attestationIdBytes32)
 	if err != nil || verifierAddress == (common.Address{}) {
-		// Verifier contract not found - this should probably be an error, but TypeScript version returns false
 		isProofValid = false
 	} else {
-		// Create Verifier contract binding
 		verifierContract, err := bindings.NewVerifier(verifierAddress, s.provider)
 		if err != nil {
 			isProofValid = false
 		} else {
-			// Verify the proof
-			// Convert proof format: TypeScript swaps B coordinates like [proof.b[0][1], proof.b[0][0]]
+			// Convert proof format:t swaps B coordinates [proof.b[0][1], proof.b[0][0]]
 			bFormatted := [2][2]*big.Int{
 				{proof.B[0][1], proof.B[0][0]}, // Swap first pair
 				{proof.B[1][1], proof.B[1][0]}, // Swap second pair
 			}
 
-			// Use publicSignals (processed strings) like TypeScript version
 			// Convert the processed string signals to *big.Int for Go contract call
 			var publicSignalsArray [21]*big.Int
 			for i, signal := range publicSignals {
@@ -368,10 +357,7 @@ func (s *SelfBackendVerifier) Verify(
 		}
 	}
 
-	// Block 14: Construct return value using already computed values
-	// If validation failed, we might not have computed these values, so compute them only if needed
 	if forbiddenCountriesList == nil || len(genericDiscloseOutput.Nullifier) == 0 {
-		// Fallback: compute missing values if validation was skipped due to errors
 		if len(userContextData) >= 128 {
 			discloseIndices, exists = utils.DiscloseIndices[attestationId]
 			if exists {
@@ -389,8 +375,6 @@ func (s *SelfBackendVerifier) Verify(
 			}
 		}
 	}
-
-	// Calculate validation details for return value using already computed config
 	isMinimumAgeValid := true
 	if configErr == nil && verificationConfig.MinimumAge != nil {
 		configMinAge := *verificationConfig.MinimumAge
@@ -453,7 +437,7 @@ func (s *SelfBackendVerifier) castToAddress(bigInt *big.Int) string {
 // castToUUID converts big integer to UUID format
 func (s *SelfBackendVerifier) castToUUID(bigInt *big.Int) string {
 	hexStr := bigInt.Text(16) // Convert to hex without 0x prefix
-	// Pad to 32 characters (16 bytes = 32 hex chars)
+	// Pad to 32 characters
 	if len(hexStr) < 32 {
 		hexStr = fmt.Sprintf("%032s", hexStr)
 	}
@@ -471,7 +455,6 @@ func (s *SelfBackendVerifier) validateWithConfig(
 	attestationId types.AttestationId,
 	issues *[]ConfigIssue,
 ) ([]string, types.GenericDiscloseOutput, error) {
-	// Block 9: Check if forbidden countries list matches
 	forbiddenCountriesListPacked := make([]string, 4)
 	for i := 0; i < 4; i++ {
 		forbiddenCountriesListPacked[i] = publicSignals[discloseIndices.ForbiddenCountriesListPackedIndex+i]
@@ -502,8 +485,6 @@ func (s *SelfBackendVerifier) validateWithConfig(
 				strings.Join(forbiddenCountriesList, ", "), verificationConfig.ExcludedCountries),
 		})
 	}
-
-	// Block 10: Check minimum age matches
 	genericDiscloseOutput, err := utils.FormatRevealedDataPacked(attestationId, publicSignals)
 	if err != nil {
 		*issues = append(*issues, ConfigIssue{
@@ -517,7 +498,7 @@ func (s *SelfBackendVerifier) validateWithConfig(
 		configMinAge := *verificationConfig.MinimumAge
 		circuitMinAge := genericDiscloseOutput.MinimumAge
 
-		// Parse circuit minimum age
+
 		circuitMinAgeInt := 0
 		if circuitMinAge != "00" {
 			fmt.Sscanf(circuitMinAge, "%d", &circuitMinAgeInt)
@@ -533,10 +514,8 @@ func (s *SelfBackendVerifier) validateWithConfig(
 		}
 	}
 
-	// Block 11: Check timestamp validation
 	s.validateTimestamp(publicSignals, discloseIndices, issues)
 
-	// Block 12: Check OFAC validation
 	if verificationConfig.Ofac != nil && !*verificationConfig.Ofac {
 		for i, ofacCheck := range genericDiscloseOutput.Ofac {
 			if ofacCheck {
@@ -559,7 +538,6 @@ func (s *SelfBackendVerifier) validateWithConfig(
 		}
 	}
 
-	// Return computed values for reuse
 	return forbiddenCountriesList, genericDiscloseOutput, nil
 }
 
@@ -613,9 +591,7 @@ func (s *SelfBackendVerifier) validateTimestamp(
 }
 
 // isEmptyVerificationConfig checks if a VerificationConfig is empty/invalid
-// Since we can't directly compare structs with slices, we check individual fields
 func (s *SelfBackendVerifier) isEmptyVerificationConfig(config types.VerificationConfig) bool {
-	// A config is considered empty if all fields are nil/zero values
 	return config.MinimumAge == nil &&
 		config.ExcludedCountries == nil &&
 		config.Ofac == nil
