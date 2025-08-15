@@ -73,7 +73,6 @@ func NewConfigMismatchError(issue []ConfigIssue) *ConfigMismatchError {
 	return &ConfigMismatchError{Issues: issue}
 }
 
-
 type SelfBackendVerifier struct {
 	scope                           string
 	identityVerificationHubContract *bindings.IdentityVerificationHubImpl
@@ -317,10 +316,20 @@ func (s *SelfBackendVerifier) Verify(
 		if err != nil {
 			isProofValid = false
 		} else {
-			// Convert proof format:t swaps B coordinates [proof.b[0][1], proof.b[0][0]]
+			// Convert string proof fields to *big.Int
+			a0, _ := new(big.Int).SetString(proof.A[0], 10)
+			a1, _ := new(big.Int).SetString(proof.A[1], 10)
+			b00, _ := new(big.Int).SetString(proof.B[0][0], 10)
+			b01, _ := new(big.Int).SetString(proof.B[0][1], 10)
+			b10, _ := new(big.Int).SetString(proof.B[1][0], 10)
+			b11, _ := new(big.Int).SetString(proof.B[1][1], 10)
+			c0, _ := new(big.Int).SetString(proof.C[0], 10)
+			c1, _ := new(big.Int).SetString(proof.C[1], 10)
+
+			// Convert proof format: swaps B coordinates [proof.b[0][1], proof.b[0][0]]
 			bFormatted := [2][2]*big.Int{
-				{proof.B[0][1], proof.B[0][0]}, // Swap first pair
-				{proof.B[1][1], proof.B[1][0]}, // Swap second pair
+				{b01, b00}, // Swap first pair
+				{b11, b10}, // Swap second pair
 			}
 
 			// Convert the processed string signals to *big.Int for Go contract call
@@ -343,7 +352,9 @@ func (s *SelfBackendVerifier) Verify(
 				publicSignalsArray[i] = big.NewInt(0)
 			}
 
-			isValid, err := verifierContract.VerifyProof(nil, proof.A, bFormatted, proof.C, publicSignalsArray)
+			aFormatted := [2]*big.Int{a0, a1}
+			cFormatted := [2]*big.Int{c0, c1}
+			isValid, err := verifierContract.VerifyProof(nil, aFormatted, bFormatted, cFormatted, publicSignalsArray)
 			if err != nil {
 				isProofValid = false
 			} else {

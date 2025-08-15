@@ -1,7 +1,6 @@
 package types
 
 import (
-	"math/big"
 	"self-sdk-go/common"
 )
 
@@ -10,9 +9,9 @@ type AttestationId int
 
 // VcAndDiscloseProof represents the zero-knowledge proof structure
 type VcAndDiscloseProof struct {
-	A [2]*big.Int    `json:"a"`
-	B [2][2]*big.Int `json:"b"`
-	C [2]*big.Int    `json:"c"`
+	A [2]string    `json:"a"`
+	B [2][2]string `json:"b"`
+	C [2]string    `json:"c"`
 }
 
 // VerificationConfig represents the configuration for verification
