@@ -16,6 +16,7 @@ import (
 	bindings "self-sdk-go/contracts/bindings"
 	"self-sdk-go/internal/types"
 	"self-sdk-go/internal/utils"
+	"self-sdk-go/internal/utils/store"
 )
 
 const (
@@ -72,16 +73,11 @@ func NewConfigMismatchError(issue []ConfigIssue) *ConfigMismatchError {
 	return &ConfigMismatchError{Issues: issue}
 }
 
-type ConfigStore interface {
-	GetConfig(ctx context.Context, id string) (types.VerificationConfig, error)
-	SetConfig(ctx context.Context, id string, config types.VerificationConfig) (bool, error)
-	GetActionId(ctx context.Context, userIdentifier string, actionId string) (string, error)
-}
 
 type SelfBackendVerifier struct {
 	scope                           string
 	identityVerificationHubContract *bindings.IdentityVerificationHubImpl
-	configStorage                   ConfigStore
+	configStorage                   store.ConfigStore
 	provider                        *ethclient.Client
 	allowedIDs                      map[types.AttestationId]bool
 	userIdentifierType              types.UserIDType
@@ -93,7 +89,7 @@ func NewSelfBackendVerifier(
 	endpoint string,
 	mockPassport bool,
 	allowedIds map[types.AttestationId]bool,
-	configStorage ConfigStore,
+	configStorage store.ConfigStore,
 	userIdentifierType types.UserIDType,
 ) (*SelfBackendVerifier, error) {
 	rpcUrl := CELO_MAINNET_RPC_URL
@@ -310,7 +306,6 @@ func (s *SelfBackendVerifier) Verify(
 		return nil, NewConfigMismatchError(issues)
 	}
 
-
 	isProofValid := false
 
 	// Use the pre-calculated attestationIdBytes32 from above
@@ -375,15 +370,14 @@ func (s *SelfBackendVerifier) Verify(
 			}
 		}
 	}
+
+	// Determine minimum age validity from validation issues
 	isMinimumAgeValid := true
-	if configErr == nil && verificationConfig.MinimumAge != nil {
-		configMinAge := *verificationConfig.MinimumAge
-		circuitMinAge := genericDiscloseOutput.MinimumAge
-		circuitMinAgeInt := 0
-		if circuitMinAge != "00" {
-			fmt.Sscanf(circuitMinAge, "%d", &circuitMinAgeInt)
+	for _, issue := range issues {
+		if issue.Type == InvalidMinimumAge {
+			isMinimumAgeValid = false
+			break
 		}
-		isMinimumAgeValid = configMinAge <= circuitMinAgeInt
 	}
 
 	isOfacValid := true
@@ -497,7 +491,6 @@ func (s *SelfBackendVerifier) validateWithConfig(
 	if verificationConfig.MinimumAge != nil {
 		configMinAge := *verificationConfig.MinimumAge
 		circuitMinAge := genericDiscloseOutput.MinimumAge
-
 
 		circuitMinAgeInt := 0
 		if circuitMinAge != "00" {
