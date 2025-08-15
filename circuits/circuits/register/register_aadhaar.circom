@@ -114,7 +114,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     commitmentHasher.inputs[4] <== qrDataExtractor.photoHash;
 
     signal output commitment <== commitmentHasher.out;
-
+    signal output timestamp <== qrDataExtractor.timestamp;
 }
 
 

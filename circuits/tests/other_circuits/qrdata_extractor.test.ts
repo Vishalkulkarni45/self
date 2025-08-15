@@ -66,6 +66,7 @@ describe('Aadhaar QR Data Extractor1', function () {
       'state[31]',
       'aadhaar_last_4digits[4]',
       'ph_no_last_4digits[4]',
+      'timestamp',
     ]);
 
     await circuit.checkConstraints(witness);
@@ -152,6 +153,7 @@ describe('Aadhaar QR Data Extractor1', function () {
       'state[31]',
       'aadhaar_last_4digits[4]',
       'ph_no_last_4digits[4]',
+      'timestamp',
     ]);
 
     await circuit.checkConstraints(witness);
