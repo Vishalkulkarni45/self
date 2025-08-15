@@ -131,11 +131,17 @@ func NewSelfBackendVerifier(
 // Verify performs the verification of attestation with the given proof and signals
 func (s *SelfBackendVerifier) Verify(
 	ctx context.Context,
-	attestationId types.AttestationId,
+	attestationIdStr string,
 	proof types.VcAndDiscloseProof,
-	pubSignals []*big.Int,
+	pubSignals []string,
 	userContextData string,
 ) (*types.VerificationResult, error) {
+
+	attestationIdInt, err := strconv.Atoi(attestationIdStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid attestation ID: %v", err)
+	}
+	attestationId := types.AttestationId(attestationIdInt)
 	allowedId, exists := s.allowedIDs[attestationId]
 	var issues []ConfigIssue
 
@@ -146,14 +152,13 @@ func (s *SelfBackendVerifier) Verify(
 		})
 	}
 
-	// Convert public signals to string format, adding 0x prefix for hex values
+	// Process public signals, adding 0x prefix for hex values if needed
 	publicSignals := make([]string, len(pubSignals))
 	for i, signal := range pubSignals {
-		signalStr := signal.String()
-		if len(signalStr) > 0 && containsHexChars(signalStr) {
-			publicSignals[i] = "0x" + signalStr
+		if len(signal) > 0 && containsHexChars(signal) {
+			publicSignals[i] = "0x" + signal
 		} else {
-			publicSignals[i] = signalStr
+			publicSignals[i] = signal
 		}
 	}
 
@@ -263,7 +268,7 @@ func (s *SelfBackendVerifier) Verify(
 		userIdentifierBigInt := new(big.Int)
 		userIdentifierBigInt.SetString(userIdentifierHex, 16)
 
-		userIdentifier = s.castToUserIdentifier(userIdentifierBigInt, s.userIdentifierType)
+		userIdentifier = utils.CastToUserIdentifier(userIdentifierBigInt, s.userIdentifierType)
 		userDefinedData = userContextData[128:]
 
 		// Get config ID from storage
@@ -415,40 +420,6 @@ func (s *SelfBackendVerifier) Verify(
 			UserDefinedData: userDefinedData,
 		},
 	}, nil
-}
-
-// castToUserIdentifier converts a big integer to user identifier string based on the specified type
-func (s *SelfBackendVerifier) castToUserIdentifier(bigInt *big.Int, userIdType types.UserIDType) string {
-	switch userIdType {
-	case types.UserIDTypeHex:
-		return s.castToAddress(bigInt)
-	case types.UserIDTypeUUID:
-		return s.castToUUID(bigInt)
-	default:
-		return bigInt.String()
-	}
-}
-
-// castToAddress converts big integer to hex address format (0x + 40 hex chars)
-func (s *SelfBackendVerifier) castToAddress(bigInt *big.Int) string {
-	hexStr := bigInt.Text(16) // Convert to hex without 0x prefix
-	// Pad to 40 characters (20 bytes = 40 hex chars)
-	if len(hexStr) < 40 {
-		hexStr = fmt.Sprintf("%040s", hexStr)
-	}
-	return "0x" + hexStr
-}
-
-// castToUUID converts big integer to UUID format
-func (s *SelfBackendVerifier) castToUUID(bigInt *big.Int) string {
-	hexStr := bigInt.Text(16) // Convert to hex without 0x prefix
-	// Pad to 32 characters
-	if len(hexStr) < 32 {
-		hexStr = fmt.Sprintf("%032s", hexStr)
-	}
-	// Format as UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-	return fmt.Sprintf("%s-%s-%s-%s-%s",
-		hexStr[0:8], hexStr[8:12], hexStr[12:16], hexStr[16:20], hexStr[20:32])
 }
 
 // validateWithConfig performs config-based validations (forbidden countries, minimum age, timestamp, OFAC)

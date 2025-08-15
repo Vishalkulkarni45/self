@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"fmt"
+	"math/big"
 	"self-sdk-go/common"
+	"self-sdk-go/internal/types"
 	"strings"
 )
 
@@ -44,4 +47,38 @@ func UnpackForbiddenCountriesList(forbiddenCountriesListPacked []string) []strin
 	}
 
 	return countries
+}
+
+// castToUserIdentifier converts a big integer to user identifier string based on the specified type
+func CastToUserIdentifier(bigInt *big.Int, userIdType types.UserIDType) string {
+	switch userIdType {
+	case types.UserIDTypeHex:
+		return CastToAddress(bigInt)
+	case types.UserIDTypeUUID:
+		return CastToUUID(bigInt)
+	default:
+		return bigInt.String()
+	}
+}
+
+// castToAddress converts big integer to hex address format (0x + 40 hex chars)
+func CastToAddress(bigInt *big.Int) string {
+	hexStr := bigInt.Text(16) // Convert to hex without 0x prefix
+	// Pad to 40 characters (20 bytes = 40 hex chars)
+	if len(hexStr) < 40 {
+		hexStr = fmt.Sprintf("%040s", hexStr)
+	}
+	return "0x" + hexStr
+}
+
+// castToUUID converts big integer to UUID format
+func CastToUUID(bigInt *big.Int) string {
+	hexStr := bigInt.Text(16) // Convert to hex without 0x prefix
+	// Pad to 32 characters
+	if len(hexStr) < 32 {
+		hexStr = fmt.Sprintf("%032s", hexStr)
+	}
+	// Format as UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		hexStr[0:8], hexStr[8:12], hexStr[12:16], hexStr[16:20], hexStr[20:32])
 }

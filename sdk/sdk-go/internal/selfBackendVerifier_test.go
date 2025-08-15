@@ -64,35 +64,28 @@ var testProof = types.VcAndDiscloseProof{
 	},
 }
 
-var testPublicSignals = []*big.Int{
-	big.NewInt(0),
-	parseBigInt("88695642300982331844063832786964092168707990538423248083901435067469135872"),
-	parseBigInt("5917645764266387229099807922771871753544163856784761583567435202615"),
-	big.NewInt(4936272),
-	big.NewInt(0),
-	big.NewInt(0),
-	big.NewInt(0),
-	parseBigInt("13444167391765850209653844241387268774183214285042803350347364004811481522835"),
-	big.NewInt(1),
-	parseBigInt("3128220823265944096261447595696332812503333375431456287926106302900687520341"),
-	big.NewInt(2),
-	big.NewInt(5),
-	big.NewInt(0),
-	big.NewInt(8),
-	big.NewInt(1),
-	big.NewInt(2),
-	parseBigInt("17359956125106148146828355805271472653597249114301196742546733002427978706344"),
-	parseBigInt("7420120618403967585712321281997181302561301414016003514649937965499789236588"),
-	parseBigInt("16836358042995742879630198413873414945978677264752036026400967422611478610995"),
-	parseBigInt("13934606664243914063643606771911468856671016933765586820821710153612586828695"),
-	parseBigInt("333950092602874832043713879344132078365835356296"),
-}
-
-// Helper function to parse big integers
-func parseBigInt(s string) *big.Int {
-	bi := new(big.Int)
-	bi.SetString(s, 10)
-	return bi
+var testPublicSignals = []string{
+	"0",
+	"88695642300982331844063832786964092168707990538423248083901435067469135872",
+	"5917645764266387229099807922771871753544163856784761583567435202615",
+	"4936272",
+	"0",
+	"0",
+	"0",
+	"13444167391765850209653844241387268774183214285042803350347364004811481522835",
+	"1",
+	"3128220823265944096261447595696332812503333375431456287926106302900687520341",
+	"2",
+	"5",
+	"0",
+	"8",
+	"1",
+	"2",
+	"17359956125106148146828355805271472653597249114301196742546733002427978706344",
+	"7420120618403967585712321281997181302561301414016003514649937965499789236588",
+	"16836358042995742879630198413873414945978677264752036026400967422611478610995",
+	"13934606664243914063643606771911468856671016933765586820821710153612586828695",
+	"333950092602874832043713879344132078365835356296",
 }
 
 // Helper function to convert big integer to UUID format (matching the main implementation)
@@ -215,7 +208,7 @@ func TestSelfBackendVerifier_Verify_WithUUIDUserIDType(t *testing.T) {
 	// Try to verify with valid attestation ID 1
 	result, err := verifier.Verify(
 		ctx,
-		types.AttestationId(1), // Valid ID
+		"1", // Valid ID
 		testProof,
 		testPublicSignals,
 		userContextData,
@@ -253,7 +246,7 @@ func TestUserContextHashValidation(t *testing.T) {
 	// The public signals should contain this hash at the userIdentifierIndex
 	// For attestationId 1, userIdentifierIndex is 20 (from constants.go)
 	if len(testPublicSignals) > 20 {
-		circuitHash := testPublicSignals[20].String()
+		circuitHash := testPublicSignals[20]
 		t.Logf("Circuit userContextHash: %s", circuitHash)
 
 		// Convert calculated hash to big.Int for comparison (remove 0x prefix)
@@ -261,12 +254,16 @@ func TestUserContextHashValidation(t *testing.T) {
 		hashForParsing := strings.TrimPrefix(userContextHashStr, "0x")
 		calculatedHashBigInt.SetString(hashForParsing, 16)
 
-		if calculatedHashBigInt.Cmp(testPublicSignals[20]) == 0 {
+		// Convert circuit hash string to big.Int for comparison
+		circuitHashBigInt := new(big.Int)
+		circuitHashBigInt.SetString(circuitHash, 10)
+
+		if calculatedHashBigInt.Cmp(circuitHashBigInt) == 0 {
 			t.Logf("✅ UserContextHash matches!")
 		} else {
 			t.Logf("❌ UserContextHash mismatch!")
 			t.Logf("Expected: %s", calculatedHashBigInt.String())
-			t.Logf("Got: %s", testPublicSignals[20].String())
+			t.Logf("Got: %s", circuitHash)
 		}
 	}
 
