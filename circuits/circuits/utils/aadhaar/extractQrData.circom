@@ -258,6 +258,36 @@ template PhotoExtractor(maxDataLength) {
     out <== outInt.out;
 }
 
+/// @title ValidateDelimiterIndices
+/// @notice Validates the delimiter indices
+/// @param maxDataLength - Maximum length of the data
+/// @input delimiterIndices[18] - Delimiter indices
+template ValidateDelimiterIndices(maxDataLength) {
+    signal input delimiterIndices[18];
+
+    component range_check[18];
+    component delimiter_idx_less_than_nxt_idx[17];
+
+    for(var i = 0; i < 17; i++) {
+        range_check[i] = Num2Bits(12);
+        range_check[i].in <== delimiterIndices[i];
+
+        delimiter_idx_less_than_nxt_idx[i] = LessThan(12);
+        delimiter_idx_less_than_nxt_idx[i].in[0] <== delimiterIndices[i];
+        delimiter_idx_less_than_nxt_idx[i].in[1] <== delimiterIndices[i + 1];
+    }
+
+    range_check[17] = Num2Bits(12);
+    range_check[17].in <== delimiterIndices[17];
+
+    component is_last_delimiter_idx_valid = LessThan(12);
+    is_last_delimiter_idx_valid.in[0] <== delimiterIndices[17];
+    is_last_delimiter_idx_valid.in[1] <== maxDataLength;
+
+
+}
+
+
 //TODO: Currently we use state to be 31 bytes , but this can be reduced to MAX LENGTH OF STATE
 
 /// @title EXTRACT_QR_DATA
@@ -300,6 +330,10 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal nDelimitedData[maxDataLength];
     signal n255Filter[maxDataLength + 1];
     n255Filter[0] <== 0;
+
+    component validateDelimiterIndices = ValidateDelimiterIndices(maxDataLength);
+    validateDelimiterIndices.delimiterIndices <== delimiterIndices;
+
 
     for (var i = 0; i < maxDataLength; i++) {
         is255[i] = IsEqual();
