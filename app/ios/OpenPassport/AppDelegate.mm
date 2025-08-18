@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 #import "AppDelegate.h"
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
@@ -13,10 +15,21 @@
 {
   [FIRApp configure];
 
-  if ([UNUserNotificationCenter class] != nil) {
-    UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-    center.delegate = self;
-  }
+  // TODO: Uncomment this after the APN has been configured
+  // if ([UNUserNotificationCenter class] != nil) {
+  //   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+  //   center.delegate = self;
+
+  //   // Request permission for notifications
+  //   [center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge)
+  //                         completionHandler:^(BOOL granted, NSError * _Nullable error) {
+  //     if (granted) {
+  //       dispatch_async(dispatch_get_main_queue(), ^{
+  //         [[UIApplication sharedApplication] registerForRemoteNotifications];
+  //       });
+  //     }
+  //   }];
+  // }
 
   self.moduleName = @"OpenPassport";
   self.initialProps = @{};

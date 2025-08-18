@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import React, { useCallback } from 'react';
 import {
   NativeSyntheticEvent,
@@ -7,9 +9,9 @@ import {
 } from 'react-native';
 
 import { extractMRZInfo } from '../../utils/utils';
-import { RCTFragment, RCTFragmentViewManagerProps } from './RCTFragment';
+import { RCTFragment } from './RCTFragment';
 
-interface RCTPassportOCRViewManagerProps extends RCTFragmentViewManagerProps {
+interface NativePassportOCRViewProps {
   onPassportRead: (
     event: NativeSyntheticEvent<{
       data:
@@ -23,11 +25,21 @@ interface RCTPassportOCRViewManagerProps extends RCTFragmentViewManagerProps {
           };
     }>,
   ) => void;
+  onError: (
+    event: NativeSyntheticEvent<{
+      error: string;
+      errorMessage: string;
+      stackTrace: string;
+    }>,
+  ) => void;
+  style?: any; // Or a more specific style type if available
 }
 
 const RCTPassportOCRViewNativeComponent = Platform.select({
-  ios: requireNativeComponent('PassportOCRView'),
-  android: requireNativeComponent('PassportOCRViewManager'),
+  ios: requireNativeComponent<NativePassportOCRViewProps>('PassportOCRView'),
+  android: requireNativeComponent<NativePassportOCRViewProps>(
+    'PassportOCRViewManager',
+  ),
 });
 
 if (!RCTPassportOCRViewNativeComponent) {
@@ -111,10 +123,16 @@ export const PassportCamera: React.FC<PassportCameraProps> = ({
     );
   } else {
     // For Android, wrap the native component inside your RCTFragment to preserve existing functionality.
-    const Fragment = RCTFragment as React.FC<RCTPassportOCRViewManagerProps>;
+    const Fragment = RCTFragment as React.FC<
+      React.ComponentProps<typeof RCTFragment> & NativePassportOCRViewProps
+    >;
     return (
       <Fragment
-        RCTFragmentViewManager={RCTPassportOCRViewNativeComponent}
+        RCTFragmentViewManager={
+          RCTPassportOCRViewNativeComponent as ReturnType<
+            typeof requireNativeComponent
+          >
+        }
         fragmentComponentName="PassportOCRViewManager"
         isMounted={isMounted}
         style={{

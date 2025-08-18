@@ -1,11 +1,12 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
+import type { EndpointType } from '@selfxyz/common';
+import { WS_DB_RELAYER } from '@selfxyz/common';
+import { UserIdType } from '@selfxyz/common';
 import { Platform } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 import { io } from 'socket.io-client';
 import { create } from 'zustand';
-
-import { WS_DB_RELAYER } from '../../../common/src/constants/constants';
-import { EndpointType } from '../../../common/src/utils/appType';
-import { UserIdType } from '../../../common/src/utils/circuits/uuid';
 
 SQLite.enablePromise(true);
 

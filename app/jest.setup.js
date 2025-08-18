@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 /* global jest */
 /** @jest-environment jsdom */
 require('react-native-gesture-handler/jestSetup');
@@ -47,6 +49,11 @@ jest.mock('@segment/analytics-react-native', () => {
     reset: jest.fn(),
   };
 
+  // Mock flush policy classes
+  const MockFlushPolicy = class {
+    constructor() {}
+  };
+
   return {
     createClient: jest.fn(() => mockClient),
     EventPlugin: jest.fn(),
@@ -54,7 +61,10 @@ jest.mock('@segment/analytics-react-native', () => {
       ENRICHMENT: 'enrichment',
       DESTINATION: 'destination',
       BEFORE: 'before',
+      before: 'before',
     },
+    StartupFlushPolicy: MockFlushPolicy,
+    BackgroundFlushPolicy: MockFlushPolicy,
   };
 });
 

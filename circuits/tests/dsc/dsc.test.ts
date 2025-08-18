@@ -2,16 +2,19 @@ import { expect } from 'chai';
 import { wasm as wasm_tester } from 'circom_tester';
 import dotenv from 'dotenv';
 import path from 'path';
-import serialized_csca_tree from '../../../common/pubkeys/serialized_csca_tree.json';
-import { parseCertificateSimple } from '../../../common/src/utils/certificate_parsing/parseCertificateSimple';
-import { getCircuitNameFromPassportData } from '../../../common/src/utils/circuits/circuitsName';
-import { generateCircuitInputsDSC } from '../../../common/src/utils/circuits/generateInputs';
-import { genAndInitMockPassportData } from '../../../common/src/utils/passports/genMockPassportData';
-import { parseDscCertificateData } from '../../../common/src/utils/passports/passport_parsing/parseDscCertificateData';
-import { getLeafDscTreeFromParsedDsc } from '../../../common/src/utils/trees';
-import { SignatureAlgorithm } from '../../../common/src/utils/types';
-import { fullSigAlgs, sigAlgs } from './test_cases';
+import serialized_csca_tree from '../../../common/pubkeys/serialized_csca_tree.json' with { type: 'json' };
+import { parseCertificateSimple } from '@selfxyz/common/utils/certificate_parsing/parseCertificateSimple';
+import { getCircuitNameFromPassportData } from '@selfxyz/common/utils/circuits/circuitsName';
+import { generateCircuitInputsDSC } from '@selfxyz/common/utils/circuits/generateInputs';
+import { genAndInitMockPassportData } from '@selfxyz/common/utils/passports/genMockPassportData';
+import { parseDscCertificateData } from '@selfxyz/common/utils/passports/passport_parsing/parseDscCertificateData';
+import { getLeafDscTreeFromParsedDsc } from '@selfxyz/common/utils/trees';
+import { SignatureAlgorithm } from '@selfxyz/common/utils/types';
+import { fullSigAlgs, sigAlgs } from './test_cases.js';
+import { fileURLToPath } from 'url';
 dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const testSuite = process.env.FULL_TEST_SUITE === 'true' ? fullSigAlgs : sigAlgs;
 
@@ -26,7 +29,7 @@ testSuite.forEach(({ sigAlg, hashFunction, domainParameter, keyLength }) => {
   );
   const passportMetadata = passportData.passportMetadata;
 
-  describe(`DSC chain certificate - ${passportMetadata.cscaHashFunction.toUpperCase()} ${passportMetadata.cscaSignatureAlgorithm.toUpperCase()} ${passportMetadata.cscaCurveOrExponent.toUpperCase()} ${
+  describe(`DSC chain certificate - ${passportMetadata.cscaHashFunction?.toUpperCase()} ${passportMetadata.cscaSignatureAlgorithm?.toUpperCase()} ${passportMetadata.cscaCurveOrExponent?.toUpperCase()} ${
     passportData.csca_parsed.publicKeyDetails.bits
   }`, function () {
     this.timeout(0); // Disable timeout
@@ -42,9 +45,9 @@ testSuite.forEach(({ sigAlg, hashFunction, domainParameter, keyLength }) => {
         ),
         {
           include: [
-            'node_modules',
-            './node_modules/@zk-kit/binary-merkle-root.circom/src',
-            './node_modules/circomlib/circuits',
+            '../node_modules',
+            '../node_modules/@zk-kit/binary-merkle-root.circom/src',
+            '../node_modules/circomlib/circuits',
           ],
         }
       );

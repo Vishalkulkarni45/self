@@ -1,12 +1,13 @@
-import { UserIdType, validateUserId } from "./circuits/uuid";
+import { UserIdType, validateUserId } from './circuits/uuid.js';
 
 export type Mode = 'register' | 'dsc' | 'vc_and_disclose';
 export type EndpointType = 'https' | 'celo' | 'staging_celo' | 'staging_https';
 
 import { v4 } from 'uuid';
-import { REDIRECT_URL } from "../constants/constants";
-import { Country3LetterCode } from "../constants/countries";
-import { formatEndpoint } from "./scope";
+import { REDIRECT_URL } from '../constants/constants.js';
+import { Country3LetterCode } from '../constants/countries.js';
+import { formatEndpoint } from './scope.js';
+
 export interface SelfApp {
   appName: string;
   logoBase64: string;
@@ -19,6 +20,9 @@ export interface SelfApp {
   userIdType: UserIdType;
   devMode: boolean;
   disclosures: SelfAppDisclosureConfig;
+  version: number;
+  chainID: 42220 | 44787;
+  userDefinedData: string;
 }
 
 export interface SelfAppDisclosureConfig {
@@ -51,17 +55,19 @@ export class SelfAppBuilder {
     }
     // Check if scope and endpoint contain only ASCII characters
     if (!/^[\x00-\x7F]*$/.test(config.scope)) {
-      throw new Error("Scope must contain only ASCII characters (0-127)");
+      throw new Error('Scope must contain only ASCII characters (0-127)');
     }
     if (!/^[\x00-\x7F]*$/.test(config.endpoint)) {
-      throw new Error("Endpoint must contain only ASCII characters (0-127)");
+      throw new Error('Endpoint must contain only ASCII characters (0-127)');
     }
     if (config.scope.length > 31) {
-      throw new Error("Scope must be less than 31 characters");
+      throw new Error('Scope must be less than 31 characters');
     }
     const formattedEndpoint = formatEndpoint(config.endpoint);
     if (formattedEndpoint.length > 496) {
-      throw new Error(`Endpoint must be less than 496 characters, current endpoint: ${formattedEndpoint}, length: ${formattedEndpoint.length}`);
+      throw new Error(
+        `Endpoint must be less than 496 characters, current endpoint: ${formattedEndpoint}, length: ${formattedEndpoint.length}`
+      );
     }
     if (!config.userId) {
       throw new Error('userId is required');
@@ -78,7 +84,7 @@ export class SelfAppBuilder {
       }
       config.userId = config.userId.slice(2);
     }
-    if (!validateUserId(config.userId, config.userIdType ?? "uuid")) {
+    if (!validateUserId(config.userId, config.userIdType ?? 'uuid')) {
       throw new Error('userId must be a valid UUID or address');
     }
 
@@ -87,9 +93,12 @@ export class SelfAppBuilder {
       userIdType: 'uuid',
       devMode: false,
       endpointType: 'https',
-      header: "",
-      logoBase64: "",
+      header: '',
+      logoBase64: '',
       disclosures: {},
+      chainID: config.endpointType === 'staging_celo' ? 44787 : 42220,
+      version: config.version ?? 2,
+      userDefinedData: '',
       ...config,
     } as SelfApp;
   }

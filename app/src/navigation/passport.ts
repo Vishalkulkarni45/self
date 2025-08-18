@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 
+import NFCMethodSelectionScreen from '../screens/passport/NFCMethodSelectionScreen';
 import PassportCameraScreen from '../screens/passport/PassportCameraScreen';
 import PassportCameraTrouble from '../screens/passport/PassportCameraTroubleScreen';
 import PassportNFCScanScreen from '../screens/passport/PassportNFCScanScreen';
@@ -55,6 +58,13 @@ const passportScreens = {
     screen: UnsupportedPassportScreen,
     options: {
       headerShown: false,
+    } as NativeStackNavigationOptions,
+  },
+  PassportNFCMethodSelection: {
+    screen: NFCMethodSelectionScreen,
+    options: {
+      headerShown: false,
+      animation: 'slide_from_bottom',
     } as NativeStackNavigationOptions,
   },
 };

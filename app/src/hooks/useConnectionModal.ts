@@ -1,9 +1,12 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useEffect } from 'react';
 import { Linking, Platform } from 'react-native';
 
 import { SettingsEvents } from '../consts/analytics';
 import { navigationRef } from '../navigation';
+import { useSettingStore } from '../stores/settingStore';
 import analytics from '../utils/analytics';
 import { useModal } from './useModal';
 
@@ -13,22 +16,28 @@ const connectionModalParams = {
   titleText: 'Internet connection error',
   bodyText: 'In order to use SELF, you must have access to the internet.',
   buttonText: 'Open settings',
+  secondaryButtonText: "Don't show again",
   onButtonPress: async () => {
     trackEvent(SettingsEvents.CONNECTION_SETTINGS_OPENED);
     return Platform.OS === 'ios'
-      ? Linking.openURL('prefs://MOBILE_DATA_SETTINGS_ID')
+      ? Linking.openURL('App-Prefs:root=Cellular')
       : Linking.sendIntent('android.settings.WIRELESS_SETTINGS');
   },
   onModalDismiss: () => {
-    // noop
+    useSettingStore.getState().setHideNetworkModal(true);
   },
   preventDismiss: true,
 } as const;
 
 export default function useConnectionModal() {
-  const { isConnected, isInternetReachable } = useNetInfo();
+  const { isConnected, isInternetReachable } = useNetInfo({
+    reachabilityUrl: 'https://api.self.xyz/ping',
+  });
   const { showModal, dismissModal, visible } = useModal(connectionModalParams);
-  const hasConnection = isInternetReachable === true && isConnected === true;
+  //isConnected and isInternetReachable can be null for unknown state
+  const hasNoConnection =
+    isConnected === false && isInternetReachable === false;
+  const hideNetworkModal = useSettingStore(state => state.hideNetworkModal);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -36,10 +45,10 @@ export default function useConnectionModal() {
         return;
       }
 
-      if (!hasConnection && !visible) {
+      if (hasNoConnection && !visible && !hideNetworkModal) {
         showModal();
         trackEvent(SettingsEvents.CONNECTION_MODAL_OPENED);
-      } else if (visible && hasConnection) {
+      } else if (visible && !hasNoConnection) {
         dismissModal();
         trackEvent(SettingsEvents.CONNECTION_MODAL_CLOSED);
       }
@@ -47,7 +56,7 @@ export default function useConnectionModal() {
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [hasConnection, dismissModal, visible, navigationRef.isReady()]);
+  }, [hasNoConnection, dismissModal, visible, navigationRef.isReady()]);
 
   return {
     visible,

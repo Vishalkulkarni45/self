@@ -1,11 +1,22 @@
 {
-  "devDependencies": {
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+  "name": "self-workspace-root",
+  "workspaces": [
+    "app",
+    "common",
+    "circuits",
+    "contracts",
+    "sdk/*",
+    "prover/tests"
+  ],
+  "scripts": {
+    "build": "yarn workspaces foreach --topological-dev --parallel --exclude @selfxyz/contracts -i --all run build",
+    "lint": "yarn workspaces foreach --parallel -i --all --exclude self-workspace-root run lint",
+    "types": "yarn workspaces foreach --topological-dev --parallel --exclude @selfxyz/contracts -i --all run types ",
+    "postinstall": "patch-package"
   },
-  "packageManager": "yarn@4.5.3+sha512.3003a14012e2987072d244c720506549c1aab73ee728208f1b2580a9fd67b92d61ba6b08fe93f6dce68fd771e3af1e59a0afa28dd242dd0940d73b95fedd4e90",
-  "dependencies": {
-    "@openpassport/zk-kit-imt": "^0.0.5",
-    "@openpassport/zk-kit-lean-imt": "^0.0.6"
+  "packageManager": "yarn@4.6.0",
+  "devDependencies": {
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0"
   }
 }

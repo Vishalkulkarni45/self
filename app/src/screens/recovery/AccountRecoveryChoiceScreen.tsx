@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { Separator, View, XStack, YStack } from 'tamagui';
@@ -12,13 +14,16 @@ import useHapticNavigation from '../../hooks/useHapticNavigation';
 import Keyboard from '../../images/icons/keyboard.svg';
 import RestoreAccountSvg from '../../images/icons/restore_account.svg';
 import { ExpandableBottomLayout } from '../../layouts/ExpandableBottomLayout';
-import { useAuth } from '../../stores/authProvider';
-import { loadPassportDataAndSecret } from '../../stores/passportDataProvider';
+import { useAuth } from '../../providers/authProvider';
+import {
+  loadPassportDataAndSecret,
+  reStorePassportDataWithRightCSCA,
+} from '../../providers/passportDataProvider';
 import { useSettingStore } from '../../stores/settingStore';
 import analytics from '../../utils/analytics';
 import { STORAGE_NAME, useBackupMnemonic } from '../../utils/cloudBackup';
 import { black, slate500, slate600, white } from '../../utils/colors';
-import { isUserRegistered } from '../../utils/proving/validateDocument';
+import { isUserRegisteredWithAlternativeCSCA } from '../../utils/proving/validateDocument';
 
 const { trackEvent } = analytics();
 
@@ -54,7 +59,10 @@ const AccountRecoveryChoiceScreen: React.FC<
       const passportDataAndSecret =
         (await loadPassportDataAndSecret()) as string;
       const { passportData, secret } = JSON.parse(passportDataAndSecret);
-      const isRegistered = await isUserRegistered(passportData, secret);
+      const { isRegistered, csca } = await isUserRegisteredWithAlternativeCSCA(
+        passportData,
+        secret,
+      );
       console.log('User is registered:', isRegistered);
       if (!isRegistered) {
         console.log(
@@ -65,11 +73,12 @@ const AccountRecoveryChoiceScreen: React.FC<
         setRestoring(false);
         return;
       }
-
       if (!cloudBackupEnabled) {
         toggleCloudBackupEnabled();
       }
+      reStorePassportDataWithRightCSCA(passportData, csca as string);
       trackEvent(BackupEvents.CLOUD_RESTORE_SUCCESS);
+      trackEvent(BackupEvents.ACCOUNT_RECOVERY_COMPLETED);
       onRestoreFromCloudNext();
       setRestoring(false);
     } catch (e: any) {

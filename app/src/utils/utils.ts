@@ -1,16 +1,16 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 // Handles both TD1 (3 lines, 30 chars each) and TD3 (2 lines, 44 chars each) formats
 export function extractMRZInfo(mrzString: string) {
   const mrzLines = mrzString.split('\n');
 
-  if (mrzLines.length < 2) {
-    throw new Error(
-      'Invalid MRZ format: Expected at least two lines of MRZ data',
-    );
-  }
+  //line 1 and line 2 - concated
+  const TD1_REGEX =
+    /^(?<documentType>[A-Z0-9<]{2})(?<issuingCountry>[A-Z<]{3})(?<documentNumber>[A-Z0-9<]{9})(?<checkDigitDocumentNumber>[0-9]{1})(?<optionalData1>[A-Z0-9<]{15})(?<dateOfBirth>[0-9]{6})(?<checkDigitDateOfBirth>[0-9]{1})(?<sex>[MF<]{1})(?<dateOfExpiry>[0-9]{6})(?<checkDigitDateOfExpiry>[0-9]{1})(?<nationality>[A-Z<]{3})(?<optionalData2>[A-Z0-9<]{7})/;
+  const TD3_line_2_REGEX = /^([A-Z0-9<]{9})([0-9ILDSOG])([A-Z<]{3})/;
 
-  // Check format based on line length
-  const isTD1 = mrzLines[0].length === 30;
-  const isTD3 = mrzLines[0].length === 44;
+  const isTD1 = TD1_REGEX.test(mrzLines[0]) || mrzLines[0].startsWith('I');
+  const isTD3 = TD3_line_2_REGEX.test(mrzLines[1]);
 
   if (!isTD1 && !isTD3) {
     throw new Error(
@@ -22,11 +22,12 @@ export function extractMRZInfo(mrzString: string) {
 
   if (isTD1) {
     // TD1 format (ID cards)
-    documentType = mrzLines[0].slice(0, 2).replace(/</g, '').trim();
-    countryCode = mrzLines[0].slice(2, 5).replace(/</g, '').trim();
-    passportNumber = mrzLines[0].slice(5, 14).replace(/</g, '').trim();
-    dateOfBirth = mrzLines[1].slice(0, 6).trim();
-    dateOfExpiry = mrzLines[1].slice(8, 14).trim();
+    const line = mrzLines[0];
+    documentType = line.slice(0, 2).replace(/</g, '').trim();
+    countryCode = line.slice(2, 5).replace(/</g, '').trim();
+    passportNumber = line.slice(5, 14).replace(/</g, '').trim();
+    dateOfBirth = line.slice(30, 36).trim();
+    dateOfExpiry = line.slice(38, 44).trim();
   } else {
     // TD3 format (passports)
     documentType = mrzLines[0].slice(0, 2).replace(/</g, '').trim();

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import 'react-native-get-random-values';
 
 import { Buffer } from 'buffer';
@@ -6,10 +8,11 @@ import { YStack } from 'tamagui';
 
 import ErrorBoundary from './src/components/ErrorBoundary';
 import AppNavigation from './src/navigation';
+import { AuthProvider } from './src/providers/authProvider';
+import { DatabaseProvider } from './src/providers/databaseProvider';
+import { NotificationTrackingProvider } from './src/providers/notificationTrackingProvider';
+import { PassportProvider } from './src/providers/passportDataProvider';
 import { initSentry, wrapWithSentry } from './src/Sentry';
-import { AuthProvider } from './src/stores/authProvider';
-import { DatabaseProvider } from './src/stores/databaseProvider';
-import { PassportProvider } from './src/stores/passportDataProvider';
 
 initSentry();
 
@@ -22,7 +25,9 @@ function App(): React.JSX.Element {
         <AuthProvider>
           <PassportProvider>
             <DatabaseProvider>
-              <AppNavigation />
+              <NotificationTrackingProvider>
+                <AppNavigation />
+              </NotificationTrackingProvider>
             </DatabaseProvider>
           </PassportProvider>
         </AuthProvider>

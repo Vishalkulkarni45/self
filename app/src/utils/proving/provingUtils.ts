@@ -1,9 +1,12 @@
-import forge from 'node-forge';
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { WS_DB_RELAYER_STAGING } from '../../../../common/src/constants/constants';
-import { WS_DB_RELAYER } from '../../../../common/src/constants/constants';
-import { EndpointType } from '../../../../common/src/utils/appType';
-import { initElliptic } from '../../../../common/src/utils/certificate_parsing/elliptic';
+import type { EndpointType } from '@selfxyz/common';
+import {
+  initElliptic,
+  WS_DB_RELAYER,
+  WS_DB_RELAYER_STAGING,
+} from '@selfxyz/common';
+import forge from 'node-forge';
 
 const elliptic = initElliptic();
 const { ec: EC } = elliptic;
@@ -31,37 +34,49 @@ export function encryptAES256GCM(
   };
 }
 
-export type TEEPayloadDisclose = {
-  type: 'disclose';
-  endpointType: string;
-  endpoint: string;
-  onchain: boolean;
+type RegisterSuffixes = '' | '_id';
+type DscSuffixes = '' | '_id';
+type DiscloseSuffixes = '' | '_id';
+type ProofTypes = 'register' | 'dsc' | 'disclose';
+type RegisterProofType =
+  `${Extract<ProofTypes, 'register'>}${RegisterSuffixes}`;
+type DscProofType = `${Extract<ProofTypes, 'dsc'>}${DscSuffixes}`;
+type DiscloseProofType =
+  `${Extract<ProofTypes, 'disclose'>}${DiscloseSuffixes}`;
+
+export type TEEPayloadBase = {
+  endpointType: EndpointType;
   circuit: {
     name: string;
     inputs: string;
   };
 };
 
-export type TEEPayload = {
-  type: 'register' | 'dsc';
+export type TEEPayload = TEEPayloadBase & {
+  type: RegisterProofType | DscProofType;
   onchain: true;
-  endpointType: string;
-  circuit: {
-    name: string;
-    inputs: string;
-  };
+};
+
+export type TEEPayloadDisclose = TEEPayloadBase & {
+  type: DiscloseProofType;
+  onchain: boolean;
+  endpoint: string;
+  userDefinedData: string;
+  version: number;
 };
 
 export function getPayload(
   inputs: any,
-  circuitType: 'register' | 'dsc' | 'disclose',
+  circuitType: RegisterProofType | DscProofType | DiscloseProofType,
   circuitName: string,
   endpointType: EndpointType,
   endpoint: string,
+  version: number = 1,
+  userDefinedData: string = '',
 ) {
   if (circuitType === 'disclose') {
     const payload: TEEPayloadDisclose = {
-      type: 'disclose',
+      type: circuitName === 'vc_and_disclose' ? 'disclose' : 'disclose_id',
       endpointType: endpointType,
       endpoint: endpoint,
       onchain: endpointType === 'celo' ? true : false,
@@ -69,11 +84,13 @@ export function getPayload(
         name: circuitName,
         inputs: JSON.stringify(inputs),
       },
+      version,
+      userDefinedData,
     };
     return payload;
   } else {
     const payload: TEEPayload = {
-      type: circuitType as 'register' | 'dsc',
+      type: circuitType as RegisterProofType | DscProofType,
       onchain: true,
       endpointType: endpointType,
       circuit: {

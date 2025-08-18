@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { Button, Text, ViewProps } from 'tamagui';
@@ -43,8 +45,11 @@ export default function AbstractButton({
 
   const handlePress = (e: any) => {
     if (trackEvent) {
-      // attempt to hide the event category
-      trackEvent = trackEvent.split(':')[1].trim() ?? trackEvent;
+      // attempt to remove event category from click event
+      const parsedEvent = trackEvent?.split(':')?.[1]?.trim();
+      if (parsedEvent) {
+        trackEvent = parsedEvent;
+      }
       analyticsTrackEvent(`Click: ${trackEvent}`);
     }
     if (onPress) {

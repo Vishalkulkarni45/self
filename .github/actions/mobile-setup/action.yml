@@ -43,7 +43,7 @@ runs:
         ruby-version: ${{ inputs.ruby_version }}
 
     - name: Setup Node.js environment
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node_version }}
 
@@ -52,5 +52,6 @@ runs:
       run: |
         cd ${{ inputs.app_path }}
         corepack enable
+        yarn set version 4.6.0
         yarn install
         yarn install-app:deploy

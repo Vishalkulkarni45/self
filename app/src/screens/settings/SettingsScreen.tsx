@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import { useNavigation } from '@react-navigation/native';
 import { Bug } from '@tamagui/lucide-icons';
+import { FileText } from '@tamagui/lucide-icons';
 import React, { PropsWithChildren, useCallback, useMemo } from 'react';
 import { Linking, Platform, Share } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -27,7 +30,7 @@ import ShareIcon from '../../images/icons/share.svg';
 import Star from '../../images/icons/star.svg';
 import Telegram from '../../images/icons/telegram.svg';
 import Web from '../../images/icons/webpage.svg';
-import { RootStackParamList } from '../../Navigation';
+import { RootStackParamList } from '../../navigation';
 import { useSettingStore } from '../../stores/settingStore';
 import {
   amber500,
@@ -54,7 +57,11 @@ interface SocialButtonProps {
 }
 
 const emailFeedback = 'feedback@self.xyz';
-type RouteOption = keyof RootStackParamList | 'share' | 'email_feedback';
+type RouteOption =
+  | keyof RootStackParamList
+  | 'share'
+  | 'email_feedback'
+  | 'ManageDocuments';
 
 const storeURL = Platform.OS === 'ios' ? appStoreUrl : playStoreUrl;
 
@@ -69,6 +76,7 @@ const routes = [
   [Cloud, 'Cloud backup', 'CloudBackupSettings'],
   [Feedback, 'Send feeback', 'email_feedback'],
   [ShareIcon, 'Share Self app', 'share'],
+  [FileText as React.FC<SvgProps>, 'Manage ID documents', 'ManageDocuments'],
 ] satisfies [React.FC<SvgProps>, string, RouteOption][];
 
 // get the actual type of the routes so we can use in the onMenuPress function so it
@@ -76,7 +84,6 @@ const routes = [
 type RouteLinks = (typeof routes)[number][2] | (typeof DEBUG_MENU)[number][2];
 
 const DEBUG_MENU: [React.FC<SvgProps>, string, RouteOption][] = [
-  [Data as React.FC<SvgProps>, 'Gen Mock Passport Data', 'CreateMock'],
   [Bug as React.FC<SvgProps>, 'Debug menu', 'DevSettings'],
 ];
 
@@ -131,8 +138,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({}) => {
     return isDevMode ? [...routes, ...DEBUG_MENU] : routes;
   }, [isDevMode]);
 
-  const twoFingerTap = Gesture.Tap()
-    .minPointers(2)
+  const devModeTap = Gesture.Tap()
     .numberOfTaps(5)
     .onStart(() => {
       setDevModeOn();
@@ -179,6 +185,10 @@ ${deviceInfo.map(([k, v]) => `${k}=${v}`).join('; ')}
             );
             break;
 
+          case 'ManageDocuments':
+            navigation.navigate('ManageDocuments' as any);
+            break;
+
           default:
             navigation.navigate(menuRoute as any);
             break;
@@ -189,7 +199,7 @@ ${deviceInfo.map(([k, v]) => `${k}=${v}`).join('; ')}
   );
   const { bottom } = useSafeAreaInsets();
   return (
-    <GestureDetector gesture={twoFingerTap}>
+    <GestureDetector gesture={devModeTap}>
       <View backgroundColor={white}>
         <YStack
           bg={black}

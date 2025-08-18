@@ -3,10 +3,12 @@ name: Publish to npm
 on:
   push:
     branches:
-      - main
+      - dev
     paths:
       - 'sdk/core/package.json'
       - 'sdk/qrcode/package.json'
+      - 'common/package.json'
+  workflow_dispatch:
 
 jobs:
   detect-changes:
@@ -14,23 +16,30 @@ jobs:
     outputs:
       core_changed: ${{ steps.check-version.outputs.core_changed }}
       qrcode_changed: ${{ steps.check-version.outputs.qrcode_changed }}
+      common_changed: ${{ steps.check-version.outputs.common_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      
+
       - name: Check for version changes
         id: check-version
         run: |
           git diff HEAD^ HEAD --name-only | grep -q "sdk/core/package.json" && echo "core_changed=true" >> $GITHUB_OUTPUT || echo "core_changed=false" >> $GITHUB_OUTPUT
           git diff HEAD^ HEAD --name-only | grep -q "sdk/qrcode/package.json" && echo "qrcode_changed=true" >> $GITHUB_OUTPUT || echo "qrcode_changed=false" >> $GITHUB_OUTPUT
-          
-          if git diff HEAD^ HEAD -- sdk/core/package.json | grep -q '"version":'; then
+          git diff HEAD^ HEAD --name-only | grep -q "common/package.json" && echo "common_changed=true" >> $GITHUB_OUTPUT || echo "common_changed=false" >> $GITHUB_OUTPUT
+
+          # check if it was dispatched manually as well
+          if git diff HEAD^ HEAD -- sdk/core/package.json | grep -q '"version":' || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "core_changed=true" >> $GITHUB_OUTPUT
           fi
-          
-          if git diff HEAD^ HEAD -- sdk/qrcode/package.json | grep -q '"version":'; then
+
+          if git diff HEAD^ HEAD -- sdk/qrcode/package.json | grep -q '"version":' || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "qrcode_changed=true" >> $GITHUB_OUTPUT
+          fi
+
+          if git diff HEAD^ HEAD -- common/package.json | grep -q '"version":' || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "common_changed=true" >> $GITHUB_OUTPUT
           fi
 
   publish-core:
@@ -39,31 +48,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install dependencies (common first)
-        run: |
-          cd common
-          yarn install 
-          cd ../sdk/core
-          yarn install 
-      
+
+      - name: Install Dependencies
+        uses: ./.github/actions/yarn-install
+
       - name: Build package
         run: |
-          cd sdk/core
-          yarn build
-      
+          yarn workspace @selfxyz/core build:deps
+
       - name: Publish to npm
+        working-directory: sdk/core
         run: |
-          cd sdk/core
-          npm publish --access public
+          yarn config set npmScopes.selfxyz.npmAuthToken ${{ secrets.NPM_TOKEN }}
+          yarn config set npmPublishAccess public
+          yarn npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-qrcode:
     needs: detect-changes
@@ -71,28 +77,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install dependencies (common first)
-        run: |
-          cd common
-          yarn install 
-          cd ../sdk/qrcode
-          yarn install 
-      
+
+      - name: Install Dependencies
+        uses: ./.github/actions/yarn-install
+
       - name: Build package
         run: |
-          cd sdk/qrcode
-          yarn build
-      
+          yarn workspace @selfxyz/qrcode build:deps
+
       - name: Publish to npm
+        working-directory: sdk/qrcode
         run: |
-          cd sdk/qrcode
-          npm publish --access public
+          yarn config set npmScopes.selfxyz.npmAuthToken ${{ secrets.NPM_TOKEN }}
+          yarn config set npmPublishAccess public
+          yarn npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-common:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.common_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        uses: ./.github/actions/yarn-install
+
+      - name: Build package
+        run: |
+          yarn workspace @selfxyz/common build
+
+      - name: Publish to npm
+        working-directory: common
+        run: |
+          yarn config set npmScopes.selfxyz.npmAuthToken ${{ secrets.NPM_TOKEN }}
+          yarn config set npmPublishAccess public
+          yarn npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

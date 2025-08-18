@@ -1,9 +1,18 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 export const AppEvents = {
   DISMISS_PRIVACY_DISCLAIMER: 'App: Dismiss Privacy Disclaimer',
   GET_STARTED: 'App: Get Started',
   UPDATE_MODAL_CLOSED: 'App: Update Modal Closed',
   UPDATE_MODAL_OPENED: 'App: Update Modal Opened',
   UPDATE_STARTED: 'App: Update Started',
+};
+
+export const NotificationEvents = {
+  BACKGROUND_NOTIFICATION_OPENED:
+    'Notification: Background Notification Opened',
+  COLD_START_NOTIFICATION_OPENED:
+    'Notification: Cold Start Notification Opened',
 };
 
 export const AuthEvents = {
@@ -51,6 +60,8 @@ export const ProofEvents = {
   PROOF_VERIFICATION_STARTED: 'Proof: Proof Verification Started',
   PROVING_PROCESS_ERROR: 'Proof: Proving Process Error',
   PROVING_STATE_CHANGE: 'Proof: Proving State Change',
+  REGISTER_COMPLETED: 'Proof: Register Completed',
+  ALREADY_REGISTERED: 'Proof: Already Registered',
   QR_SCAN_CANCELLED: 'Proof: QR Scan Cancelled',
   QR_SCAN_FAILED: 'Proof: QR Scan Failed',
   QR_SCAN_SUCCESS: 'Proof: QR Scan Success',
@@ -64,6 +75,7 @@ export const SettingsEvents = {
 
 export const BackupEvents = {
   ACCOUNT_RECOVERY_STARTED: 'Backup: Account Recovery Started',
+  ACCOUNT_RECOVERY_COMPLETED: 'Backup: Account Recovery Completed',
   ACCOUNT_VERIFICATION_COMPLETED: 'Backup: Account Verification Completed',
   CLOUD_BACKUP_CONTINUE: 'Backup: Cloud Backup Continue',
   CLOUD_BACKUP_STARTED: 'Backup: Cloud Backup Started',

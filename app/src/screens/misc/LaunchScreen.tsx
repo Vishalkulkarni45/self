@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import LottieView from 'lottie-react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -26,8 +28,7 @@ const LaunchScreen: React.FC<LaunchScreenProps> = ({}) => {
   const skipToHome = useHapticNavigation('Home');
   const createMock = useHapticNavigation('CreateMock');
   const { height } = useWindowDimensions();
-  const twoFingerTap = Gesture.Tap()
-    .minPointers(2)
+  const devModeTap = Gesture.Tap()
     .numberOfTaps(5)
     .onStart(() => {
       createMock();
@@ -38,7 +39,7 @@ const LaunchScreen: React.FC<LaunchScreenProps> = ({}) => {
       <ExpandableBottomLayout.TopSection backgroundColor={black}>
         <YStack flex={1} paddingTop="$10">
           <View style={styles.cardContainer}>
-            <GestureDetector gesture={twoFingerTap}>
+            <GestureDetector gesture={devModeTap}>
               <LottieView
                 autoPlay={true}
                 loop={false}

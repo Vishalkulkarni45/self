@@ -1,11 +1,14 @@
 import { expect } from 'chai';
 import { wasm as wasm_tester } from 'circom_tester';
 import path from 'path';
-import { formatCountriesList } from '../../../common/src/utils/circuits/formatInputs';
-import { formatAndUnpackForbiddenCountriesList } from '../../../common/src/utils/circuits/formatOutputs';
-import { formatInput } from '../../../common/src/utils/circuits/generateInputs';
-import { formatMrz } from '../../../common/src/utils/passports/format';
-import { genAndInitMockPassportData } from '../../../common/src/utils/passports/genMockPassportData';
+import { formatCountriesList } from '@selfxyz/common/utils/circuits/formatInputs';
+import { formatAndUnpackForbiddenCountriesList } from '@selfxyz/common/utils/circuits/formatOutputs';
+import { formatInput } from '@selfxyz/common/utils/circuits/generateInputs';
+import { formatMrz } from '@selfxyz/common/utils/passports/format';
+import { genAndInitMockPassportData } from '@selfxyz/common/utils/passports/genMockPassportData';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('ProveCountryIsNotInList', function () {
   this.timeout(0);
@@ -18,9 +21,9 @@ describe('ProveCountryIsNotInList', function () {
     );
     circuit = await wasm_tester(circuitPath, {
       include: [
-        'node_modules',
-        './node_modules/@zk-kit/binary-merkle-root.circom/src',
-        './node_modules/circomlib/circuits',
+        '../node_modules',
+        '../node_modules/@zk-kit/binary-merkle-root.circom/src',
+        '../node_modules/circomlib/circuits',
       ],
     });
   });

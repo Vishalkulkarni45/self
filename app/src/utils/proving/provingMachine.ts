@@ -1,19 +1,30 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
+import {
+  DocumentCategory,
+  EndpointType,
+  getCircuitNameFromPassportData,
+  getSolidityPackedUserContextData,
+  PassportData,
+  SelfApp,
+} from '@selfxyz/common';
 import forge from 'node-forge';
 import io, { Socket } from 'socket.io-client';
 import { v4 } from 'uuid';
 import { AnyActorRef, createActor, createMachine } from 'xstate';
 import { create } from 'zustand';
 
-import { WS_RPC_URL_VC_AND_DISCLOSE } from '../../../../common/src/constants/constants';
-import { EndpointType, SelfApp } from '../../../../common/src/utils/appType';
-import { getCircuitNameFromPassportData } from '../../../../common/src/utils/circuits/circuitsName';
+import { ProofEvents } from '../../consts/analytics';
 import { navigationRef } from '../../navigation';
+import { unsafe_getPrivateKey } from '../../providers/authProvider';
 import {
   clearPassportData,
-  loadPassportDataAndSecret,
-} from '../../stores/passportDataProvider';
+  loadSelectedDocument,
+  reStorePassportDataWithRightCSCA,
+} from '../../providers/passportDataProvider';
 import { useProtocolStore } from '../../stores/protocolStore';
 import { useSelfAppStore } from '../../stores/selfAppStore';
+import analytics from '../analytics';
 import { getPublicKey, verifyAttestation } from './attest';
 import {
   generateTEEInputsDisclose,
@@ -33,7 +44,10 @@ import {
   checkPassportSupported,
   isPassportNullified,
   isUserRegistered,
+  isUserRegisteredWithAlternativeCSCA,
 } from './validateDocument';
+
+const { trackEvent } = analytics();
 
 const provingMachine = createMachine({
   id: 'proving',
@@ -43,6 +57,7 @@ const provingMachine = createMachine({
       on: {
         FETCH_DATA: 'fetching_data',
         ERROR: 'error',
+        PASSPORT_DATA_NOT_FOUND: 'passport_data_not_found',
       },
     },
     fetching_data: {
@@ -149,6 +164,7 @@ interface ProvingState {
   reason: string | null;
   endpointType: EndpointType | null;
   fcmToken: string | null;
+  env: 'prod' | 'stg' | null;
   setFcmToken: (token: string) => void;
   init: (
     circuitType: 'dsc' | 'disclose' | 'register',
@@ -265,6 +281,7 @@ export const useProvingStore = create<ProvingState>((set, get) => {
     passportData: null,
     secret: null,
     circuitType: null,
+    env: null,
     selfApp: null,
     error_code: null,
     reason: null,
@@ -367,7 +384,10 @@ export const useProvingStore = create<ProvingState>((set, get) => {
           typeof message === 'string' ? JSON.parse(message) : message;
         console.log('Received status update with status:', data.status);
         if (data.status === 3 || data.status === 5) {
-          console.log('Proof generation/verification failed (status 3 or 5).');
+          console.error(
+            'Proof generation/verification failed (status 3 or 5).',
+          );
+          console.error(data);
           set({ error_code: data.error_code, reason: data.reason });
           actor!.send({ type: 'PROVE_FAILURE' });
           socket?.disconnect();
@@ -375,6 +395,9 @@ export const useProvingStore = create<ProvingState>((set, get) => {
         } else if (data.status === 4) {
           socket?.disconnect();
           set({ socketConnection: null });
+          if (get().circuitType === 'register') {
+            trackEvent(ProofEvents.REGISTER_COMPLETED);
+          }
           actor!.send({ type: 'PROVE_SUCCESS' });
         }
       });
@@ -489,22 +512,33 @@ export const useProvingStore = create<ProvingState>((set, get) => {
         secret: null,
         circuitType,
         endpointType: null,
+        env: null,
       });
 
       actor = createActor(provingMachine);
       setupActorSubscriptions(actor);
       actor.start();
 
-      const passportDataAndSecretStr = await loadPassportDataAndSecret();
-      if (!passportDataAndSecretStr) {
+      const selectedDocument = await loadSelectedDocument();
+      if (!selectedDocument) {
+        console.error('No document found for proving');
+        actor!.send({ type: 'PASSPORT_DATA_NOT_FOUND' });
+        return;
+      }
+
+      const { data: passportData } = selectedDocument;
+
+      const secret = await unsafe_getPrivateKey();
+      if (!secret) {
+        console.error('Could not load secret');
         actor!.send({ type: 'ERROR' });
         return;
       }
 
-      const passportDataAndSecret = JSON.parse(passportDataAndSecretStr);
-      const { passportData, secret } = passportDataAndSecret;
+      // Set environment based on mock property
+      const env = passportData.mock ? 'stg' : 'prod';
 
-      set({ passportData, secret });
+      set({ passportData, secret, env });
       set({ circuitType });
       actor.send({ type: 'FETCH_DATA' });
     },
@@ -512,12 +546,13 @@ export const useProvingStore = create<ProvingState>((set, get) => {
     startFetchingData: async () => {
       _checkActorInitialized(actor);
       try {
-        const { passportData } = get();
-        const env =
-          passportData.documentType && passportData.documentType !== 'passport'
-            ? 'stg'
-            : 'prod';
-        await useProtocolStore.getState().passport.fetch_all(env);
+        const { passportData, env } = get();
+        const document: DocumentCategory = passportData.documentCategory;
+        await useProtocolStore
+          .getState()
+          [
+            document
+          ].fetch_all(env!, (passportData as PassportData).dsc_parsed!.authorityKeyIdentifier);
         actor!.send({ type: 'FETCH_SUCCESS' });
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -542,40 +577,55 @@ export const useProvingStore = create<ProvingState>((set, get) => {
           return;
         }
 
-        const isRegistered = await isUserRegistered(
-          passportData,
-          secret as string,
-        );
+        /// disclosure
         if (circuitType === 'disclose') {
-          if (isRegistered) {
+          // check if the user is registered using the csca from the passport data.
+          const isRegisteredWithLocalCSCA = await isUserRegistered(
+            passportData,
+            secret as string,
+          );
+          if (isRegisteredWithLocalCSCA) {
             actor!.send({ type: 'VALIDATION_SUCCESS' });
             return;
           } else {
+            console.log('Passport is not registered with local CSCA');
             actor!.send({ type: 'PASSPORT_DATA_NOT_FOUND' });
             return;
           }
-        } else if (isRegistered) {
-          actor!.send({ type: 'ALREADY_REGISTERED' });
-          return;
         }
 
-        const isNullifierOnchain = await isPassportNullified(passportData);
-        if (isNullifierOnchain) {
-          console.log(
-            'Passport is nullified, but not registered with this secret. Navigating to AccountRecoveryChoice',
+        /// registration
+        else {
+          const { isRegistered, csca } =
+            await isUserRegisteredWithAlternativeCSCA(
+              passportData,
+              secret as string,
+            );
+          if (isRegistered) {
+            reStorePassportDataWithRightCSCA(passportData, csca as string);
+            trackEvent(ProofEvents.ALREADY_REGISTERED);
+            actor!.send({ type: 'ALREADY_REGISTERED' });
+            return;
+          }
+          const isNullifierOnchain = await isPassportNullified(passportData);
+          if (isNullifierOnchain) {
+            console.log(
+              'Passport is nullified, but not registered with this secret. Navigating to AccountRecoveryChoice',
+            );
+            actor!.send({ type: 'ACCOUNT_RECOVERY_CHOICE' });
+            return;
+          }
+          const document: DocumentCategory = passportData.documentCategory;
+          const isDscRegistered = await checkIfPassportDscIsInTree(
+            passportData,
+            useProtocolStore.getState()[document].dsc_tree,
           );
-          actor!.send({ type: 'ACCOUNT_RECOVERY_CHOICE' });
-          return;
+          console.log('isDscRegistered: ', isDscRegistered);
+          if (isDscRegistered) {
+            set({ circuitType: 'register' });
+          }
+          actor!.send({ type: 'VALIDATION_SUCCESS' });
         }
-        const isDscRegistered = await checkIfPassportDscIsInTree(
-          passportData,
-          useProtocolStore.getState().passport.dsc_tree,
-        );
-        console.log('isDscRegistered: ', isDscRegistered);
-        if (isDscRegistered) {
-          set({ circuitType: 'register' });
-        }
-        actor!.send({ type: 'VALIDATION_SUCCESS' });
       } catch (error) {
         console.error('Error validating passport:', error);
         actor!.send({ type: 'VALIDATION_ERROR' });
@@ -583,30 +633,45 @@ export const useProvingStore = create<ProvingState>((set, get) => {
     },
 
     initTeeConnection: async (): Promise<boolean> => {
+      const { passportData }: { passportData: PassportData } = get();
+      const document: DocumentCategory = passportData.documentCategory;
       const circuitsMapping =
-        useProtocolStore.getState().passport.circuits_dns_mapping;
-      const passportData = get().passportData;
+        useProtocolStore.getState()[document].circuits_dns_mapping;
 
       let circuitName, wsRpcUrl;
       if (get().circuitType === 'disclose') {
         circuitName = 'disclose';
-        wsRpcUrl = WS_RPC_URL_VC_AND_DISCLOSE;
+        if (passportData.documentCategory === 'passport') {
+          wsRpcUrl = circuitsMapping?.DISCLOSE?.[circuitName];
+        } else {
+          wsRpcUrl = circuitsMapping?.DISCLOSE_ID?.[circuitName];
+        }
       } else {
         circuitName = getCircuitNameFromPassportData(
           passportData,
           get().circuitType as 'register' | 'dsc',
         );
         if (get().circuitType === 'register') {
-          wsRpcUrl = circuitsMapping?.REGISTER?.[circuitName];
+          if (passportData.documentCategory === 'passport') {
+            wsRpcUrl = circuitsMapping?.REGISTER?.[circuitName];
+          } else {
+            wsRpcUrl = circuitsMapping?.REGISTER_ID?.[circuitName];
+          }
         } else {
-          wsRpcUrl = circuitsMapping?.DSC?.[circuitName];
+          if (passportData.documentCategory === 'passport') {
+            wsRpcUrl = circuitsMapping?.DSC?.[circuitName];
+          } else {
+            wsRpcUrl = circuitsMapping?.DSC_ID?.[circuitName];
+          }
         }
       }
       if (!circuitName) {
         actor?.send({ type: 'CONNECT_ERROR' });
         throw new Error('Could not determine circuit name');
       }
+
       if (!wsRpcUrl) {
+        actor?.send({ type: 'CONNECT_ERROR' });
         throw new Error('No WebSocket URL available for TEE connection');
       }
 
@@ -663,12 +728,7 @@ export const useProvingStore = create<ProvingState>((set, get) => {
             const {
               registerDeviceToken,
             } = require('../../utils/notifications/notificationService');
-            console.log(
-              'passportData.documentType: ',
-              passportData?.documentType,
-            );
-            const isMockPassport =
-              passportData?.documentType === 'mock_passport';
+            const isMockPassport = passportData?.mock;
             await registerDeviceToken(uuid, fcmToken, isMockPassport);
           } catch (error) {
             console.error('Error registering device token:', error);
@@ -735,15 +795,20 @@ export const useProvingStore = create<ProvingState>((set, get) => {
         sharedKey: null,
         uuid: null,
         endpointType: null,
+        env: null,
       });
     },
 
     _generatePayload: async () => {
       const { circuitType, passportData, secret, uuid, sharedKey } = get();
-      console.log('circuitType: ', circuitType);
+      const document: DocumentCategory = passportData.documentCategory;
       const selfApp = useSelfAppStore.getState().selfApp;
       // TODO: according to the circuitType we could check that the params are valid.
-      let inputs, circuitName, endpointType, endpoint;
+      let inputs,
+        circuitName,
+        endpointType,
+        endpoint,
+        circuitTypeWithDocumentExtension;
       const protocolStore = useProtocolStore.getState();
       switch (circuitType) {
         case 'register':
@@ -751,15 +816,17 @@ export const useProvingStore = create<ProvingState>((set, get) => {
             generateTEEInputsRegister(
               secret as string,
               passportData,
-              protocolStore.passport.dsc_tree,
+              protocolStore[document].dsc_tree,
             ));
+          circuitTypeWithDocumentExtension = `${circuitType}${document === 'passport' ? '' : '_id'}`;
           break;
         case 'dsc':
           ({ inputs, circuitName, endpointType, endpoint } =
             generateTEEInputsDSC(
               passportData,
-              protocolStore.passport.csca_tree as string[][],
+              protocolStore[document].csca_tree as string[][],
             ));
+          circuitTypeWithDocumentExtension = `${circuitType}${document === 'passport' ? '' : '_id'}`;
           break;
         case 'disclose':
           ({ inputs, circuitName, endpointType, endpoint } =
@@ -768,17 +835,31 @@ export const useProvingStore = create<ProvingState>((set, get) => {
               passportData,
               selfApp as SelfApp,
             ));
+          circuitTypeWithDocumentExtension = `disclose`;
           break;
         default:
           console.error('Invalid circuit type:' + circuitType);
           throw new Error('Invalid circuit type:' + circuitType);
       }
+      const userDefinedData = selfApp?.userDefinedData
+        ? getSolidityPackedUserContextData(
+            selfApp.chainID,
+            selfApp.userId,
+            selfApp.userDefinedData,
+          ).slice(2)
+        : '';
       const payload = getPayload(
         inputs,
-        circuitType as provingMachineCircuitType,
+        circuitTypeWithDocumentExtension as
+          | 'register_id'
+          | 'dsc_id'
+          | 'register'
+          | 'dsc',
         circuitName as string,
         endpointType as EndpointType,
         endpoint as string,
+        selfApp?.version,
+        userDefinedData,
       );
       const forgeKey = forge.util.createBuffer(
         sharedKey?.toString('binary') as string,

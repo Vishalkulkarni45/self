@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
+
 import Clipboard from '@react-native-clipboard/clipboard';
 import { useNavigation } from '@react-navigation/native';
 import { ethers } from 'ethers';
@@ -7,9 +9,14 @@ import { Text, TextArea, View, XStack, YStack } from 'tamagui';
 
 import { SecondaryButton } from '../../components/buttons/SecondaryButton';
 import Description from '../../components/typography/Description';
+import { BackupEvents } from '../../consts/analytics';
 import Paste from '../../images/icons/paste.svg';
-import { useAuth } from '../../stores/authProvider';
-import { loadPassportDataAndSecret } from '../../stores/passportDataProvider';
+import { useAuth } from '../../providers/authProvider';
+import {
+  loadPassportDataAndSecret,
+  reStorePassportDataWithRightCSCA,
+} from '../../providers/passportDataProvider';
+import analytics from '../../utils/analytics';
 import {
   black,
   slate300,
@@ -18,7 +25,7 @@ import {
   slate700,
   white,
 } from '../../utils/colors';
-import { isUserRegistered } from '../../utils/proving/validateDocument';
+import { isUserRegisteredWithAlternativeCSCA } from '../../utils/proving/validateDocument';
 
 interface RecoverWithPhraseScreenProps {}
 
@@ -27,6 +34,7 @@ const RecoverWithPhraseScreen: React.FC<
 > = ({}) => {
   const navigation = useNavigation();
   const { restoreAccountFromMnemonic } = useAuth();
+  const { trackEvent } = analytics();
   const [mnemonic, setMnemonic] = useState<string>();
   const [restoring, setRestoring] = useState(false);
   const onPaste = useCallback(async () => {
@@ -56,18 +64,23 @@ const RecoverWithPhraseScreen: React.FC<
 
     const passportDataAndSecret = (await loadPassportDataAndSecret()) as string;
     const { passportData, secret } = JSON.parse(passportDataAndSecret);
-    const isRegistered = await isUserRegistered(passportData, secret);
+    const { isRegistered, csca } = await isUserRegisteredWithAlternativeCSCA(
+      passportData,
+      secret as string,
+    );
     console.log('User is registered:', isRegistered);
     if (!isRegistered) {
       console.log(
         'Secret provided did not match a registered passport. Please try again.',
       );
+      reStorePassportDataWithRightCSCA(passportData, csca as string);
       navigation.navigate('Launch');
       setRestoring(false);
       return;
     }
 
     setRestoring(false);
+    trackEvent(BackupEvents.ACCOUNT_RECOVERY_COMPLETED);
     navigation.navigate('AccountVerifiedSuccess');
   }, [mnemonic, restoreAccountFromMnemonic]);
 
