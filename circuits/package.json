@@ -15,7 +15,9 @@
     "lint": "prettier --check .",
     "test": "yarn ts-mocha --max-old-space-size=8192 'tests/**/*.test.ts' 'tests/*.test.ts' --exit",
     "test-custom-hasher": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/custom_hasher.test.ts' --exit",
+    "test-qr-extractor": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/qrdata_extractor.test.ts' --exit",
     "test-disclose": "yarn ts-mocha --max-old-space-size=8192 'tests/disclose/vc_and_disclose.test.ts' --exit",
+    "test-disclose-aadhaar": "yarn ts-mocha --max-old-space-size=8192 'tests/disclose/vc_and_disclose_aadhaar.test.ts' --exit",
     "test-dsc": "yarn ts-mocha --max-old-space-size=51200 'tests/dsc/dsc.test.ts' --exit",
     "test-ecdsa": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/ecdsa.test.ts' --exit",
     "test-is-older-than": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/is_older_than.test.ts' --exit",
@@ -23,10 +25,12 @@
     "test-not-in-list": "yarn ts-mocha --max-old-space-size=8192 'tests/other_circuits/prove_country_is_not_in_list.test.ts' --exit",
     "test-ofac": "yarn ts-mocha --max-old-space-size=8192 'tests/ofac/ofac.test.ts' --exit",
     "test-register": "yarn ts-mocha --max-old-space-size=40960 'tests/register/register.test.ts' --exit",
+    "test-register-aadhaar": "yarn ts-mocha --max-old-space-size=40960 'tests/register/register_aadhaar.test.ts' --exit",
     "test-rsa": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/rsaPkcs1v1_5.test.ts' --exit",
     "test-rsa-pss": "yarn ts-mocha --max-old-space-size=8192 'tests/utils/rsapss.test.ts' --exit"
   },
   "dependencies": {
+    "@anon-aadhaar/core": "^2.4.3",
     "@noble/curves": "^1.4.2",
     "@openpassport/zk-email-circuits": "^6.1.2",
     "@openpassport/zk-kit-imt": "^0.0.4",
@@ -40,6 +44,7 @@
     "@zk-email/zk-regex-circom": "^1.2.1",
     "@zk-kit/binary-merkle-root.circom": "^1.0.0",
     "@zk-kit/circuits": "^1.0.0-beta",
+    "anon-aadhaar-circuits": "https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/circuits?main",
     "asn1": "^0.2.6",
     "asn1.js": "^5.4.1",
     "asn1js": "^3.0.5",
@@ -71,5 +76,6 @@
     "prettier": "^3.3.3",
     "ts-mocha": "^10.0.0",
     "ts-node": "^10.9.2"
-  }
+  },
+  "packageManager": "yarn@4.5.3"
 }

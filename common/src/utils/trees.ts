@@ -1,25 +1,42 @@
 import { IMT } from '@openpassport/zk-kit-imt';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { ChildNodes, SMT } from '@openpassport/zk-kit-smt';
-import countries from "i18n-iso-countries";
-import en from "i18n-iso-countries/langs/en.json";
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon6 } from 'poseidon-lite';
-import { CSCA_TREE_DEPTH, DSC_TREE_DEPTH, max_csca_bytes, max_dsc_bytes, OFAC_TREE_LEVELS } from '../constants/constants';
+import countries from 'i18n-iso-countries';
+import en from 'i18n-iso-countries/langs/en.json';
 import {
-  CertificateData,
-} from './certificate_parsing/dataStructure';
+  poseidon1,
+  poseidon12,
+  poseidon13,
+  poseidon2,
+  poseidon3,
+  poseidon4,
+  poseidon5,
+  poseidon6,
+} from 'poseidon-lite';
+import {
+  CSCA_TREE_DEPTH,
+  DSC_TREE_DEPTH,
+  max_csca_bytes,
+  max_dsc_bytes,
+  OFAC_TREE_LEVELS,
+} from '../constants/constants';
+import { CertificateData } from './certificate_parsing/dataStructure';
 import { parseCertificateSimple } from './certificate_parsing/parseCertificateSimple';
 import { stringToAsciiBigIntArray } from './circuits/uuid';
 import { packBytesAndPoseidon } from './hash';
 import { pad } from './passports/passport';
-import { DscCertificateMetaData, parseDscCertificateData } from './passports/passport_parsing/parseDscCertificateData';
+import {
+  DscCertificateMetaData,
+  parseDscCertificateData,
+} from './passports/passport_parsing/parseDscCertificateData';
+import { packBytes } from './bytes';
 countries.registerLocale(en);
 
 /** get leaf for DSC and CSCA Trees */
 export function getLeaf(parsed: CertificateData, type: 'dsc' | 'csca'): string {
   if (type === 'dsc') {
     // for now, we pad it for sha
-    const tbsArray = Object.keys(parsed.tbsBytes).map(key => parsed.tbsBytes[key]);
+    const tbsArray = Object.keys(parsed.tbsBytes).map((key) => parsed.tbsBytes[key]);
     const [paddedTbsBytes, tbsBytesPaddedLength] = pad(parsed.hashAlgorithm)(
       tbsArray,
       max_dsc_bytes
@@ -29,13 +46,19 @@ export function getLeaf(parsed: CertificateData, type: 'dsc' | 'csca'): string {
     return poseidon2([dsc_hash, tbsArray.length]).toString();
   } else {
     const tbsBytesArray = Array.from(parsed.tbsBytes);
-    const paddedTbsBytesArray = tbsBytesArray.concat(new Array(max_csca_bytes - tbsBytesArray.length).fill(0));
+    const paddedTbsBytesArray = tbsBytesArray.concat(
+      new Array(max_csca_bytes - tbsBytesArray.length).fill(0)
+    );
     const csca_hash = packBytesAndPoseidon(paddedTbsBytesArray);
     return poseidon2([csca_hash, tbsBytesArray.length]).toString();
   }
 }
 
-export function getLeafDscTreeFromDscCertificateMetadata(dscParsed: CertificateData, dscMetaData: DscCertificateMetaData): string { // TODO: WRONG  change this function using raw dsc and hashfunctions from passportMetadata
+export function getLeafDscTreeFromDscCertificateMetadata(
+  dscParsed: CertificateData,
+  dscMetaData: DscCertificateMetaData
+): string {
+  // TODO: WRONG  change this function using raw dsc and hashfunctions from passportMetadata
   const cscaParsed = parseCertificateSimple(dscMetaData.csca);
   return getLeafDscTree(dscParsed, cscaParsed);
 }
@@ -54,8 +77,10 @@ export function getLeafCscaTree(csca_parsed: CertificateData): string {
   return getLeaf(csca_parsed, 'csca');
 }
 
-
-export function getDscTreeInclusionProof(leaf: string, serialized_dsc_tree: string): [string, number[], bigint[], number] {
+export function getDscTreeInclusionProof(
+  leaf: string,
+  serialized_dsc_tree: string
+): [string, number[], bigint[], number] {
   const hashFunction = (a: any, b: any) => poseidon2([a, b]);
   const tree = LeanIMT.import(hashFunction, serialized_dsc_tree);
   const index = tree.indexOf(BigInt(leaf));
@@ -74,7 +99,11 @@ export function getCscaTreeInclusionProof(leaf: string, _serialized_csca_tree: a
     throw new Error('Your public key was not found in the registry');
   }
   const proof = tree.createProof(index);
-  return [tree.root, proof.pathIndices.map(index => index.toString()), proof.siblings.flat().map(sibling => sibling.toString())];
+  return [
+    tree.root,
+    proof.pathIndices.map((index) => index.toString()),
+    proof.siblings.flat().map((sibling) => sibling.toString()),
+  ];
 }
 
 export function getCscaTreeRoot(serialized_csca_tree: any[][]) {
@@ -202,7 +231,11 @@ export function buildSMT(field: any[], treetype: string): [number, number, SMT] 
   return [count, performance.now() - startTime, tree];
 }
 
-function processPassportNoAndNationality(passno: string, nationality: string, index: number): bigint {
+function processPassportNoAndNationality(
+  passno: string,
+  nationality: string,
+  index: number
+): bigint {
   if (passno.length > 9) {
     console.log('passport number length is greater than 9:', index, passno);
   } else if (passno.length < 9) {
@@ -234,21 +267,21 @@ function processPassportNoAndNationality(passno: string, nationality: string, in
 // will be removed once we parse the OFAC list better, starting from the XML file.
 const normalizeCountryName = (country: string): string => {
   const mapping: Record<string, string> = {
-    "palestinian": "Palestine",
-    "korea, north": "North Korea",
-    "korea, south": "Korea, Republic of",
-    "united kingdom": "United Kingdom",
-    "syria": "Syrian Arab Republic",
-    "burma": "Myanmar",
-    "cabo verde": "Cape Verde",
-    "congo, democratic republic of the": "Democratic Republic of the Congo",
-    "macau": "Macao",
+    palestinian: 'Palestine',
+    'korea, north': 'North Korea',
+    'korea, south': 'Korea, Republic of',
+    'united kingdom': 'United Kingdom',
+    syria: 'Syrian Arab Republic',
+    burma: 'Myanmar',
+    'cabo verde': 'Cape Verde',
+    'congo, democratic republic of the': 'Democratic Republic of the Congo',
+    macau: 'Macao',
   };
   return mapping[country.toLowerCase()] || country;
 };
 
 const getCountryCode = (countryName: string): string | undefined => {
-  return countries.getAlpha3Code(normalizeCountryName(countryName), "en");
+  return countries.getAlpha3Code(normalizeCountryName(countryName), 'en');
 };
 
 function generateSmallKey(input: bigint): bigint {
@@ -371,7 +404,11 @@ export function getCountryLeaf(
   }
 }
 
-export function getPassportNumberAndNationalityLeaf(passport: (bigint | number)[], nationality: (bigint | number)[], i?: number): bigint {
+export function getPassportNumberAndNationalityLeaf(
+  passport: (bigint | number)[],
+  nationality: (bigint | number)[],
+  i?: number
+): bigint {
   if (passport.length !== 9) {
     console.log('parsed passport length is not 9:', i, passport);
     return;
@@ -432,3 +469,126 @@ export function getDobLeaf(dobMrz: (bigint | number)[], i?: number): bigint {
     console.log('err : Dob', err, i, dobMrz);
   }
 }
+
+//---------------------------
+
+// AADHAAR
+
+//---------------------------
+
+export function buildAadhaarSMT(field: any[], treetype: string): [number, number, SMT] {
+  let count = 0;
+  let startTime = performance.now();
+
+  const hash2 = (childNodes: ChildNodes) =>
+    childNodes.length === 2 ? poseidon2(childNodes) : poseidon3(childNodes);
+  const tree = new SMT(hash2, true);
+
+  for (let i = 0; i < field.length; i++) {
+    const entry = field[i];
+
+    if (i !== 0) {
+      console.log('Processing', treetype, 'number', i, 'out of', field.length);
+    }
+
+    let leaf = BigInt(0);
+    if (treetype == 'name_and_dob') {
+      leaf = processNameAndDobAadhaar(entry, i);
+      if (i ==0) {
+        console.log("expt leaf ", leaf );
+
+      }
+    } else if (treetype == 'name_and_yob') {
+      leaf = processNameAndYobAadhaar(entry, i);
+    }
+
+    if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
+      console.log('This entry already exists in the tree, skipping...');
+      continue;
+    }
+
+    count += 1;
+    tree.add(leaf, BigInt(1));
+  }
+
+  return [count, performance.now() - startTime, tree];
+}
+
+const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
+  const firstName = entry.First_Name;
+  const lastName = entry.Last_Name;
+  const day = entry.day;
+  const month = entry.month;
+  const year = entry.year;
+
+  if (day == null || month == null || year == null) {
+    console.log('dob is null', i, entry);
+    return BigInt(0);
+  }
+
+  const name = processNameAadhaar(firstName, lastName);
+  const dob = processDobAadhaar(year, month, day);
+
+  return generateSmallKey(poseidon5([name[0], name[1], dob[0], dob[1], dob[2]]));
+};
+
+const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
+  const firstName = entry.First_Name;
+  const lastName = entry.Last_Name;
+  const year = entry.year;
+  if (year == null) {
+    console.log('year is null', i, entry);
+    return BigInt(0);
+  }
+
+  const name = processNameAadhaar(firstName, lastName);
+  return generateSmallKey(poseidon3([name[0], name[1], BigInt(year)]));
+};
+
+const processNameAadhaar = (firstName: string, lastName: string): bigint[] => {
+  const nameArr = (firstName + ' ' + lastName)
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+  return packBytes(nameArr);
+};
+
+const processDobAadhaar = (year: string, month: string, day: string): bigint[] => {
+  const monthMap: { [key: string]: string } = {
+    jan: '01',
+    feb: '02',
+    mar: '03',
+    apr: '04',
+    may: '05',
+    jun: '06',
+    jul: '07',
+    aug: '08',
+    sep: '09',
+    oct: '10',
+    nov: '11',
+    dec: '12',
+  };
+
+  month = monthMap[month.toLowerCase()];
+
+  return [year, month, day].map(BigInt);
+};
+
+export const getNameDobLeafAadhaar = (name: string, year: string, month: string, day: string) => {
+  const paddedName = name
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+  const namePacked = packBytes(paddedName);
+  return generateSmallKey(poseidon5([namePacked[0], namePacked[1], BigInt(year), BigInt(month), BigInt(day)]));
+};
+
+export const getNameYobLeafAahaar = (name: string, year: string) => {
+  const paddedName = name
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+  const namePacked = packBytes(paddedName);
+
+  return generateSmallKey(poseidon3([namePacked[0], namePacked[1], BigInt(year)]));
+};
