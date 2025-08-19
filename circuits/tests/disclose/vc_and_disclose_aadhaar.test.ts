@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { wasm as wasmTester } from 'circom_tester';
 import path from 'path';
 
-import { sha256Pad } from '@zk-email/helpers/dist/sha-utils';
+import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import {
   convertBigIntToByteArray,
   decompressByteArray,
@@ -10,24 +10,29 @@ import {
 } from '@anon-aadhaar/core';
 
 import assert from 'assert';
-import { testQRData } from '../assets/dataInput.json';
-import { packBytesAndPoseidon } from '../../../common/src/utils/hash';
+import jsonData from '../assets/dataInput.json' with { type: 'json' };
+import { packBytesAndPoseidon } from '../../../common/src/utils/hash.js';
 import { poseidon2, poseidon5 } from 'poseidon-lite';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
-import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs';
+import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs.js';
 import {
   generateMerkleProof,
   generateSMTProof,
   getNameDobLeafAadhaar,
   getNameYobLeafAahaar,
-} from '../../../common/src/utils/trees';
-import { COMMITMENT_TREE_DEPTH } from '../../../common/src/constants/constants';
-import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json';
-import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json';
+} from '../../../common/src/utils/trees.js';
+import { COMMITMENT_TREE_DEPTH } from '../../../common/src/constants/constants.js';
+import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json' with { type: 'json' };
+import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json' with { type: 'json' };
 import { SMT } from '@openpassport/zk-kit-smt';
-import { stringToAsciiArray } from '../utils/aadhaar/utils';
-import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
-import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs';
+import { stringToAsciiArray } from '../utils/aadhaar/utils.js';
+import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
+import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
+import { fileURLToPath } from 'url';
+
+const { testQRData } = jsonData;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let QRData: string = testQRData;
 
@@ -150,7 +155,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       {
         verbose: true,
         logOutput: true,
-        include: ['node_modules', './node_modules/circomlib/circuits'],
+        include: ['../node_modules', '../node_modules/circomlib/circuits'],
       }
     );
   });

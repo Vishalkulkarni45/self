@@ -1,12 +1,17 @@
 import { expect } from 'chai';
 import path from 'path';
 import { wasm as wasm_tester } from 'circom_tester';
-import { testQRData } from '../assets/dataInput.json';
-import { sha256Pad } from '@zk-email/helpers/dist/sha-utils';
-import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format';
+import jsonData from '../assets/dataInput.json' with { type: 'json' };
+import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
+import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
 import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@anon-aadhaar/core';
 import { assert } from 'chai';
-import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
+import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
+import { fileURLToPath } from 'url';
+
+const { testQRData } = jsonData;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;
@@ -18,9 +23,9 @@ describe('Aadhaar QR Data Extractor1', function () {
         verbose: true,
         logOutput: true,
         include: [
-          'node_modules',
-          './node_modules/anon-aadhaar-circuits/src/helpers/constants.circom',
-          './node_modules/circomlib/circuits',
+          '../node_modules',
+          '../node_modules/anon-aadhaar-circuits/src/helpers/constants.circom',
+          '../node_modules/circomlib/circuits',
         ],
       }
     );
