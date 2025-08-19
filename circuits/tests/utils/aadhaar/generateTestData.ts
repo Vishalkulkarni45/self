@@ -12,6 +12,9 @@ import {
 } from '@anon-aadhaar/core'
 import crypto from 'crypto'
 import fs from 'fs'
+import path from 'path'
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 // This is the official test data issued by the UIDAI
 // In this script we'll change the signed data to emulate the specs of the Aadhaar QR V2
@@ -24,7 +27,7 @@ export const testCustomData =
 // Will sign the data with the keys generated for test
 const signNewTestData = (newSignedData: Uint8Array) => {
   const privateKey = fs.readFileSync(
-    require.resolve('anon-aadhaar-circuits/assets/testPrivateKey.pem'),
+    path.resolve(__dirname, '../../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'),
     {
       encoding: 'utf8',
     },

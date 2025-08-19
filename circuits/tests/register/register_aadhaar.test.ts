@@ -2,11 +2,11 @@ import { expect } from 'chai';
 import { wasm as wasmTester } from 'circom_tester';
 import path from 'path';
 
-import { sha256Pad } from '@zk-email/helpers/dist/sha-utils';
+import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import {
   bufferToHex,
   Uint8ArrayToCharArray,
-} from '@zk-email/helpers/dist/binary-format';
+} from '@zk-email/helpers/dist/binary-format.js';
 import {
   convertBigIntToByteArray,
   decompressByteArray,
@@ -17,15 +17,19 @@ import {
 import fs from 'fs';
 import crypto from 'crypto';
 import assert from 'assert';
-import { testQRData } from '../assets/dataInput.json';
-import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash';
+import jsonData from '../assets/dataInput.json' with { type: 'json' };
+import { customHasher, packBytesAndPoseidon } from '../../../common/src/utils/hash.js';
 import { poseidon5 } from 'poseidon-lite';
-import { stringToAsciiArray } from '../utils/aadhaar/utils';
-import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData';
-import { formatInput } from '../../../common/src/utils/circuits/generateInputs';
+import { stringToAsciiArray } from '../utils/aadhaar/utils.js';
+import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
+import { formatInput } from '../../../common/src/utils/circuits/generateInputs.js';
+import { fileURLToPath } from 'url';
 
+const { testQRData } = jsonData;
 
 let QRData: string = testQRData;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 function prepareTestData(name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-01-1984', gender: string= 'M', pincode: string= '110051', state: string= 'Delhi') {
@@ -108,7 +112,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
       {
         verbose: true,
         logOutput: true,
-        include: ['node_modules'],
+        include: ['../node_modules'],
       }
     );
   });
