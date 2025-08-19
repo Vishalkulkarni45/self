@@ -29,7 +29,7 @@ library Formatter {
         bytes memory lastNameBytes;
         string[] memory names = new string[](2);
 
-        uint i = 0;
+        uint256 i = 0;
         // Extract last name
         while (i < inputBytes.length && inputBytes[i] != "<") {
             lastNameBytes = abi.encodePacked(lastNameBytes, inputBytes[i]);
@@ -104,9 +104,8 @@ library Formatter {
      */
     function fieldElementsToBytes(uint256[3] memory publicSignals) internal pure returns (bytes memory) {
         if (
-            publicSignals[0] >= SNARK_SCALAR_FIELD ||
-            publicSignals[1] >= SNARK_SCALAR_FIELD ||
-            publicSignals[2] >= SNARK_SCALAR_FIELD
+            publicSignals[0] >= SNARK_SCALAR_FIELD || publicSignals[1] >= SNARK_SCALAR_FIELD
+                || publicSignals[2] >= SNARK_SCALAR_FIELD
         ) {
             revert InvalidFieldElement();
         }
@@ -126,10 +125,8 @@ library Formatter {
 
     function fieldElementsToBytesIdCard(uint256[4] memory publicSignals) internal pure returns (bytes memory) {
         if (
-            publicSignals[0] >= SNARK_SCALAR_FIELD ||
-            publicSignals[1] >= SNARK_SCALAR_FIELD ||
-            publicSignals[2] >= SNARK_SCALAR_FIELD ||
-            publicSignals[3] >= SNARK_SCALAR_FIELD
+            publicSignals[0] >= SNARK_SCALAR_FIELD || publicSignals[1] >= SNARK_SCALAR_FIELD
+                || publicSignals[2] >= SNARK_SCALAR_FIELD || publicSignals[3] >= SNARK_SCALAR_FIELD
         ) {
             revert InvalidFieldElement();
         }
@@ -155,9 +152,11 @@ library Formatter {
      * @return forbiddenCountries An array of strings representing the forbidden country codes.
      */
     // TODO: look at this function a bit
-    function extractForbiddenCountriesFromPacked(
-        uint256[4] memory publicSignals
-    ) internal pure returns (string[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH] memory forbiddenCountries) {
+    function extractForbiddenCountriesFromPacked(uint256[4] memory publicSignals)
+        internal
+        pure
+        returns (string[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH] memory forbiddenCountries)
+    {
         for (uint256 i = 0; i < 4; i++) {
             if (publicSignals[i] >= SNARK_SCALAR_FIELD) {
                 revert InvalidFieldElement();
@@ -172,9 +171,8 @@ library Formatter {
                 uint256 shift = byteIndex * 8;
                 uint256 mask = 0xFFFFFF;
                 uint256 packedData = (publicSignals[index * 3] >> shift) & mask;
-                uint256 reversedPackedData = ((packedData & 0xff) << 16) |
-                    ((packedData & 0xff00)) |
-                    ((packedData & 0xff0000) >> 16);
+                uint256 reversedPackedData =
+                    ((packedData & 0xff) << 16) | ((packedData & 0xff00)) | ((packedData & 0xff0000) >> 16);
                 forbiddenCountries[j] = string(abi.encodePacked(uint24(reversedPackedData)));
             } else if (byteIndex < 31) {
                 uint256 part0 = (publicSignals[0] >> (byteIndex * 8));
@@ -187,9 +185,8 @@ library Formatter {
                 uint256 shift = byteIndexIn1 * 8;
                 uint256 mask = 0xFFFFFF;
                 uint256 packedData = (publicSignals[1] >> shift) & mask;
-                uint256 reversedPackedData = ((packedData & 0xff) << 16) |
-                    ((packedData & 0xff00)) |
-                    ((packedData & 0xff0000) >> 16);
+                uint256 reversedPackedData =
+                    ((packedData & 0xff) << 16) | ((packedData & 0xff00)) | ((packedData & 0xff0000) >> 16);
                 forbiddenCountries[j] = string(abi.encodePacked(uint24(reversedPackedData)));
             } else if (byteIndex < 62) {
                 uint256 part0 = (publicSignals[1] >> ((byteIndex - 31) * 8)) & 0x00ffff;
@@ -202,9 +199,8 @@ library Formatter {
                 uint256 shift = byteIndexIn1 * 8;
                 uint256 mask = 0xFFFFFF;
                 uint256 packedData = (publicSignals[2] >> shift) & mask;
-                uint256 reversedPackedData = ((packedData & 0xff) << 16) |
-                    ((packedData & 0xff00)) |
-                    ((packedData & 0xff0000) >> 16);
+                uint256 reversedPackedData =
+                    ((packedData & 0xff) << 16) | ((packedData & 0xff00)) | ((packedData & 0xff0000) >> 16);
                 forbiddenCountries[j] = string(abi.encodePacked(uint24(reversedPackedData)));
             }
         }
@@ -271,11 +267,11 @@ library Formatter {
      * @param endIndex The ending index of the substring (exclusive).
      * @return The resulting substring.
      */
-    function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
+    function substring(string memory str, uint256 startIndex, uint256 endIndex) internal pure returns (string memory) {
         bytes memory strBytes = bytes(str);
         bytes memory result = new bytes(endIndex - startIndex);
 
-        for (uint i = startIndex; i < endIndex; i++) {
+        for (uint256 i = startIndex; i < endIndex; i++) {
             result[i - startIndex] = strBytes[i];
         }
 
@@ -288,15 +284,15 @@ library Formatter {
      * @param value The string representing a number.
      * @return result The parsed unsigned integer.
      */
-    function parseDatePart(string memory value) internal pure returns (uint) {
+    function parseDatePart(string memory value) internal pure returns (uint256) {
         bytes memory tempEmptyStringTest = bytes(value);
         if (tempEmptyStringTest.length == 0) {
             return 0;
         }
 
-        uint digit;
-        uint result;
-        for (uint i = 0; i < tempEmptyStringTest.length; i++) {
+        uint256 digit;
+        uint256 result;
+        for (uint256 i = 0; i < tempEmptyStringTest.length; i++) {
             digit = uint8(tempEmptyStringTest[i]) - 48;
             result = result * 10 + digit;
         }
@@ -312,7 +308,7 @@ library Formatter {
      * @param day The day of the month.
      * @return timestamp The Unix timestamp corresponding to the given date.
      */
-    function toTimestamp(uint256 year, uint256 month, uint256 day) internal pure returns (uint timestamp) {
+    function toTimestamp(uint256 year, uint256 month, uint256 day) internal pure returns (uint256 timestamp) {
         uint16 i;
 
         if (year < 1970 || year > 2100) {

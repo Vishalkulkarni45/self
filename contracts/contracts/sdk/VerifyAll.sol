@@ -62,6 +62,24 @@ contract VerifyAll is Ownable {
             }
             IIdentityVerificationHubV1.ReadableRevealedData memory emptyData = IIdentityVerificationHubV1
                 .ReadableRevealedData({
+                issuingState: "",
+                name: new string[](0),
+                passportNumber: "",
+                nationality: "",
+                dateOfBirth: "",
+                gender: "",
+                expiryDate: "",
+                olderThan: 0,
+                passportNoOfac: 1,
+                nameAndDobOfac: 1,
+                nameAndYobOfac: 1
+            });
+            return (emptyData, false, errorCode);
+        }
+        if (targetRootTimestamp != 0) {
+            if (registry.rootTimestamps(result.identityCommitmentRoot) != targetRootTimestamp) {
+                IIdentityVerificationHubV1.ReadableRevealedData memory emptyData = IIdentityVerificationHubV1
+                    .ReadableRevealedData({
                     issuingState: "",
                     name: new string[](0),
                     passportNumber: "",
@@ -74,33 +92,13 @@ contract VerifyAll is Ownable {
                     nameAndDobOfac: 1,
                     nameAndYobOfac: 1
                 });
-            return (emptyData, false, errorCode);
-        }
-        if (targetRootTimestamp != 0) {
-            if (registry.rootTimestamps(result.identityCommitmentRoot) != targetRootTimestamp) {
-                IIdentityVerificationHubV1.ReadableRevealedData memory emptyData = IIdentityVerificationHubV1
-                    .ReadableRevealedData({
-                        issuingState: "",
-                        name: new string[](0),
-                        passportNumber: "",
-                        nationality: "",
-                        dateOfBirth: "",
-                        gender: "",
-                        expiryDate: "",
-                        olderThan: 0,
-                        passportNoOfac: 1,
-                        nameAndDobOfac: 1,
-                        nameAndYobOfac: 1
-                    });
                 return (emptyData, false, "INVALID_TIMESTAMP");
             }
         }
 
         uint256[3] memory revealedDataPacked = result.revealedDataPacked;
-        IIdentityVerificationHubV1.ReadableRevealedData memory readableData = hub.getReadableRevealedData(
-            revealedDataPacked,
-            types
-        );
+        IIdentityVerificationHubV1.ReadableRevealedData memory readableData =
+            hub.getReadableRevealedData(revealedDataPacked, types);
 
         return (readableData, true, "");
     }

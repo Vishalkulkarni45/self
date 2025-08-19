@@ -27,6 +27,7 @@ interface IIdentityVerificationHubV1 {
         PASSPORT_NO_OFAC, // The passport number OFAC status.
         NAME_AND_DOB_OFAC, // The name and date of birth OFAC verification result.
         NAME_AND_YOB_OFAC // The name and year of birth OFAC verification result.
+
     }
 
     /**
@@ -101,9 +102,10 @@ interface IIdentityVerificationHubV1 {
      * @param proof The hub proof containing configuration flags and the underlying VC and Disclose proof.
      * @return result The verification result including attestationId, scope, userIdentifier, nullifier, identityCommitmentRoot, revealed data, and forbidden countries list.
      */
-    function verifyVcAndDisclose(
-        VcAndDiscloseHubProof memory proof
-    ) external view returns (VcAndDiscloseVerificationResult memory result);
+    function verifyVcAndDisclose(VcAndDiscloseHubProof memory proof)
+        external
+        view
+        returns (VcAndDiscloseVerificationResult memory result);
 
     /**
      * @notice Converts packed revealed data into a human-readable format.
@@ -112,10 +114,10 @@ interface IIdentityVerificationHubV1 {
      * @param types An array of RevealedDataType indicating the order of attributes.
      * @return readableData The decoded and formatted revealed data.
      */
-    function getReadableRevealedData(
-        uint256[3] memory revealedDataPacked,
-        RevealedDataType[] memory types
-    ) external view returns (ReadableRevealedData memory readableData);
+    function getReadableRevealedData(uint256[3] memory revealedDataPacked, RevealedDataType[] memory types)
+        external
+        view
+        returns (ReadableRevealedData memory readableData);
 
     /**
      * @notice Retrieves a human-readable list of forbidden countries.
@@ -123,9 +125,10 @@ interface IIdentityVerificationHubV1 {
      * @param forbiddenCountriesListPacked The packed representation of forbidden countries.
      * @return forbiddenCountries A fixed-size array (length defined by CircuitConstants.MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH) of strings representing forbidden countries.
      */
-    function getReadableForbiddenCountries(
-        uint256[4] memory forbiddenCountriesListPacked
-    ) external view returns (string[40] memory forbiddenCountries);
+    function getReadableForbiddenCountries(uint256[4] memory forbiddenCountriesListPacked)
+        external
+        view
+        returns (string[40] memory forbiddenCountries);
 
     /**
      * @notice Registers a passport commitment using a register circuit proof.

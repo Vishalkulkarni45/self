@@ -47,9 +47,9 @@ interface IIdentityVerificationHubV2 {
      * @param config The verification configuration
      * @return configId The generated config ID
      */
-    function setVerificationConfigV2(
-        SelfStructs.VerificationConfigV2 memory config
-    ) external returns (bytes32 configId);
+    function setVerificationConfigV2(SelfStructs.VerificationConfigV2 memory config)
+        external
+        returns (bytes32 configId);
 
     /**
      * @notice Main verification function with new structured input format

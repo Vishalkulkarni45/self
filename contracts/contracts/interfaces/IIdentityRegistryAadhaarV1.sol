@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
  * @dev This interface exposes only the external functions accessible by regular callers,
  *      i.e. functions that are not owner-restricted.
  */
-interface IIdentityRegistryV1 {
+interface IIdentityRegistryAadhaarV1 {
     /**
      * @notice Retrieves the address of the registered identity verification hub.
      * @return The address of the hub.
@@ -16,25 +16,17 @@ interface IIdentityRegistryV1 {
 
     /**
      * @notice Checks if a specific nullifier is already registered for the given attestation.
-     * @param attestationId The attestation identifier.
      * @param nullifier The nullifier to check.
      * @return True if the nullifier is registered; otherwise, false.
      */
-    function nullifiers(bytes32 attestationId, uint256 nullifier) external view returns (bool);
+    function nullifiers(uint256 nullifier) external view returns (bool);
 
     /**
-     * @notice Checks whether a DSC key commitment is registered.
-     * @param commitment The DSC key commitment to check.
+     * @notice Checks whether a UIDAI pubkey commitment is registered.
+     * @param commitment The UIDAI pubkey commitment to check.
      * @return True if the commitment is registered, false otherwise.
      */
-    function isRegisteredDscKeyCommitment(uint256 commitment) external view returns (bool);
-
-    /**
-     * @notice Retrieves the timestamp at which a given Merkle tree root was created.
-     * @param root The Merkle tree root.
-     * @return The creation timestamp for the provided root.
-     */
-    function rootTimestamps(uint256 root) external view returns (uint256);
+    function isRegisteredUidaiPubkeyCommitment(uint256 commitment) external view returns (bool);
 
     /**
      * @notice Checks if the identity commitment Merkle tree contains the specified root.
@@ -63,12 +55,6 @@ interface IIdentityRegistryV1 {
     function getIdentityCommitmentIndex(uint256 commitment) external view returns (uint256);
 
     /**
-     * @notice Retrieves the current passport number OFAC root.
-     * @return The current passport number OFAC root value.
-     */
-    function getPassportNoOfacRoot() external view returns (uint256);
-
-    /**
      * @notice Retrieves the current name and date of birth OFAC root.
      * @return The current name and date of birth OFAC root value.
      */
@@ -82,54 +68,18 @@ interface IIdentityRegistryV1 {
 
     /**
      * @notice Checks if the provided OFAC roots match the stored OFAC roots.
-     * @param passportNoRoot The passport number OFAC root to verify.
      * @param nameAndDobRoot The name and date of birth OFAC root to verify.
      * @param nameAndYobRoot The name and year of birth OFAC root to verify.
      * @return True if all provided roots match the stored values, false otherwise.
      */
-    function checkOfacRoots(uint256 passportNoRoot, uint256 nameAndDobRoot, uint256 nameAndYobRoot)
-        external
-        view
-        returns (bool);
+    function checkOfacRoots(uint256 nameAndDobRoot, uint256 nameAndYobRoot) external view returns (bool);
 
     /**
-     * @notice Retrieves the current CSCA root.
-     * @return The current CSCA root value.
+     * @notice Checks if the provided UIDAI pubkey is stored in the registry and also if it's not expired.
+     * @param pubkey The UIDAI pubkey to verify.
+     * @return True if the given pubkey is stored in the registry and also if it's not expired, otherwise false.
      */
-    function getCscaRoot() external view returns (uint256);
-
-    /**
-     * @notice Checks if the provided CSCA root matches the stored CSCA root.
-     * @param root The CSCA root to verify.
-     * @return True if the given root equals the stored CSCA root, otherwise false.
-     */
-    function checkCscaRoot(uint256 root) external view returns (bool);
-
-    /**
-     * @notice Retrieves the current Merkle root of the DSC key commitments.
-     * @return The current DSC key commitment Merkle root.
-     */
-    function getDscKeyCommitmentMerkleRoot() external view returns (uint256);
-
-    /**
-     * @notice Checks if the provided root matches the DSC key commitment Merkle root.
-     * @param root The root to check.
-     * @return True if it matches the current root, false otherwise.
-     */
-    function checkDscKeyCommitmentMerkleRoot(uint256 root) external view returns (bool);
-
-    /**
-     * @notice Retrieves the total number of DSC key commitments in the Merkle tree.
-     * @return The DSC key commitment Merkle tree size.
-     */
-    function getDscKeyCommitmentTreeSize() external view returns (uint256);
-
-    /**
-     * @notice Retrieves the index of a specific DSC key commitment in the Merkle tree.
-     * @param commitment The DSC key commitment to locate.
-     * @return The index of the provided commitment.
-     */
-    function getDscKeyCommitmentIndex(uint256 commitment) external view returns (uint256);
+    function checkUidaiPubkey(uint256 pubkey) external view returns (bool);
 
     /**
      * @notice Registers a new identity commitment.
@@ -141,9 +91,10 @@ interface IIdentityRegistryV1 {
     function registerCommitment(bytes32 attestationId, uint256 nullifier, uint256 commitment) external;
 
     /**
-     * @notice Registers a new DSC key commitment.
-     * @dev Must be called by the identity verification hub. Reverts if the DSC key commitment is already registered.
-     * @param dscCommitment The DSC key commitment to register.
+     * @notice Registers a new UIDAI pubkey commitment.
+     * @dev Must be called by the identity verification hub. Reverts if the UIDAI pubkey commitment is already registered.
+     * @param commitment The UIDAI pubkey commitment to register.
+     * @param expiryTimestamp The expiry timestamp of the commitment.
      */
-    function registerDscKeyCommitment(uint256 dscCommitment) external;
+    function registerUidaiPubkeyCommitment(uint256 commitment, uint256 expiryTimestamp) external;
 }

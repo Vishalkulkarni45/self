@@ -15,10 +15,10 @@ interface IVcAndDiscloseCircuitVerifier {
      * @param pubSignals An array of 16 unsigned integers representing the public signals associated with the proof.
      */
     struct VcAndDiscloseProof {
-        uint[2] a;
-        uint[2][2] b;
-        uint[2] c;
-        uint[21] pubSignals;
+        uint256[2] a;
+        uint256[2][2] b;
+        uint256[2] c;
+        uint256[21] pubSignals;
     }
 
     /**
@@ -31,9 +31,9 @@ interface IVcAndDiscloseCircuitVerifier {
      * @return A boolean value indicating whether the proof is valid (true) or not (false).
      */
     function verifyProof(
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c,
-        uint[21] calldata pubSignals
+        uint256[2] calldata a,
+        uint256[2][2] calldata b,
+        uint256[2] calldata c,
+        uint256[21] calldata pubSignals
     ) external view returns (bool);
 }

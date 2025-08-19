@@ -47,49 +47,47 @@ library CircuitAttributeHandlerV2 {
      */
     function getFieldPositions(bytes32 attestationId) internal pure returns (FieldPositions memory positions) {
         if (attestationId == AttestationId.E_PASSPORT) {
-            return
-                FieldPositions({
-                    issuingStateStart: 2,
-                    issuingStateEnd: 4,
-                    nameStart: 5,
-                    nameEnd: 43,
-                    documentNumberStart: 44,
-                    documentNumberEnd: 52,
-                    nationalityStart: 54,
-                    nationalityEnd: 56,
-                    dateOfBirthStart: 57,
-                    dateOfBirthEnd: 62,
-                    genderStart: 64,
-                    genderEnd: 64,
-                    expiryDateStart: 65,
-                    expiryDateEnd: 70,
-                    olderThanStart: 88,
-                    olderThanEnd: 89,
-                    ofacStart: 90,
-                    ofacEnd: 92
-                });
+            return FieldPositions({
+                issuingStateStart: 2,
+                issuingStateEnd: 4,
+                nameStart: 5,
+                nameEnd: 43,
+                documentNumberStart: 44,
+                documentNumberEnd: 52,
+                nationalityStart: 54,
+                nationalityEnd: 56,
+                dateOfBirthStart: 57,
+                dateOfBirthEnd: 62,
+                genderStart: 64,
+                genderEnd: 64,
+                expiryDateStart: 65,
+                expiryDateEnd: 70,
+                olderThanStart: 88,
+                olderThanEnd: 89,
+                ofacStart: 90,
+                ofacEnd: 92
+            });
         } else if (attestationId == AttestationId.EU_ID_CARD) {
-            return
-                FieldPositions({
-                    issuingStateStart: 2,
-                    issuingStateEnd: 4,
-                    nameStart: 60,
-                    nameEnd: 89,
-                    documentNumberStart: 5,
-                    documentNumberEnd: 13,
-                    nationalityStart: 45,
-                    nationalityEnd: 47,
-                    dateOfBirthStart: 30,
-                    dateOfBirthEnd: 35,
-                    genderStart: 37,
-                    genderEnd: 37,
-                    expiryDateStart: 38,
-                    expiryDateEnd: 43,
-                    olderThanStart: 90,
-                    olderThanEnd: 91,
-                    ofacStart: 92,
-                    ofacEnd: 93
-                });
+            return FieldPositions({
+                issuingStateStart: 2,
+                issuingStateEnd: 4,
+                nameStart: 60,
+                nameEnd: 89,
+                documentNumberStart: 5,
+                documentNumberEnd: 13,
+                nationalityStart: 45,
+                nationalityEnd: 47,
+                dateOfBirthStart: 30,
+                dateOfBirthEnd: 35,
+                genderStart: 37,
+                genderEnd: 37,
+                expiryDateStart: 38,
+                expiryDateEnd: 43,
+                olderThanStart: 90,
+                olderThanEnd: 91,
+                ofacStart: 92,
+                ofacEnd: 93
+            });
         } else {
             revert("Invalid attestation ID");
         }
@@ -147,10 +145,9 @@ library CircuitAttributeHandlerV2 {
      */
     function getDateOfBirth(bytes32 attestationId, bytes memory charcodes) internal pure returns (string memory) {
         FieldPositions memory positions = getFieldPositions(attestationId);
-        return
-            Formatter.formatDate(
-                extractStringAttribute(charcodes, positions.dateOfBirthStart, positions.dateOfBirthEnd)
-            );
+        return Formatter.formatDate(
+            extractStringAttribute(charcodes, positions.dateOfBirthStart, positions.dateOfBirthEnd)
+        );
     }
 
     /**
@@ -184,10 +181,8 @@ library CircuitAttributeHandlerV2 {
      */
     function getOlderThan(bytes32 attestationId, bytes memory charcodes) internal pure returns (uint256) {
         FieldPositions memory positions = getFieldPositions(attestationId);
-        return
-            Formatter.numAsciiToUint(uint8(charcodes[positions.olderThanStart])) *
-            10 +
-            Formatter.numAsciiToUint(uint8(charcodes[positions.olderThanStart + 1]));
+        return Formatter.numAsciiToUint(uint8(charcodes[positions.olderThanStart])) * 10
+            + Formatter.numAsciiToUint(uint8(charcodes[positions.olderThanStart + 1]));
     }
 
     /**
@@ -274,11 +269,11 @@ library CircuitAttributeHandlerV2 {
      * @param olderThan The threshold value to compare against.
      * @return True if the extracted age is greater than or equal to the threshold, false otherwise.
      */
-    function compareOlderThan(
-        bytes32 attestationId,
-        bytes memory charcodes,
-        uint256 olderThan
-    ) internal pure returns (bool) {
+    function compareOlderThan(bytes32 attestationId, bytes memory charcodes, uint256 olderThan)
+        internal
+        pure
+        returns (bool)
+    {
         return getOlderThan(attestationId, charcodes) >= olderThan;
     }
 
@@ -289,11 +284,11 @@ library CircuitAttributeHandlerV2 {
      * @param end The ending index (inclusive) of the attribute in the byte array.
      * @return The extracted attribute as a string.
      */
-    function extractStringAttribute(
-        bytes memory charcodes,
-        uint256 start,
-        uint256 end
-    ) internal pure returns (string memory) {
+    function extractStringAttribute(bytes memory charcodes, uint256 start, uint256 end)
+        internal
+        pure
+        returns (string memory)
+    {
         if (charcodes.length <= end) {
             revert InsufficientCharcodeLen();
         }

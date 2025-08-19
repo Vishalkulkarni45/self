@@ -24,8 +24,8 @@ contract SelfIdentityERC721 is SelfVerificationRoot, ERC721, Ownable {
     uint256 private _tokenIdCounter;
 
     /// @notice Mapping from token ID to identity attributes
-    mapping(uint256 tokenId => ISelfVerificationRoot.GenericDiscloseOutputV2 identityAttributes)
-        private _identityAttributes;
+    mapping(uint256 tokenId => ISelfVerificationRoot.GenericDiscloseOutputV2 identityAttributes) private
+        _identityAttributes;
 
     /// @notice Mapping to track minted user identifiers to prevent double minting
     mapping(uint256 userIdentifier => bool minted) private _mintedUserIdentifiers;
@@ -59,12 +59,11 @@ contract SelfIdentityERC721 is SelfVerificationRoot, ERC721, Ownable {
      * @param name The name of the NFT collection
      * @param symbol The symbol of the NFT collection
      */
-    constructor(
-        address identityVerificationHubAddress,
-        uint256 scopeValue,
-        string memory name,
-        string memory symbol
-    ) SelfVerificationRoot(identityVerificationHubAddress, scopeValue) ERC721(name, symbol) Ownable(_msgSender()) {}
+    constructor(address identityVerificationHubAddress, uint256 scopeValue, string memory name, string memory symbol)
+        SelfVerificationRoot(identityVerificationHubAddress, scopeValue)
+        ERC721(name, symbol)
+        Ownable(_msgSender())
+    {}
 
     // ====================================================
     // External/Public Functions
@@ -84,9 +83,11 @@ contract SelfIdentityERC721 is SelfVerificationRoot, ERC721, Ownable {
      * @param tokenId The token ID to query
      * @return The identity attributes associated with the token
      */
-    function getIdentityAttributes(
-        uint256 tokenId
-    ) external view returns (ISelfVerificationRoot.GenericDiscloseOutputV2 memory) {
+    function getIdentityAttributes(uint256 tokenId)
+        external
+        view
+        returns (ISelfVerificationRoot.GenericDiscloseOutputV2 memory)
+    {
         require(_exists(tokenId), "Token does not exist");
         return _identityAttributes[tokenId];
     }

@@ -20,7 +20,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     struct IdentityVerificationHubStorage {
         uint256 _circuitVersion;
         mapping(bytes32 attestationId => address registry) _registries;
-        mapping(bytes32 attestationId => mapping(uint256 sigTypeId => address registerCircuitVerifier)) _registerCircuitVerifiers;
+        mapping(bytes32 attestationId => mapping(uint256 sigTypeId => address registerCircuitVerifier))
+            _registerCircuitVerifiers;
         mapping(bytes32 attestationId => mapping(uint256 sigTypeId => address dscCircuitVerifier)) _dscCircuitVerifiers;
         mapping(bytes32 attestationId => address discloseVerifiers) _discloseVerifiers;
     }
@@ -265,9 +266,12 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param config The verification configuration
      * @return configId The generated config ID
      */
-    function setVerificationConfigV2(
-        SelfStructs.VerificationConfigV2 memory config
-    ) external virtual onlyProxy returns (bytes32 configId) {
+    function setVerificationConfigV2(SelfStructs.VerificationConfigV2 memory config)
+        external
+        virtual
+        onlyProxy
+        returns (bytes32 configId)
+    {
         configId = generateConfigId(config);
         IdentityVerificationHubV2Storage storage $v2 = _getIdentityVerificationHubV2Storage();
         $v2._v2VerificationConfigs[configId] = config;
@@ -286,11 +290,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         (SelfStructs.HubInputHeader memory header, bytes calldata proofData) = _decodeInput(baseVerificationInput);
 
         // Perform verification and get output along with user data
-        (bytes memory output, uint256 destChainId, bytes memory userDataToPass) = _executeVerificationFlow(
-            header,
-            proofData,
-            userContextData
-        );
+        (bytes memory output, uint256 destChainId, bytes memory userDataToPass) =
+            _executeVerificationFlow(header, proofData, userContextData);
 
         // Use destChainId and userDataToPass returned from _executeVerificationFlow
         _handleVerificationResult(destChainId, output, userDataToPass);
@@ -310,10 +311,12 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @notice Updates the VC and Disclose circuit verifier address.
      * @param vcAndDiscloseCircuitVerifierAddress The new VC and Disclose circuit verifier address.
      */
-    function updateVcAndDiscloseCircuit(
-        bytes32 attestationId,
-        address vcAndDiscloseCircuitVerifierAddress
-    ) external virtual onlyProxy onlyOwner {
+    function updateVcAndDiscloseCircuit(bytes32 attestationId, address vcAndDiscloseCircuitVerifierAddress)
+        external
+        virtual
+        onlyProxy
+        onlyOwner
+    {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         $._discloseVerifiers[attestationId] = vcAndDiscloseCircuitVerifierAddress;
         emit VcAndDiscloseCircuitUpdated(attestationId, vcAndDiscloseCircuitVerifierAddress);
@@ -325,11 +328,12 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param typeId The signature type identifier.
      * @param verifierAddress The new register circuit verifier address.
      */
-    function updateRegisterCircuitVerifier(
-        bytes32 attestationId,
-        uint256 typeId,
-        address verifierAddress
-    ) external virtual onlyProxy onlyOwner {
+    function updateRegisterCircuitVerifier(bytes32 attestationId, uint256 typeId, address verifierAddress)
+        external
+        virtual
+        onlyProxy
+        onlyOwner
+    {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         $._registerCircuitVerifiers[attestationId][typeId] = verifierAddress;
         emit RegisterCircuitVerifierUpdated(typeId, verifierAddress);
@@ -341,11 +345,12 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param typeId The signature type identifier.
      * @param verifierAddress The new DSC circuit verifier address.
      */
-    function updateDscVerifier(
-        bytes32 attestationId,
-        uint256 typeId,
-        address verifierAddress
-    ) external virtual onlyProxy onlyOwner {
+    function updateDscVerifier(bytes32 attestationId, uint256 typeId, address verifierAddress)
+        external
+        virtual
+        onlyProxy
+        onlyOwner
+    {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         $._dscCircuitVerifiers[attestationId][typeId] = verifierAddress;
         emit DscCircuitVerifierUpdated(typeId, verifierAddress);
@@ -423,10 +428,13 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param typeId The type ID to query.
      * @return The register circuit verifier address associated with the attestation ID and type ID.
      */
-    function registerCircuitVerifiers(
-        bytes32 attestationId,
-        uint256 typeId
-    ) external view virtual onlyProxy returns (address) {
+    function registerCircuitVerifiers(bytes32 attestationId, uint256 typeId)
+        external
+        view
+        virtual
+        onlyProxy
+        returns (address)
+    {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         return $._registerCircuitVerifiers[attestationId][typeId];
     }
@@ -437,10 +445,13 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param typeId The type ID to query.
      * @return The DSC circuit verifier address associated with the attestation ID and type ID.
      */
-    function dscCircuitVerifiers(
-        bytes32 attestationId,
-        uint256 typeId
-    ) external view virtual onlyProxy returns (address) {
+    function dscCircuitVerifiers(bytes32 attestationId, uint256 typeId)
+        external
+        view
+        virtual
+        onlyProxy
+        returns (address)
+    {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         return $._dscCircuitVerifiers[attestationId][typeId];
     }
@@ -537,18 +548,11 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         {
             bytes memory config = _getVerificationConfigById(configId);
 
-            bytes memory proofOutput = _basicVerification(
-                header,
-                _decodeVcAndDiscloseProof(proofData),
-                userContextData,
-                userIdentifier
-            );
+            bytes memory proofOutput =
+                _basicVerification(header, _decodeVcAndDiscloseProof(proofData), userContextData, userIdentifier);
 
-            SelfStructs.GenericDiscloseOutputV2 memory genericDiscloseOutput = CustomVerifier.customVerify(
-                header.attestationId,
-                config,
-                proofOutput
-            );
+            SelfStructs.GenericDiscloseOutputV2 memory genericDiscloseOutput =
+                CustomVerifier.customVerify(header.attestationId, config, proofOutput);
 
             output = _formatVerificationOutput(header.contractVersion, genericDiscloseOutput);
         }
@@ -564,7 +568,9 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param output The verification output data.
      * @param userDataToPass The user data to pass to the result handler.
      */
-    function _handleVerificationResult(uint256 destChainId, bytes memory output, bytes memory userDataToPass) internal {
+    function _handleVerificationResult(uint256 destChainId, bytes memory output, bytes memory userDataToPass)
+        internal
+    {
         if (destChainId == block.chainid) {
             ISelfVerificationRoot(msg.sender).onVerificationSuccess(output, userDataToPass);
         } else {
@@ -591,18 +597,16 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     ) internal returns (bytes memory output) {
         // Scope 1: Basic checks (scope and user identifier)
         {
-            CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(
-                header.attestationId
-            );
+            CircuitConstantsV2.DiscloseIndices memory indices =
+                CircuitConstantsV2.getDiscloseIndices(header.attestationId);
             _performScopeCheck(header.scope, vcAndDiscloseProof, indices);
             _performUserIdentifierCheck(userContextData, vcAndDiscloseProof, header.attestationId, indices);
         }
 
         // Scope 2: Root and date checks
         {
-            CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(
-                header.attestationId
-            );
+            CircuitConstantsV2.DiscloseIndices memory indices =
+                CircuitConstantsV2.getDiscloseIndices(header.attestationId);
             _performRootCheck(header.attestationId, vcAndDiscloseProof, indices);
             _performCurrentDateCheck(vcAndDiscloseProof, indices);
         }
@@ -612,9 +616,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         // Scope 4: Create and return output
         {
-            CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(
-                header.attestationId
-            );
+            CircuitConstantsV2.DiscloseIndices memory indices =
+                CircuitConstantsV2.getDiscloseIndices(header.attestationId);
             return _createVerificationOutput(header.attestationId, vcAndDiscloseProof, indices, userIdentifier);
         }
     }
@@ -628,9 +631,13 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param configId The configuration identifier
      * @return The verification configuration
      */
-    function getVerificationConfigV2(
-        bytes32 configId
-    ) public view virtual onlyProxy returns (SelfStructs.VerificationConfigV2 memory) {
+    function getVerificationConfigV2(bytes32 configId)
+        public
+        view
+        virtual
+        onlyProxy
+        returns (SelfStructs.VerificationConfigV2 memory)
+    {
         IdentityVerificationHubV2Storage storage $v2 = _getIdentityVerificationHubV2Storage();
         return $v2._v2VerificationConfigs[configId];
     }
@@ -688,10 +695,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         if (
             !IRegisterCircuitVerifier(verifier).verifyProof(
-                registerCircuitProof.a,
-                registerCircuitProof.b,
-                registerCircuitProof.c,
-                registerCircuitProof.pubSignals
+                registerCircuitProof.a, registerCircuitProof.b, registerCircuitProof.c, registerCircuitProof.pubSignals
             )
         ) {
             revert InvalidRegisterProof();
@@ -737,10 +741,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         if (
             !IDscCircuitVerifier(verifier).verifyProof(
-                dscCircuitProof.a,
-                dscCircuitProof.b,
-                dscCircuitProof.c,
-                dscCircuitProof.pubSignals
+                dscCircuitProof.a, dscCircuitProof.b, dscCircuitProof.c, dscCircuitProof.pubSignals
             )
         ) {
             revert InvalidDscProof();
@@ -809,13 +810,13 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
-        uint[6] memory dateNum;
+        uint256[6] memory dateNum;
         for (uint256 i = 0; i < 6; i++) {
             dateNum[i] = vcAndDiscloseProof.pubSignals[indices.currentDateIndex + i];
         }
 
-        uint currentTimestamp = Formatter.proofDateToUnixTimestamp(dateNum);
-        uint startOfDay = _getStartOfDayTimestamp();
+        uint256 currentTimestamp = Formatter.proofDateToUnixTimestamp(dateNum);
+        uint256 startOfDay = _getStartOfDayTimestamp();
 
         if (currentTimestamp < startOfDay - 1 days + 1 || currentTimestamp > startOfDay + 1 days - 1) {
             revert CurrentDateNotInValidRange();
@@ -833,10 +834,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         if (
             !IVcAndDiscloseCircuitVerifier($._discloseVerifiers[attestationId]).verifyProof(
-                vcAndDiscloseProof.a,
-                vcAndDiscloseProof.b,
-                vcAndDiscloseProof.c,
-                vcAndDiscloseProof.pubSignals
+                vcAndDiscloseProof.a, vcAndDiscloseProof.b, vcAndDiscloseProof.c, vcAndDiscloseProof.pubSignals
             )
         ) {
             revert InvalidVcAndDiscloseProof();
@@ -853,9 +851,11 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @return header The header of the input data.
      * @return proofData The proof data of the input data.
      */
-    function _decodeInput(
-        bytes calldata baseVerificationInput
-    ) internal pure returns (SelfStructs.HubInputHeader memory header, bytes calldata proofData) {
+    function _decodeInput(bytes calldata baseVerificationInput)
+        internal
+        pure
+        returns (SelfStructs.HubInputHeader memory header, bytes calldata proofData)
+    {
         if (baseVerificationInput.length < 97) {
             revert InputTooShort();
         }
@@ -873,9 +873,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @return userIdentifier The user identifier
      * @return remainingData The remaining data after the first 96 bytes
      */
-    function _decodeUserContextData(
-        bytes calldata userContextData
-    )
+    function _decodeUserContextData(bytes calldata userContextData)
         internal
         pure
         returns (bytes32 configId, uint256 destChainId, uint256 userIdentifier, bytes calldata remainingData)
@@ -958,9 +956,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         // Extract forbidden countries list
         for (uint256 i = 0; i < 4; i++) {
-            passportOutput.forbiddenCountriesListPacked[i] = vcAndDiscloseProof.pubSignals[
-                indices.forbiddenCountriesListPackedIndex + i
-            ];
+            passportOutput.forbiddenCountriesListPacked[i] =
+                vcAndDiscloseProof.pubSignals[indices.forbiddenCountriesListPackedIndex + i];
         }
 
         return abi.encode(passportOutput);
@@ -995,9 +992,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         // Extract forbidden countries list
         for (uint256 i = 0; i < 4; i++) {
-            euIdOutput.forbiddenCountriesListPacked[i] = vcAndDiscloseProof.pubSignals[
-                indices.forbiddenCountriesListPackedIndex + i
-            ];
+            euIdOutput.forbiddenCountriesListPacked[i] =
+                vcAndDiscloseProof.pubSignals[indices.forbiddenCountriesListPackedIndex + i];
         }
 
         return abi.encode(euIdOutput);
@@ -1009,9 +1005,11 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @param data The encoded proof data.
      * @return The decoded VcAndDiscloseProof struct.
      */
-    function _decodeVcAndDiscloseProof(
-        bytes memory data
-    ) internal pure returns (IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory) {
+    function _decodeVcAndDiscloseProof(bytes memory data)
+        internal
+        pure
+        returns (IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory)
+    {
         return abi.decode(data, (IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof));
     }
 
