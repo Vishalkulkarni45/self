@@ -23,7 +23,6 @@ include "@openpassport/zk-email-circuits/lib/sha.circom";
 /// @output nullifier Generated nullifier - deterministic on the Aadhaar data
 /// @output commitment Commitment that will be added to the onchain registration tree
 template REGISTER_AADHAAR(n, k, maxDataLength){
-
     signal input qrDataPadded[maxDataLength];
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
@@ -116,6 +115,3 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal output commitment <== commitmentHasher.out;
     signal output timestamp <== qrDataExtractor.timestamp;
 }
-
-
-component main { public [ pubKey ] }  = REGISTER_AADHAAR(121, 17, 512 * 3);

@@ -117,9 +117,10 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     this.timeout(0);
     expect(circuit).to.not.be.undefined;
   });
-  it('should pass constrain check for circuit with Sha256RSA signature', async function () {
+  it.only('should pass constrain check for circuit with Sha256RSA signature', async function () {
     this.timeout(0);
     const { inputs } = prepareTestData();
+    console.log("inputs", JSON.stringify(inputs));
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });

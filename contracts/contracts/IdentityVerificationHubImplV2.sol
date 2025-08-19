@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {ImplRoot} from "./upgradeable/ImplRoot.sol";
 import {SelfStructs} from "./libraries/SelfStructs.sol";
+import {GenericProofStruct} from "./interfaces/IRegisterCircuitVerifier.sol";
 import {CustomVerifier} from "./libraries/CustomVerifier.sol";
 import {GenericFormatter} from "./libraries/GenericFormatter.sol";
 import {AttestationId} from "./constants/AttestationId.sol";
@@ -10,6 +11,7 @@ import {IVcAndDiscloseCircuitVerifier} from "./interfaces/IVcAndDiscloseCircuitV
 import {ISelfVerificationRoot} from "./interfaces/ISelfVerificationRoot.sol";
 import {IIdentityRegistryV1} from "./interfaces/IIdentityRegistryV1.sol";
 import {IIdentityRegistryIdCardV1} from "./interfaces/IIdentityRegistryIdCardV1.sol";
+import {IIdentityRegistryAadhaarV1} from "./interfaces/IIdentityRegistryAadhaarV1.sol";
 import {IRegisterCircuitVerifier} from "./interfaces/IRegisterCircuitVerifier.sol";
 import {IDscCircuitVerifier} from "./interfaces/IDscCircuitVerifier.sol";
 import {CircuitConstantsV2} from "./constants/CircuitConstantsV2.sol";
@@ -166,6 +168,10 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     /// @dev Ensures that the verification config is set before performing verification.
     error ConfigNotSet();
 
+    /// @notice Thrown when the pubkey is not valid.
+    /// @dev Ensures that the pubkey is valid.
+    error InvalidPubkey();
+
     // ====================================================
     // Constructor
     // ====================================================
@@ -226,6 +232,11 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         } else if (attestationId == AttestationId.EU_ID_CARD) {
             IIdentityRegistryIdCardV1($._registries[attestationId]).registerCommitment(
                 attestationId,
+                registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_NULLIFIER_INDEX],
+                registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_COMMITMENT_INDEX]
+            );
+        } else if (attestationId == AttestationId.AADHAAR) {
+            IIdentityRegistryAadhaarV1($._registries[attestationId]).registerCommitment(
                 registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_NULLIFIER_INDEX],
                 registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_COMMITMENT_INDEX]
             );
@@ -470,6 +481,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             return IIdentityRegistryV1(registryAddress).rootTimestamps(root);
         } else if (attestationId == AttestationId.EU_ID_CARD) {
             return IIdentityRegistryIdCardV1(registryAddress).rootTimestamps(root);
+        } else if (attestationId == AttestationId.AADHAAR) {
+            return IIdentityRegistryAadhaarV1(registryAddress).rootTimestamps(root);
         } else {
             revert InvalidAttestationId();
         }
@@ -488,6 +501,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             return IIdentityRegistryV1(registryAddress).getIdentityCommitmentMerkleRoot();
         } else if (attestationId == AttestationId.EU_ID_CARD) {
             return IIdentityRegistryIdCardV1(registryAddress).getIdentityCommitmentMerkleRoot();
+        } else if (attestationId == AttestationId.AADHAAR) {
+            return IIdentityRegistryAadhaarV1(registryAddress).getIdentityCommitmentMerkleRoot();
         } else {
             revert InvalidAttestationId();
         }
@@ -665,7 +680,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     function _verifyRegisterProof(
         bytes32 attestationId,
         uint256 registerCircuitVerifierId,
-        IRegisterCircuitVerifier.RegisterCircuitProof memory registerCircuitProof
+        GenericProofStruct memory registerCircuitProof
     ) internal view {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         address verifier = $._registerCircuitVerifiers[attestationId][registerCircuitVerifierId];
@@ -689,16 +704,41 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             ) {
                 revert InvalidDscCommitmentRoot();
             }
-        } else {
-            revert InvalidAttestationId();
+        } else if (attestationId == AttestationId.AADHAAR) {
+            if (
+                !IIdentityRegistryAadhaarV1($._registries[attestationId]).checkUidaiPubkey(
+                    dscCircuitProof.pubSignals[CircuitConstantsV2.UIDAI_PUBKEY_COMMITMENT_INDEX]
+                )
+            ) {
+                revert InvalidPubkey();
+            } else {
+                revert InvalidAttestationId();
+            }
         }
 
-        if (
-            !IRegisterCircuitVerifier(verifier).verifyProof(
-                registerCircuitProof.a, registerCircuitProof.b, registerCircuitProof.c, registerCircuitProof.pubSignals
-            )
-        ) {
-            revert InvalidRegisterProof();
+        if (attestationId == AttestationId.E_PASSPORT || attestationId == AttestationId.EU_ID_CARD) {
+            require(registerCircuitProof.pubSignals.length == 3, "Invalid pubSignals length");
+            uint256[3] memory pubSignals = [
+                registerCircuitProof.pubSignals[0],
+                registerCircuitProof.pubSignals[1],
+                registerCircuitProof.pubSignals[2]
+            ];
+            if (
+                !IRegisterCircuitVerifier(verifier).verifyProof(
+                    registerCircuitProof.a, registerCircuitProof.b, registerCircuitProof.c, pubSignals
+                )
+            ) {
+                revert InvalidRegisterProof();
+            }
+        } else if (attestationId == AttestationId.AADHAAR) {
+
+            if (
+                !IAadhaarRegisterCircuitVerifier(verifier).verifyProof(
+                    registerCircuitProof.a, registerCircuitProof.b, registerCircuitProof.c, pubSignals
+                )
+            ) {
+                revert InvalidRegisterProof();
+            }
         }
     }
 

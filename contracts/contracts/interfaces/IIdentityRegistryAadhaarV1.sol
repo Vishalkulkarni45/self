@@ -29,6 +29,13 @@ interface IIdentityRegistryAadhaarV1 {
     function isRegisteredUidaiPubkeyCommitment(uint256 commitment) external view returns (bool);
 
     /**
+     * @notice Retrieves the timestamp of the identity commitment Merkle tree root.
+     * @param root The Merkle tree root to check.
+     * @return The timestamp of the root.
+     */
+    function rootTimestamps(uint256 root) external view returns (uint256);
+
+    /**
      * @notice Checks if the identity commitment Merkle tree contains the specified root.
      * @param root The Merkle tree root to check.
      * @return True if the root exists in the tree, false otherwise.
@@ -79,16 +86,15 @@ interface IIdentityRegistryAadhaarV1 {
      * @param pubkey The UIDAI pubkey to verify.
      * @return True if the given pubkey is stored in the registry and also if it's not expired, otherwise false.
      */
-    function checkUidaiPubkey(uint256 pubkey) external view returns (bool);
+    function checkUidaiPubkey(uint256 commitment) external view returns (bool);
 
     /**
      * @notice Registers a new identity commitment.
      * @dev Must be called by the identity verification hub. Reverts if the nullifier has already been used.
-     * @param attestationId The attestation identifier associated with the commitment.
      * @param nullifier A unique nullifier to prevent double registration.
      * @param commitment The identity commitment to register.
      */
-    function registerCommitment(bytes32 attestationId, uint256 nullifier, uint256 commitment) external;
+    function registerCommitment(uint256 nullifier, uint256 commitment) external;
 
     /**
      * @notice Registers a new UIDAI pubkey commitment.

@@ -43,6 +43,14 @@ library CircuitConstantsV2 {
      */
     uint256 constant DSC_CSCA_ROOT_INDEX = 1;
 
+    // ---------------------------
+    // Aadhaar Circuit Constants
+    // ---------------------------
+    /**
+     * @notice Index to access the pubkey commitment in the Aadhaar circuit public signals.
+     */
+    uint256 constant UIDAI_PUBKEY_COMMITMENT_INDEX = 2;
+
     // -------------------------------------
     // VC and Disclose Circuit Constants
     // -------------------------------------

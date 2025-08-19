@@ -5,6 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {InternalLeanIMT, LeanIMTData} from "@zk-kit/imt.sol/internal/InternalLeanIMT.sol";
 import {IIdentityRegistryAadhaarV1} from "../interfaces/IIdentityRegistryAadhaarV1.sol";
 import {ImplRoot} from "../upgradeable/ImplRoot.sol";
+import {AttestationId} from "../constants/AttestationId.sol";
 
 /**
  * @notice ⚠️ CRITICAL STORAGE LAYOUT WARNING ⚠️
@@ -178,6 +179,13 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
         return _nullifiers[nullifier];
     }
 
+    /// @notice Retrieves the timestamp of the identity commitment Merkle tree root.
+    /// @param root The Merkle tree root to check.
+    /// @return The timestamp of the root.
+    function rootTimestamps(uint256 root) external view virtual onlyProxy returns (uint256) {
+        return _rootTimestamps[root];
+    }
+
     /// @notice Checks if a UIDAI pubkey commitment is registered.
     /// @param commitment The UIDAI pubkey commitment to check.
     /// @return True if the commitment is registered, false otherwise.
@@ -262,7 +270,7 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @param attestationId The identifier for the attestation.
     /// @param nullifier The nullifier associated with the identity commitment.
     /// @param commitment The identity commitment to register.
-    function registerCommitment(bytes32 attestationId, uint256 nullifier, uint256 commitment)
+    function registerCommitment(uint256 nullifier, uint256 commitment)
         external
         onlyProxy
         onlyHub
@@ -273,7 +281,7 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
         uint256 index = _identityCommitmentIMT.size;
         uint256 imt_root = _identityCommitmentIMT._insert(commitment);
         _rootTimestamps[imt_root] = block.timestamp;
-        emit CommitmentRegistered(attestationId, nullifier, commitment, block.timestamp, imt_root, index);
+        emit CommitmentRegistered(AttestationId.AADHAAR, nullifier, commitment, block.timestamp, imt_root, index);
     }
 
     // ====================================================
