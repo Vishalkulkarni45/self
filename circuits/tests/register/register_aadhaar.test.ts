@@ -30,13 +30,14 @@ const { testQRData } = jsonData;
 let QRData: string = testQRData;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
+const publicKeyPath = path.join(__dirname, '../assets/testPublicKey.pem');
 
-
-function prepareTestData(name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string) {
-
+function prepareTestData(privateKeyPath: string, publicKeyPath: string, name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-01-1984', gender: string= 'M', pincode: string= '110051', state: string= 'Delhi') {
   let qrDataBytes: any;
+
   if(name || dateOfBirth || gender || pincode || state){
-    const newTestData = generateTestData({ data: testCustomData, name: name , dob: dateOfBirth, gender: gender, pincode: pincode, state: state});
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: name , dob: dateOfBirth, gender: gender, pincode: pincode, state: state});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{
     name = 'SUMIT KUMAR';
@@ -65,7 +66,7 @@ function prepareTestData(name?: string, dateOfBirth?: string, gender?: string, p
 
   const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
 
-  const pkPem = fs.readFileSync(path.join(__dirname, '../assets/testPublicKey.pem'));
+  const pkPem = fs.readFileSync(path.join(publicKeyPath));
   const pk = crypto.createPublicKey(pkPem);
 
   const pubKey = BigInt(
@@ -128,13 +129,13 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
   });
   it('should pass constrain check for circuit with Sha256RSA signature', async function () {
     this.timeout(0);
-    const { inputs } = prepareTestData();
+    const { inputs } = prepareTestData(privateKeyPath, publicKeyPath);
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });
   it('should pass constrain and output correct nullifier and commitment', async function () {
     this.timeout(0);
-    const { inputs, nullifier, commitment } = prepareTestData();
+    const { inputs, nullifier, commitment } = prepareTestData(privateKeyPath, publicKeyPath);
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -145,8 +146,8 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
   it('should not verify the signature of created from different key', async function () {
     this.timeout(0);
-    const { inputs } = prepareTestData();
-    const newTestData = generateTestData({ data: testCustomData });
+    const { inputs } = prepareTestData(privateKeyPath, publicKeyPath);
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const decodedData = decompressByteArray(QRDataBytes);
 
@@ -165,9 +166,9 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
   it('should fail when qrdata is tampered', async function () {
     this.timeout(0);
-     const { inputs } = prepareTestData();
+     const { inputs } = prepareTestData(privateKeyPath, publicKeyPath);
 
-    const newTestData = generateTestData({ data: testCustomData,  gender: 'F' });
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData,  gender: 'F' });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const decodedData = decompressByteArray(QRDataBytes);
 
@@ -188,7 +189,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
   it('should return different commitment when secret is tampered', async function () {
     this.timeout(0);
-    const { inputs, commitment } = prepareTestData();
+    const { inputs, commitment } = prepareTestData(privateKeyPath, publicKeyPath);
     inputs.secret = '1235';
     const w = await circuit.calculateWitness(inputs);
 
@@ -198,7 +199,7 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
 
   it('should pass for different qr data', async function () {
     this.timeout(0);
-    const { inputs, nullifier, commitment } = prepareTestData('KL RAHUL', '18-04-1992');
+    const { inputs, nullifier, commitment } = prepareTestData(privateKeyPath, publicKeyPath, 'KL RAHUL', '18-04-1992');
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
