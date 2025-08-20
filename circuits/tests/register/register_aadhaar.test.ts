@@ -32,13 +32,18 @@ let QRData: string = testQRData;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
-function prepareTestData(name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-01-1984', gender: string= 'M', pincode: string= '110051', state: string= 'Delhi') {
+function prepareTestData(name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string) {
 
   let qrDataBytes: any;
   if(name || dateOfBirth || gender || pincode || state){
     const newTestData = generateTestData({ data: testCustomData, name: name , dob: dateOfBirth, gender: gender, pincode: pincode, state: state});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{
+    name = 'SUMIT KUMAR';
+    dateOfBirth = '01-01-1984';
+    gender = 'M';
+    pincode = '110051';
+    state = 'Delhi';
     qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
   }
 
