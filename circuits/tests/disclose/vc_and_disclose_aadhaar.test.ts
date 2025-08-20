@@ -191,7 +191,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
                 revealedData['revealData_packed[2]'],
                 revealedData['revealData_packed[3]'],
             ];
-    const revealedDataUnpacked = unpackReveal(revealedData_packed);
+    const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     assert(revealedDataUnpacked[0] === 'M', 'Gender should be Male');
 
@@ -230,7 +230,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
                 revealedData['revealData_packed[2]'],
                 revealedData['revealData_packed[3]'],
             ];
-    const revealedDataUnpacked = unpackReveal(revealedData_packed);
+    const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     assert(revealedDataUnpacked[1] === '1', 'YOB should be 1');
     assert(revealedDataUnpacked[2] === '9', 'YOB should be 9');
@@ -271,7 +271,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
                 revealedData['revealData_packed[2]'],
                 revealedData['revealData_packed[3]'],
             ];
-    const revealedDataUnpacked = unpackReveal(revealedData_packed);
+    const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     for (let i = 0; i < 115; i++) {
       assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
