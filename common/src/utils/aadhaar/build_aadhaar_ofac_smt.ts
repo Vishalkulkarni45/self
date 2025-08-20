@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { buildAadhaarSMT } from '../trees';
+import { buildAadhaarSMT } from '../trees.js';
 
 async function build_aadhaar_ofac_smt() {
   let startTime = performance.now();

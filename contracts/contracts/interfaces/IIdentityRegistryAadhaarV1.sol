@@ -83,7 +83,7 @@ interface IIdentityRegistryAadhaarV1 {
 
     /**
      * @notice Checks if the provided UIDAI pubkey is stored in the registry and also if it's not expired.
-     * @param pubkey The UIDAI pubkey to verify.
+     * @param commitment The UIDAI pubkey commitment to verify.
      * @return True if the given pubkey is stored in the registry and also if it's not expired, otherwise false.
      */
     function checkUidaiPubkey(uint256 commitment) external view returns (bool);

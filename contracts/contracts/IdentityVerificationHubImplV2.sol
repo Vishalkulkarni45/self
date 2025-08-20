@@ -13,6 +13,7 @@ import {IIdentityRegistryV1} from "./interfaces/IIdentityRegistryV1.sol";
 import {IIdentityRegistryIdCardV1} from "./interfaces/IIdentityRegistryIdCardV1.sol";
 import {IIdentityRegistryAadhaarV1} from "./interfaces/IIdentityRegistryAadhaarV1.sol";
 import {IRegisterCircuitVerifier} from "./interfaces/IRegisterCircuitVerifier.sol";
+import {IAadhaarRegisterCircuitVerifier} from "./interfaces/IRegisterCircuitVerifier.sol";
 import {IDscCircuitVerifier} from "./interfaces/IDscCircuitVerifier.sol";
 import {CircuitConstantsV2} from "./constants/CircuitConstantsV2.sol";
 import {Formatter} from "./libraries/Formatter.sol";
@@ -219,7 +220,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     function registerCommitment(
         bytes32 attestationId,
         uint256 registerCircuitVerifierId,
-        IRegisterCircuitVerifier.RegisterCircuitProof memory registerCircuitProof
+        GenericProofStruct memory registerCircuitProof
     ) external virtual onlyProxy {
         _verifyRegisterProof(attestationId, registerCircuitVerifierId, registerCircuitProof);
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
@@ -707,7 +708,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         } else if (attestationId == AttestationId.AADHAAR) {
             if (
                 !IIdentityRegistryAadhaarV1($._registries[attestationId]).checkUidaiPubkey(
-                    dscCircuitProof.pubSignals[CircuitConstantsV2.UIDAI_PUBKEY_COMMITMENT_INDEX]
+                    registerCircuitProof.pubSignals[CircuitConstantsV2.UIDAI_PUBKEY_COMMITMENT_INDEX]
                 )
             ) {
                 revert InvalidPubkey();
@@ -731,6 +732,13 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
                 revert InvalidRegisterProof();
             }
         } else if (attestationId == AttestationId.AADHAAR) {
+            require(registerCircuitProof.pubSignals.length == 4, "Invalid pubSignals length");
+            uint256[4] memory pubSignals = [
+                registerCircuitProof.pubSignals[0],
+                registerCircuitProof.pubSignals[1],
+                registerCircuitProof.pubSignals[2],
+                registerCircuitProof.pubSignals[3]
+            ];
 
             if (
                 !IAadhaarRegisterCircuitVerifier(verifier).verifyProof(

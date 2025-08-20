@@ -61,6 +61,6 @@ interface IAadhaarRegisterCircuitVerifier {
         uint256[2] calldata a,
         uint256[2][2] calldata b,
         uint256[2] calldata c,
-        uint256[3] calldata pubSignals
+        uint256[4] calldata pubSignals
     ) external view returns (bool isValid);
 }

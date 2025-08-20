@@ -28,6 +28,7 @@ import {
   IRegisterCircuitVerifier,
   IDscCircuitVerifier,
   IVcAndDiscloseCircuitVerifier,
+  IdentityRegistryAadhaarImplV1,
 } from "../../typechain-types";
 
 import { DscVerifierId, RegisterVerifierId } from "@selfxyz/common";
@@ -72,7 +73,10 @@ export interface DeployedActorsV2 {
   registry: IdentityRegistryImplV1;
   registryIdImpl: IdentityRegistryIdCardImplV1;
   registryId: IdentityRegistryIdCardImplV1;
+  registryAadhaarImpl: IdentityRegistryAadhaarImplV1;
+  registryAadhaar: IdentityRegistryAadhaarImplV1;
   vcAndDisclose: VcAndDiscloseVerifier;
+  aadhaarPubkey: bigint;
   vcAndDiscloseId: VcAndDiscloseIdVerifier;
   register: RegisterVerifier;
   registerId: RegisterVerifierId;

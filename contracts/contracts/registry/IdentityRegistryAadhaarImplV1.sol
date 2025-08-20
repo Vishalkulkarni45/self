@@ -128,6 +128,8 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     error ONLY_HUB_CAN_ACCESS();
     /// @notice Thrown when attempting to register a commitment that has already been registered.
     error REGISTERED_COMMITMENT();
+    /// @notice Thrown when the expiry timestamp is in the past.
+    error EXPIRY_IN_PAST();
 
     // ====================================================
     // Modifiers
@@ -267,7 +269,6 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
 
     /// @notice Registers a new identity commitment.
     /// @dev Caller must be the hub. Reverts if the nullifier is already registered.
-    /// @param attestationId The identifier for the attestation.
     /// @param nullifier The nullifier associated with the identity commitment.
     /// @param commitment The identity commitment to register.
     function registerCommitment(uint256 nullifier, uint256 commitment)
@@ -318,6 +319,7 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @param expiryTimestamp The expiry timestamp of the commitment.
     function registerUidaiPubkeyCommitment(uint256 commitment, uint256 expiryTimestamp) external onlyProxy onlyOwner {
         _uidaiPubkeyExpiryTimestamps[commitment] = expiryTimestamp;
+        if (expiryTimestamp < block.timestamp) revert EXPIRY_IN_PAST();
         emit UidaiPubkeyCommitmentRegistered(commitment, expiryTimestamp);
     }
 

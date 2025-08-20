@@ -1,11 +1,8 @@
-import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
-import { SMT } from '@openpassport/zk-kit-smt';
 import {
   COMMITMENT_TREE_DEPTH,
   MAX_PADDED_ECONTENT_LEN,
   MAX_PADDED_SIGNED_ATTR_LEN,
   max_csca_bytes,
-  COMMITMENT_TREE_DEPTH,
   OFAC_TREE_LEVELS,
 } from '../../constants/constants.js';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
