@@ -18,7 +18,7 @@ let QRData: string = testQRData.testQRData;
 
 export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: string, name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-01-1984', gender: string= 'M', pincode: string= '110051', state: string= 'Delhi') {
   let qrDataBytes: any;
-  if(name || dateOfBirth || gender || pincode || state){
+  if(name || dateOfBirth || gender || pincode || state) {
     const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: name , dob: dateOfBirth, gender: gender, pincode: pincode, state: state});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{

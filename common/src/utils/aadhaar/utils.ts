@@ -81,7 +81,7 @@ export const generateTestData = ({
     state,
     photo,
     name,
-  })
+  });
 
   // Signing the newly generated testData
   const signature = signNewTestData(dataToSign, privateKeyPath)
