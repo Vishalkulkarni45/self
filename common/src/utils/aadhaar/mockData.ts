@@ -16,10 +16,17 @@ import { packBytesAndPoseidon } from "../hash.js";
 import { poseidon5 } from "poseidon-lite";
 let QRData: string = testQRData.testQRData;
 
-export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: string, name: string= 'SUMIT KUMAR', dateOfBirth: string= '01-01-1984', gender: string= 'M', pincode: string= '110051', state: string= 'Delhi') {
+export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string) {
+  // Set default values for any parameters that weren't provided
+  const finalName = name ?? 'SUMIT KUMAR';
+  const finalDateOfBirth = dateOfBirth ?? '01-01-1984';
+  const finalGender = gender ?? 'M';
+  const finalPincode = pincode ?? '110051';
+  const finalState = state ?? 'Delhi';
+
   let qrDataBytes: any;
   if(name || dateOfBirth || gender || pincode || state) {
-    const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: name , dob: dateOfBirth, gender: gender, pincode: pincode, state: state});
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{
     qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
@@ -50,21 +57,21 @@ export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: st
     '0x' + bufferToHex(Buffer.from(pk.export({ format: 'jwk' }).n as string, 'base64url'))
   );
 
-  const paddedName = name
+  const paddedName = finalName
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
 
-  const [dob, mob, yob] = dateOfBirth.split('-');
+  const [dob, mob, yob] = finalDateOfBirth.split('-');
 
-  const nullifierArgs = [stringToAsciiArray(gender)[0], ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
+  const nullifierArgs = [stringToAsciiArray(finalGender)[0], ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
   const nullifier = packBytesAndPoseidon(nullifierArgs);
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
   const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
-  const packedCommitmentArgs = [3, ...stringToAsciiArray(pincode), ...stringToAsciiArray(state.padEnd(31, '\0')), ...stringToAsciiArray('1234')];
+  const packedCommitmentArgs = [3, ...stringToAsciiArray(finalPincode), ...stringToAsciiArray(finalState.padEnd(31, '\0')), ...stringToAsciiArray('1234')];
   const packedCommitment = packBytesAndPoseidon(packedCommitmentArgs);
 
   // Final commitment hash using Poseidon(5) - matches circuit structure
