@@ -67,3 +67,5 @@ export {
   calculateUserIdentifierHash,
   getSolidityPackedUserContextData,
 };
+
+export { prepareAadhaarTestData } from './src/utils/aadhaar/mockData.js';

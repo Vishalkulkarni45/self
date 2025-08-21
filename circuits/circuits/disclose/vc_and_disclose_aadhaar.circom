@@ -57,8 +57,6 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input currentMonth;
     signal input currentDay;
 
-
-
     signal input ofac_name_dob_smt_leaf_key;
     signal input ofac_name_dob_smt_root;
     signal input ofac_name_dob_smt_siblings[namedobTreeLevels];
@@ -66,7 +64,6 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input ofac_name_yob_smt_leaf_key;
     signal input ofac_name_yob_smt_root;
     signal input ofac_name_yob_smt_siblings[nameyobTreeLevels];
-
 
     signal input merkle_root;
     signal input leaf_depth;

@@ -35,6 +35,7 @@ import { DscVerifierId, RegisterVerifierId } from "@selfxyz/common";
 
 export type PassportProof = IIdentityVerificationHubV1.PassportProofStruct;
 export type RegisterCircuitProof = IRegisterCircuitVerifier.RegisterCircuitProofStruct;
+export type RegisterAadhaarCircuitProof = IRegisterCircuitVerifier.RegisterAadhaarCircuitProofStruct;
 export type DscCircuitProof = IDscCircuitVerifier.DscCircuitProofStruct;
 export type VcAndDiscloseHubProof = IIdentityVerificationHubV1.VcAndDiscloseHubProofStruct;
 export type VcAndDiscloseProof = IVcAndDiscloseCircuitVerifier.VcAndDiscloseProofStruct;

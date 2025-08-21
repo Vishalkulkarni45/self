@@ -49,7 +49,10 @@ library CircuitConstantsV2 {
     /**
      * @notice Index to access the pubkey commitment in the Aadhaar circuit public signals.
      */
-    uint256 constant UIDAI_PUBKEY_COMMITMENT_INDEX = 2;
+    uint256 constant AADHAAR_UIDAI_PUBKEY_COMMITMENT_INDEX = 0;
+    uint256 constant AADHAAR_NULLIFIER_INDEX = 1;
+    uint256 constant AADHAAR_COMMITMENT_INDEX = 2;
+    uint256 constant AADHAAR_TIMESTAMP_INDEX = 3;
 
     // -------------------------------------
     // VC and Disclose Circuit Constants

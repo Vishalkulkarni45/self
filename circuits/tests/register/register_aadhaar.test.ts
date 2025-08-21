@@ -12,7 +12,6 @@ import {
   splitToWords,
 } from '@anon-aadhaar/core';
 import assert from 'assert';
-import { poseidon5 } from 'poseidon-lite';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
 import { customHasher } from '@selfxyz/common/utils/hash';
 import { prepareAadhaarTestData } from '@selfxyz/common/utils/aadhaar/mockData';
@@ -22,10 +21,7 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
 const publicKeyPath = path.join(__dirname, '../../../common/src/utils/aadhaar/assets/testPublicKey.pem');
 
-console.log("privateKeyPath", privateKeyPath);
-console.log("publicKeyPath", publicKeyPath);
-
-describe(' REGISTER AADHAAR Circuit Tests', function () {
+describe('REGISTER AADHAAR Circuit Tests', function () {
   let circuit: any;
   this.beforeAll(async function () {
     this.timeout(0);
@@ -79,7 +75,6 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     }
   });
 
-
   it('should fail when qrdata is tampered', async function () {
     this.timeout(0);
      const { inputs } = prepareAadhaarTestData(privateKeyPath, publicKeyPath);
@@ -124,16 +119,25 @@ describe(' REGISTER AADHAAR Circuit Tests', function () {
     assert(BigInt(out.commitment) === BigInt(commitment));
   });
 
-  it.only("should create the pubkey commitment correctly", async function () {
+  it("should create the pubkey commitment correctly", async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarTestData(privateKeyPath, publicKeyPath);
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
     const expectedPubKeyCommitment = customHasher(inputs.pubKey);
-    console.log("expectedPubKeyCommitment", expectedPubKeyCommitment);
 
     const out = await circuit.getOutput(w, ['pubKeyHash']);
     assert(BigInt(out.pubKeyHash) === BigInt(expectedPubKeyCommitment));
+  })
+
+  it.only("should create the timestamp correctly", async function () {
+    this.timeout(0);
+    const { inputs } = prepareAadhaarTestData(privateKeyPath, publicKeyPath);
+    const w = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(w);
+
+    const out = await circuit.getOutput(w, ['timestamp']);
+    console.log(out.timestamp);
   })
 });

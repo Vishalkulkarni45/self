@@ -173,6 +173,10 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     /// @dev Ensures that the pubkey is valid.
     error InvalidPubkey();
 
+    /// @notice Thrown when the timestamp is invalid.
+    /// @dev Ensures that the timestamp is within 20 minutes of the current block timestamp.
+    error InvalidUidaiTimestamp();
+
     // ====================================================
     // Constructor
     // ====================================================
@@ -238,8 +242,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             );
         } else if (attestationId == AttestationId.AADHAAR) {
             IIdentityRegistryAadhaarV1($._registries[attestationId]).registerCommitment(
-                registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_NULLIFIER_INDEX],
-                registerCircuitProof.pubSignals[CircuitConstantsV2.REGISTER_COMMITMENT_INDEX]
+                registerCircuitProof.pubSignals[CircuitConstantsV2.AADHAAR_NULLIFIER_INDEX],
+                registerCircuitProof.pubSignals[CircuitConstantsV2.AADHAAR_COMMITMENT_INDEX]
             );
         } else {
             revert InvalidAttestationId();
@@ -477,7 +481,6 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     function rootTimestamp(bytes32 attestationId, uint256 root) external view virtual onlyProxy returns (uint256) {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
         address registryAddress = $._registries[attestationId];
-
         if (attestationId == AttestationId.E_PASSPORT) {
             return IIdentityRegistryV1(registryAddress).rootTimestamps(root);
         } else if (attestationId == AttestationId.EU_ID_CARD) {
@@ -706,16 +709,26 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
                 revert InvalidDscCommitmentRoot();
             }
         } else if (attestationId == AttestationId.AADHAAR) {
+            uint256 timestamp = registerCircuitProof.pubSignals[CircuitConstantsV2.AADHAAR_TIMESTAMP_INDEX];
+            // if (timestamp < block.timestamp - 20 minutes) {
+            //     revert InvalidUidaiTimestamp();
+            // }
+
+            // if (timestamp > block.timestamp + 20 minutes) {
+            //     revert InvalidUidaiTimestamp();
+            // }
+
             if (
                 !IIdentityRegistryAadhaarV1($._registries[attestationId]).checkUidaiPubkey(
-                    registerCircuitProof.pubSignals[CircuitConstantsV2.UIDAI_PUBKEY_COMMITMENT_INDEX]
+                    registerCircuitProof.pubSignals[CircuitConstantsV2.AADHAAR_UIDAI_PUBKEY_COMMITMENT_INDEX]
                 )
             ) {
                 revert InvalidPubkey();
-            } else {
-                revert InvalidAttestationId();
             }
+        } else {
+            revert InvalidAttestationId();
         }
+
 
         if (attestationId == AttestationId.E_PASSPORT || attestationId == AttestationId.EU_ID_CARD) {
             require(registerCircuitProof.pubSignals.length == 3, "Invalid pubSignals length");
@@ -748,6 +761,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
                 revert InvalidRegisterProof();
             }
         }
+
     }
 
     /**

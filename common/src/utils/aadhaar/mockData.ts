@@ -29,6 +29,11 @@ export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: st
     const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{
+    name = 'SUMIT KUMAR';
+    dateOfBirth = '01-01-1984';
+    gender = 'M';
+    pincode = '110051';
+    state = 'Delhi';
     qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
   }
 
