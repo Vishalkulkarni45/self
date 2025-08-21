@@ -293,3 +293,142 @@ export function returnNewDateString(timestamp?: string): string {
     newDate.getUTCMilliseconds().toString().padStart(3, '0')
   );
 }
+export const FIELD_POSITIONS = {
+  REFERENCE_ID: 2,
+  NAME: 3,
+  DOB: 4,
+  GENDER: 5,
+  PINCODE: 11,
+  STATE: 13,
+  PHONE_NO: 17,
+  PHOTO: 18
+} as const;
+
+
+function asciiArrayToString(asciiArray: number[]): string {
+  return asciiArray
+    .filter(byte => byte !== 0)
+    .map(byte => String.fromCharCode(byte))
+    .join('');
+}
+
+
+function extractFieldData(data: Uint8Array, delimiterIndices: number[], position: number): number[] {
+  const startIndex = delimiterIndices[position - 1] + 1;
+  const endIndex = delimiterIndices[position];
+
+  const fieldData: number[] = [];
+  for (let i = startIndex; i < endIndex; i++) {
+    fieldData.push(data[i]);
+  }
+
+  return fieldData;
+}
+
+export interface ExtractedQRData {
+  name: string;
+  yob: string;
+  mob: string;
+  dob: string;
+  gender: string;
+  pincode: string;
+  state: string;
+  aadhaarLast4Digits: string;
+  phoneNoLast4Digits: string;
+  timestamp: string;
+}
+
+export function extractQRDataFields(qrData: string | Uint8Array): ExtractedQRData {
+  let qrDataBytes: Uint8Array;
+
+  if (typeof qrData === 'string') {
+    qrDataBytes = convertBigIntToByteArray(BigInt(qrData));
+  } else {
+    qrDataBytes = qrData;
+  }
+
+  const decodedData = decompressByteArray(qrDataBytes);
+  const signedData = decodedData.slice(0, decodedData.length - 256);
+
+  const delimiterIndices: number[] = [];
+  for (let i = 0; i < signedData.length; i++) {
+    if (signedData[i] === 255) {
+      delimiterIndices.push(i);
+      if (delimiterIndices.length === 18) {
+        break;
+      }
+    }
+  }
+
+  if (delimiterIndices.length < 18) {
+    throw new Error(`Insufficient delimiters found: ${delimiterIndices.length}/18`);
+  }
+
+  const aadhaarLast4Digits = asciiArrayToString([
+    signedData[5], signedData[6], signedData[7], signedData[8]
+  ]);
+
+  const nameData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.NAME);
+  const name = asciiArrayToString(nameData).trim();
+
+  const dobData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.DOB);
+  const dob = asciiArrayToString([dobData[0], dobData[1]]); // day
+  const mob = asciiArrayToString([dobData[3], dobData[4]]); // month
+  const yob = asciiArrayToString([dobData[6], dobData[7], dobData[8], dobData[9]]); // year
+
+  const genderData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.GENDER);
+  const gender = asciiArrayToString(genderData);
+
+  // Extract pincode
+  const pincodeData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.PINCODE);
+  const pincode = asciiArrayToString(pincodeData);
+
+  // Extract state
+  const stateData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.STATE);
+  const state = asciiArrayToString(stateData).trim();
+
+  // Extract phone number last 4 digits
+  const phoneData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.PHONE_NO);
+  const phoneNoLast4Digits = asciiArrayToString(phoneData);
+
+  // Extract timestamp (from position after first delimiter)
+  // Timestamp format: YYYYMMDDHHMM (similar to circom implementation)
+  const timestampStartIndex = delimiterIndices[0] + 1;
+  const timestampYear = asciiArrayToString([
+    signedData[timestampStartIndex + 8],
+    signedData[timestampStartIndex + 9],
+    signedData[timestampStartIndex + 10],
+    signedData[timestampStartIndex + 11]
+  ]);
+  const timestampMonth = asciiArrayToString([
+    signedData[timestampStartIndex + 12],
+    signedData[timestampStartIndex + 13]
+  ]);
+  const timestampDay = asciiArrayToString([
+    signedData[timestampStartIndex + 14],
+    signedData[timestampStartIndex + 15]
+  ]);
+  const timestampHour = asciiArrayToString([
+    signedData[timestampStartIndex + 16],
+    signedData[timestampStartIndex + 17]
+  ]);
+  const timestampMinute = asciiArrayToString([
+    signedData[timestampStartIndex + 18],
+    signedData[timestampStartIndex + 19]
+  ]);
+
+  const timestamp = `${timestampYear}-${timestampMonth}-${timestampDay} ${timestampHour}:${timestampMinute}`;
+
+  return {
+    name,
+    yob,
+    mob,
+    dob,
+    gender,
+    pincode,
+    state,
+    aadhaarLast4Digits,
+    phoneNoLast4Digits,
+    timestamp
+  };
+}
