@@ -57,9 +57,6 @@ describe('Aadhaar QR Data Extractor1', function () {
       data: Uint8ArrayToCharArray(qrDataPadded),
       qrDataPaddedLength: qrDataPaddedLen,
       delimiterIndices: delimiterIndices,
-      currentYear: 2025,
-      currentMonth: 8,
-      currentDay: 21,
     });
 
     const out = await circuit.getOutput(witness, [
@@ -73,7 +70,6 @@ describe('Aadhaar QR Data Extractor1', function () {
       'aadhaar_last_4digits[4]',
       'ph_no_last_4digits[4]',
       'timestamp',
-      'age',
     ]);
 
     await circuit.checkConstraints(witness);
@@ -123,8 +119,6 @@ describe('Aadhaar QR Data Extractor1', function () {
         assert(Number(out[`state[${i}]`]) === 'Delhi'.padEnd(31, '\0').split('').map((char) => char.charCodeAt(0))[i], `STATE mismatch at index ${i}`);
     }
 
-    assert(Number(out.age) === 41);
-
   });
 
   it('should extract qr data from the new test data', async function () {
@@ -150,9 +144,6 @@ describe('Aadhaar QR Data Extractor1', function () {
       data: Uint8ArrayToCharArray(qrDataPadded),
       qrDataPaddedLength: qrDataPaddedLen,
       delimiterIndices: delimiterIndices,
-      currentYear: 2025,
-      currentMonth: 8,
-      currentDay: 21,
     });
 
     const out = await circuit.getOutput(witness, [
@@ -166,7 +157,6 @@ describe('Aadhaar QR Data Extractor1', function () {
       'aadhaar_last_4digits[4]',
       'ph_no_last_4digits[4]',
       'timestamp',
-      'age',
     ]);
 
     await circuit.checkConstraints(witness);
@@ -201,8 +191,6 @@ describe('Aadhaar QR Data Extractor1', function () {
     for (let i = 0; i < 31; i++) {
         assert(Number(out[`state[${i}]`]) === 'Karnataka'.padEnd(31, '\0').split('').map((char) => char.charCodeAt(0))[i], `STATE mismatch at index ${i}`);
     }
-
-    assert(Number(out.age) === 12);
 
 
   });

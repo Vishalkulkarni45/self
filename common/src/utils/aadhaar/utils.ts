@@ -246,3 +246,26 @@ export const createCustomV2TestData = ({
 
   return newData
 }
+
+export function calculateAge(dob: string, mob: string, yob: string): { age: number, currentYear: number, currentMonth: number, currentDay: number } {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+  const currentDay = currentDate.getDate();
+
+  const birthYear = parseInt(yob);
+  const birthMonth = parseInt(mob);
+  const birthDay = parseInt(dob);
+
+  let age = currentYear - birthYear;
+
+  if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
+    age--;
+  }
+  return {
+    age,
+    currentYear,
+    currentMonth,
+    currentDay
+  };
+}

@@ -1,6 +1,7 @@
 pragma circom 2.1.9;
 
 include "circomlib/circuits/bitify.circom";
+include "circomlib/circuits/comparators.circom";
 include "../utils/aadhaar/disclose/verify_commitment.circom";
 include "@openpassport/zk-email-circuits/utils/bytes.circom";
 include "../utils/aadhaar/extractQrData.circom";
@@ -50,6 +51,12 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input state[maxFieldByteSize()];
     signal input ph_no_last_4digits[4];
     signal input photoHash;
+
+    signal input minimumAge;
+    signal input currentYear;
+    signal input currentMonth;
+    signal input currentDay;
+
 
 
     signal input ofac_name_dob_smt_leaf_key;
@@ -116,6 +123,11 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     ofac_name_yob.smt_root <== ofac_name_yob_smt_root;
     ofac_name_yob.smt_siblings <== ofac_name_yob_smt_siblings;
 
+    // verify age is greater than minimum age
+    signal age <== AgeExtractor()(yob, mob, dob, currentYear, currentMonth, currentDay);
+
+    signal output isMinimumAgeValid <== GreaterEqThan(4)([age, minimumAge]);
+
     // reveal fields based on selector
 
     signal revealData[118];
@@ -171,6 +183,10 @@ component main { public
         merkle_root,
         ofac_name_dob_smt_root,
         ofac_name_yob_smt_root,
-        attestation_id
+        attestation_id,
+        minimumAge,
+        currentYear,
+        currentMonth,
+        currentDay
     ]
 } = VC_AND_DISCLOSE_Aadhaar(33, 64, 64);

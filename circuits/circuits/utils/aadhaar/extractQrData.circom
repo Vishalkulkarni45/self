@@ -370,9 +370,6 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
 
-    signal input currentYear;
-    signal input currentMonth;
-    signal input currentDay;
 
     // Outputs are in ascii format
     signal output name[nameMaxLength()];
@@ -477,13 +474,4 @@ template EXTRACT_QR_DATA(maxDataLength) {
     timestampExtractor.nDelimitedData <== nDelimitedData;
     timestamp <== timestampExtractor.timestamp;
 
-    // Extract age
-    component ageExtractor = AgeExtractor();
-    ageExtractor.DOB_year <== yob;
-    ageExtractor.DOB_month <== mob;
-    ageExtractor.DOB_day <== dob;
-    ageExtractor.currentYear <== currentYear;
-    ageExtractor.currentMonth <== currentMonth;
-    ageExtractor.currentDay <== currentDay;
-    age <== ageExtractor.age;
 }

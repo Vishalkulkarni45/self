@@ -29,6 +29,7 @@ import { stringToAsciiArray } from '../utils/aadhaar/utils.js';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
 import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
 import { fileURLToPath } from 'url';
+import { calculateAge } from '@selfxyz/common/utils/aadhaar/utils';
 
 const { testQRData } = jsonData;
 
@@ -48,14 +49,16 @@ function selectorToField(bits: number[]): bigint {
   return result;
 }
 
-function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01-01-1984') {
+function prepareTestData(name?: string, dateOfBirth?: string) {
 
   let qrDataBytes: any;
 
-  if(name){
+  if(name && dateOfBirth){
     const newTestData = generateTestData({ data: testCustomData, name: name , dob: dateOfBirth});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{
+    name = 'Sumit Kumar';
+    dateOfBirth = '01-01-1984';
     qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
   }
 
@@ -64,6 +67,7 @@ function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01
   const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
 
   const [dob, mob, yob] = dateOfBirth.split('-');
+  const {age, currentYear, currentMonth, currentDay } = calculateAge(dob, mob, yob);
 
   const paddedName = name
     .padEnd(62, '\0')
@@ -139,6 +143,10 @@ function prepareTestData(name: string = 'Sumit Kumar', dateOfBirth: string = '01
     ofac_name_yob_smt_root: formatInput(ofac_name_yob_smt_root),
     ofac_name_yob_smt_siblings: formatInput(ofac_name_yob_smt_siblings),
     selector: '0',
+    minimumAge: formatInput(age - 2),
+    currentYear: formatInput(currentYear),
+    currentMonth: formatInput(currentMonth),
+    currentDay: formatInput(currentDay),
   };
 
   return {
@@ -183,7 +191,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     await circuit.checkConstraints(w);
 
     const revealedData = await circuit.getOutput(w, [
-      `revealData_packed[4]`
+      `revealData_packed[4]`,
+      'isMinimumAgeValid'
     ]);
     const revealedData_packed = [
                 revealedData['revealData_packed[0]'],
@@ -194,7 +203,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     assert(revealedDataUnpacked[0] === 'M', 'Gender should be Male');
-
+    assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
@@ -263,6 +272,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     const revealedData = await circuit.getOutput(w, [
       `revealData_packed[4]`,
+      'isMinimumAgeValid'
     ]);
 
     const revealedData_packed = [
@@ -279,5 +289,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     assert(revealedDataUnpacked[117].charCodeAt(0) === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
     assert(revealedDataUnpacked[116].charCodeAt(0) === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
+    assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
   });
 });
