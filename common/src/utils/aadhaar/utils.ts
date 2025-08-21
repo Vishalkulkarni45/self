@@ -3,7 +3,6 @@ import {
   decompressByteArray,
   returnFullId,
   rawDataToCompressedQR,
-  returnNewDateString,
   replaceBytesBetween,
   IdFields,
   extractPhoto,
@@ -57,6 +56,7 @@ export const generateTestData = ({
   state,
   photo,
   name,
+  timestamp,
 }: {
   privateKeyPath: string
   data: string
@@ -66,6 +66,7 @@ export const generateTestData = ({
   state?: string
   photo?: boolean
   name?: string
+  timestamp?: string
 }) => {
   const qrDataBytes = convertBigIntToByteArray(BigInt(data))
   const decodedData = decompressByteArray(qrDataBytes)
@@ -81,6 +82,7 @@ export const generateTestData = ({
     state,
     photo,
     name,
+    timestamp,
   });
 
   // Signing the newly generated testData
@@ -112,6 +114,7 @@ export const createCustomV2TestData = ({
   state,
   photo,
   name,
+  timestamp,
 }: {
   signedData: Uint8Array
   dob?: string
@@ -120,6 +123,7 @@ export const createCustomV2TestData = ({
   state?: string
   photo?: boolean
   name?: string
+  timestamp?: string
 }) => {
   const allDataParsed: number[][] = []
   const delimiterIndices: number[] = []
@@ -141,7 +145,7 @@ export const createCustomV2TestData = ({
   }
 
   // Set new timestamp to the time of the signature
-  const newDateString = returnNewDateString()
+  const newDateString = returnNewDateString(timestamp)
   const newTimestamp = new TextEncoder().encode(newDateString)
   const signedDataWithNewTimestamp = replaceBytesBetween(
     signedData,
@@ -268,4 +272,24 @@ export function calculateAge(dob: string, mob: string, yob: string): { age: numb
     currentMonth,
     currentDay
   };
+}
+
+export function returnNewDateString(timestamp?: string): string {
+  const newDate = timestamp ? new Date(+timestamp) : new Date();
+
+  // Convert the UTC date to IST by adding 5 hours and 30 minutes
+  const offsetHours = 5;
+  const offsetMinutes = 30;
+  newDate.setUTCHours(newDate.getUTCHours() + offsetHours);
+  newDate.setUTCMinutes(newDate.getUTCMinutes() + offsetMinutes);
+
+  return (
+    newDate.getUTCFullYear().toString() +
+    (newDate.getUTCMonth() + 1).toString().padStart(2, '0') +
+    newDate.getUTCDate().toString().padStart(2, '0') +
+    newDate.getUTCHours().toString().padStart(2, '0') +
+    newDate.getUTCMinutes().toString().padStart(2, '0') +
+    newDate.getUTCSeconds().toString().padStart(2, '0') +
+    newDate.getUTCMilliseconds().toString().padStart(3, '0')
+  );
 }

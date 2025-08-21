@@ -131,13 +131,12 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     assert(BigInt(out.pubKeyHash) === BigInt(expectedPubKeyCommitment));
   })
 
-  it.only("should create the timestamp correctly", async function () {
+  it("should create the timestamp correctly", async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarTestData(privateKeyPath, publicKeyPath);
+    const { inputs } = prepareAadhaarTestData(privateKeyPath, publicKeyPath, "Some Guy", undefined, undefined, undefined, undefined, new Date(Date.now() - 30 * 60 * 1000).getTime().toString());
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
     const out = await circuit.getOutput(w, ['timestamp']);
-    console.log(out.timestamp);
   })
 });

@@ -16,9 +16,9 @@ import { packBytesAndPoseidon } from "../hash.js";
 import { poseidon5 } from "poseidon-lite";
 let QRData: string = testQRData.testQRData;
 
-export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string) {
+export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
   // Set default values for any parameters that weren't provided
-  const finalName = name ?? 'SUMIT KUMAR';
+  const finalName = name ?? 'Sumit Kumar';
   const finalDateOfBirth = dateOfBirth ?? '01-01-1984';
   const finalGender = gender ?? 'M';
   const finalPincode = pincode ?? '110051';
@@ -26,10 +26,10 @@ export function prepareAadhaarTestData(privateKeyPath: string, publicKeyPath: st
 
   let qrDataBytes: any;
   if(name || dateOfBirth || gender || pincode || state) {
-    const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState});
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState, timestamp: timestamp});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   }else{
-    name = 'SUMIT KUMAR';
+    name = 'Sumit Kumar';
     dateOfBirth = '01-01-1984';
     gender = 'M';
     pincode = '110051';

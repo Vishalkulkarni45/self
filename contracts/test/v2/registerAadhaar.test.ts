@@ -57,7 +57,7 @@ describe("Aadhaar Registration test", function () {
     });
   });
 
-  describe.only("Identity Commitment", () => {
+  describe("Identity Commitment", () => {
     let aadhaarData: any;
     let registerProof: any;
     let registerSecret: string;
@@ -136,12 +136,41 @@ describe("Aadhaar Registration test", function () {
 
       await expect(
         deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, newRegisterProof),
-      ).to.be.revertedWithCustomError(deployedActors.hub, "InvalidUidaiPubkey");
+      ).to.be.revertedWithCustomError(deployedActors.hub, "InvalidPubkey");
+    });
+
+    it("should not fail if timestamp is within 20 minutes", async () => {
+      const newAadhaarData = prepareAadhaarTestData(
+        privateKeyPath,
+        publicKeyPath,
+        'Sumit Kumar',
+        '01-01-1984',
+        'M',
+        '110051',
+        'WB',
+        //timestamp 10 minutes ago and converted to timestamp string
+        new Date(Date.now() - 10 * 60 * 1000).getTime().toString()
+      );
+      const newRegisterProof = await generateRegisterAadhaarProof(registerSecret, newAadhaarData.inputs);
+
+      await expect(
+        deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, newRegisterProof),
+      ).to.not.be.reverted;
     });
 
     it("should fail with InvalidUidaiTimestamp when UIDAI timestamp is not within 20 minutes of current time", async () => {
-      const newRegisterProof = structuredClone(registerProof);
-      newRegisterProof.pubSignals[3] = 0n;
+      const newAadhaarData = prepareAadhaarTestData(
+        privateKeyPath,
+        publicKeyPath,
+        'Sumit Kumar',
+        '01-01-1984',
+        'M',
+        '110051',
+        'WB',
+        //timestamp 30 minutes ago and converted to timestamp string
+        new Date(Date.now() - 30 * 60 * 1000).getTime().toString()
+      );
+      const newRegisterProof = await generateRegisterAadhaarProof(registerSecret, newAadhaarData.inputs);
 
       await expect(
         deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, newRegisterProof),

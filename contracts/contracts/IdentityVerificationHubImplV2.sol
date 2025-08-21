@@ -710,13 +710,13 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             }
         } else if (attestationId == AttestationId.AADHAAR) {
             uint256 timestamp = registerCircuitProof.pubSignals[CircuitConstantsV2.AADHAAR_TIMESTAMP_INDEX];
-            // if (timestamp < block.timestamp - 20 minutes) {
-            //     revert InvalidUidaiTimestamp();
-            // }
+            if (timestamp < block.timestamp - 20 minutes) {
+                revert InvalidUidaiTimestamp();
+            }
 
-            // if (timestamp > block.timestamp + 20 minutes) {
-            //     revert InvalidUidaiTimestamp();
-            // }
+            if (timestamp > block.timestamp + 20 minutes) {
+                revert InvalidUidaiTimestamp();
+            }
 
             if (
                 !IIdentityRegistryAadhaarV1($._registries[attestationId]).checkUidaiPubkey(

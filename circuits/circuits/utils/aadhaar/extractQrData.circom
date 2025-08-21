@@ -80,8 +80,6 @@ template AgeExtractor() {
     signal isHigherDayOnSameMonth <== monthEq * dayGt;
 
     signal output age <== ageByYear + (monthGt + isHigherDayOnSameMonth);
-
-
 }
 
 /// @title TimestampExtractor
@@ -100,13 +98,14 @@ template TimestampExtractor(maxDataLength) {
     signal output month <== DigitBytesToInt(2)([nDelimitedData[13], nDelimitedData[14]]);
     signal output day <== DigitBytesToInt(2)([nDelimitedData[15], nDelimitedData[16]]);
     signal hour <== DigitBytesToInt(2)([nDelimitedData[17], nDelimitedData[18]]);
+    signal minute <== DigitBytesToInt(2)([nDelimitedData[19], nDelimitedData[20]]);
 
     component dateToUnixTime = DigitBytesToTimestamp(2032);
     dateToUnixTime.year <== year;
     dateToUnixTime.month <== month;
     dateToUnixTime.day <== day;
     dateToUnixTime.hour <== hour;
-    dateToUnixTime.minute <== 0;
+    dateToUnixTime.minute <== minute;
     dateToUnixTime.second <== 0;
 
     timestamp <== dateToUnixTime.out - 19800; // 19800 is the offset for IST
