@@ -76,7 +76,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
 
     // verify commitment is part of the merkle tree
-    VERIFY_COMMITMENT(nLevels)(
+    signal output nullifier <== VERIFY_COMMITMENT_GENERATE_NULLIFIER(nLevels)(
         attestation_id,
         secret,
         qrDataHash,

@@ -14,7 +14,7 @@ include "../extractQrData.circom";
 /// @input merkletree_size Actual size of the merkle tree
 /// @input path Path to the user's commitment in the merkle tree
 /// @input siblings Siblings of the user's commitment in the merkle tree
-template VERIFY_COMMITMENT(nLevels) {
+template VERIFY_COMMITMENT_GENERATE_NULLIFIER(nLevels) {
     signal input attestation_id;
     signal input secret;
     signal input qrDataHash;
@@ -58,7 +58,7 @@ template VERIFY_COMMITMENT(nLevels) {
         nullifierHasher.in[i + 71] <== aadhaar_last_4digits[i];
     }
 
-    signal nullifier <== nullifierHasher.out;
+    signal output nullifier <== nullifierHasher.out;
 
     component packedCommitment = PackBytesAndPoseidon(42);
     packedCommitment.in[0] <== attestation_id;
