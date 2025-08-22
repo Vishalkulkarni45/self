@@ -8,9 +8,8 @@ import { formatInput } from '../../../common/src/utils/circuits/generateInputs.j
 import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
 import { fileURLToPath } from 'url';
 import {
-  REVEAL_DATA_INDICES,
   createSelector,
-  SELECTOR_BITS
+  extractField
 } from '../../../common/src/utils/aadhaar/constants.js';
 import { prepareAadhaarDiscloseTestData } from '@selfxyz/common/utils/aadhaar/mockData';
 import { SMT } from '@openpassport/zk-kit-smt';
@@ -34,16 +33,14 @@ nameAndYob_smt.import(nameAndYobAadhaarjson);
 // Create Merkle tree at module level
 const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
 
-//Converts 119 selctor to single field
-function selectorToField(bits: number[]): bigint {
-  if (bits.length !== 119) throw new Error('Input must be 119 bits');
-  let result = 0n;
-  for (let i = 0; i < 119; i++) {
-    if (bits[i]) {
-      result += 1n << BigInt(i);
-    }
-  }
-  return result;
+// Helper function to get packed reveal data from circuit output
+function getPackedRevealData(revealedData: any): string[] {
+  return [
+    revealedData['revealData_packed[0]'],
+    revealedData['revealData_packed[1]'],
+    revealedData['revealData_packed[2]'],
+    revealedData['revealData_packed[3]'],
+  ];
 }
 
 
@@ -78,9 +75,10 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
 
-    const sel_bits = Array(119).fill(0);
-    sel_bits[0] = 1;
-    inputs.selector = formatInput(selectorToField(sel_bits))[0];
+    // Use createSelector to generate selector for revealing only gender
+    const selector = createSelector(['GENDER']);
+    inputs.selector = formatInput(selector)[0];
+
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -88,40 +86,27 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       `revealData_packed[4]`,
       'isMinimumAgeValid'
     ]);
-    const revealedData_packed = [
-                revealedData['revealData_packed[0]'],
-                revealedData['revealData_packed[1]'],
-                revealedData['revealData_packed[2]'],
-                revealedData['revealData_packed[3]'],
-            ];
+
+    const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
-    // Use constants instead of hardcoded indices
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.GENDER] === 'M', 'Gender should be Male');
+    // Use extractField to get field values
+    const gender = extractField(revealedDataUnpacked, 'GENDER');
+    const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE');
+
+    assert(gender === 'M', 'Gender should be Male');
     assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MINIMUM_AGE].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
+    assert(minimumAge === Number(inputs.minimumAge[0]), 'Minimum Age should match input');
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
-    const sel_bits = Array(119).fill(0);
-    // year selector
-    sel_bits[1] = 1;
-    sel_bits[2] = 1;
-    sel_bits[3] = 1;
-    sel_bits[4] = 1;
-    // month selector
-    sel_bits[5] = 1;
-    sel_bits[6] = 1;
-    // day selector
-    sel_bits[7] = 1;
-    sel_bits[8] = 1;
 
-    // ofac name yob selector
-    sel_bits[118] = 1;
+    // Use createSelector to generate selector for revealing birth date and OFAC check
+    const selector = createSelector(['YEAR_OF_BIRTH', 'MONTH_OF_BIRTH', 'DAY_OF_BIRTH', 'OFAC_NAME_YOB_CHECK']);
+    inputs.selector = formatInput(selector)[0];
 
-    inputs.selector = formatInput(selectorToField(sel_bits))[0];
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -130,43 +115,42 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       'reveal_photoHash',
       'isMinimumAgeValid'
     ]);
-    const revealedData_packed = [
-                revealedData['revealData_packed[0]'],
-                revealedData['revealData_packed[1]'],
-                revealedData['revealData_packed[2]'],
-                revealedData['revealData_packed[3]'],
-            ];
+
+    const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START] === '1', 'YOB should be 1');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START + 1] === '9', 'YOB should be 9');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START + 2] === '8', 'YOB should be 8');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START + 3] === '4', 'YOB should be 4');
+    // Use extractField to get field values
+    const yearOfBirth = extractField(revealedDataUnpacked, 'YEAR_OF_BIRTH');
+    const monthOfBirth = extractField(revealedDataUnpacked, 'MONTH_OF_BIRTH');
+    const dayOfBirth = extractField(revealedDataUnpacked, 'DAY_OF_BIRTH');
+    const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
+    const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE');
 
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MONTH_OF_BIRTH_START] === '0', 'MOB should be 0');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MONTH_OF_BIRTH_START + 1] === '1', 'MOB should be 1');
+    // Verify extracted values
+    assert(yearOfBirth === '1984', 'YOB should be 1984');
+    assert(monthOfBirth === '01', 'MOB should be 01');
+    assert(dayOfBirth === '01', 'DOB should be 01');
+    assert(ofacNameYobCheck === 1, 'OFAC Name YOB should be 1 (not in OFAC list)');
 
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.DAY_OF_BIRTH_START] === '0', 'DOB should be 0');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.DAY_OF_BIRTH_START + 1] === '1', 'DOB should be 1');
-
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.OFAC_NAME_YOB_CHECK].charCodeAt(0) === 1, 'OFAC Name YOB should be 1 (not in OFAC list)');
-
+    // Verify non-revealed fields are null
     for (let i = 9; i < 116; i++) {
       assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
     }
+
     assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
     assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MINIMUM_AGE].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
+    assert(minimumAge === Number(inputs.minimumAge[0]), 'Minimum Age should match input');
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt, 'ABU ABBAS','10-12-1948');
-    const sel_bits = Array(119).fill(0);
-    sel_bits[117] = 1;
-    sel_bits[118] = 1;
-    inputs.selector = formatInput(selectorToField(sel_bits))[0];
+
+    // Use createSelector to generate selector for revealing OFAC checks
+    const selector = createSelector(['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK']);
+    inputs.selector = formatInput(selector)[0];
     inputs.minimumAge = ['100'];
+
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -175,21 +159,23 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       'isMinimumAgeValid'
     ]);
 
-    const revealedData_packed = [
-                revealedData['revealData_packed[0]'],
-                revealedData['revealData_packed[1]'],
-                revealedData['revealData_packed[2]'],
-                revealedData['revealData_packed[3]'],
-            ];
+    const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
+    // Use extractField to get field values
+    const ofacNameDobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_CHECK');
+    const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
+    const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE');
+
+    // Verify non-revealed fields are null
     for (let i = 0; i < 115; i++) {
       assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
     }
 
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.OFAC_NAME_YOB_CHECK].charCodeAt(0) === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.OFAC_NAME_DOB_CHECK].charCodeAt(0) === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
+    // Verify OFAC checks show person is in OFAC list
+    assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
     assert(revealedData.isMinimumAgeValid === '0');
-    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MINIMUM_AGE].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
+    assert(minimumAge === Number(inputs.minimumAge[0]), 'Minimum Age should match input');
   });
 });
