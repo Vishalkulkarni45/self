@@ -182,6 +182,8 @@ export function prepareAadhaarDiscloseTestData(
   merkletree: LeanIMT,
   nameAndDob_smt: SMT,
   nameAndYob_smt: SMT,
+  nameAndDobReverse_smt: SMT,
+  nameAndYobReverse_smt: SMT,
   scope: string,
   secret: string,
   user_identifier: string,
@@ -232,10 +234,22 @@ export function prepareAadhaarDiscloseTestData(
     siblings: ofac_name_yob_smt_siblings,
   } = generateSMTProof(nameAndYob_smt, nameyob_leaf);
 
+  const {
+    root: ofac_name_dob_reverse_smt_root,
+    closestleaf: ofac_name_dob_reverse_smt_leaf_key,
+    siblings: ofac_name_dob_reverse_smt_siblings,
+  } = generateSMTProof(nameAndDobReverse_smt, namedob_leaf);
+
+  const {
+    root: ofac_name_yob_reverse_smt_root,
+    closestleaf: ofac_name_yob_reverse_smt_leaf_key,
+    siblings: ofac_name_yob_reverse_smt_siblings,
+  } = generateSMTProof(nameAndYobReverse_smt, nameyob_leaf);
+
   const inputs = {
     attestation_id: '3',
     secret: secret,
-    qrDataHash: sharedData.qrHash,
+    qrDataHash: BigInt(sharedData.qrHash).toString(),
     gender: genderAscii.toString(),
     yob: stringToAsciiArray(sharedData.extractedFields.yob),
     mob: stringToAsciiArray(sharedData.extractedFields.mob),
@@ -246,23 +260,29 @@ export function prepareAadhaarDiscloseTestData(
     state: stringToAsciiArray(sharedData.extractedFields.state.padEnd(31, '\0')),
     ph_no_last_4digits: stringToAsciiArray(sharedData.extractedFields.phoneNoLast4Digits),
     photoHash: formatInput(BigInt(sharedData.photoHash)),
-    merkle_root: formatInput(merkletree.root),
+    merkle_root: formatInput(BigInt(merkletree.root)),
     leaf_depth: formatInput(leaf_depth),
     path: formatInput(merkle_path),
     siblings: formatInput(siblings),
-    ofac_name_dob_smt_leaf_key: formatInput(ofac_name_dob_smt_leaf_key),
-    ofac_name_dob_smt_root: formatInput(ofac_name_dob_smt_root),
+    ofac_name_dob_smt_leaf_key: formatInput(BigInt(ofac_name_dob_smt_leaf_key)),
+    ofac_name_dob_smt_root: formatInput(BigInt(ofac_name_dob_smt_root)),
     ofac_name_dob_smt_siblings: formatInput(ofac_name_dob_smt_siblings),
-    ofac_name_yob_smt_leaf_key: formatInput(ofac_name_yob_smt_leaf_key),
-    ofac_name_yob_smt_root: formatInput(ofac_name_yob_smt_root),
+    ofac_name_dob_reverse_smt_leaf_key: formatInput(BigInt(ofac_name_dob_reverse_smt_leaf_key)),
+    ofac_name_dob_reverse_smt_root: formatInput(BigInt(ofac_name_dob_reverse_smt_root)),
+    ofac_name_dob_reverse_smt_siblings: formatInput(ofac_name_dob_reverse_smt_siblings),
+    ofac_name_yob_smt_leaf_key: formatInput(BigInt(ofac_name_yob_smt_leaf_key)),
+    ofac_name_yob_smt_root: formatInput(BigInt(ofac_name_yob_smt_root)),
     ofac_name_yob_smt_siblings: formatInput(ofac_name_yob_smt_siblings),
+    ofac_name_yob_reverse_smt_leaf_key: formatInput(BigInt(ofac_name_yob_reverse_smt_leaf_key)),
+    ofac_name_yob_reverse_smt_root: formatInput(BigInt(ofac_name_yob_reverse_smt_root)),
+    ofac_name_yob_reverse_smt_siblings: formatInput(ofac_name_yob_reverse_smt_siblings),
     selector: '0',
     minimumAge: formatInput(age - 2),
     currentYear: formatInput(currentYear),
     currentMonth: formatInput(currentMonth),
     currentDay: formatInput(currentDay),
-    scope: formatInput(scope),
-    user_identifier: formatInput(user_identifier),
+    scope: formatInput(BigInt(scope)),
+    user_identifier: formatInput(BigInt(user_identifier)),
   };
 
   return {
