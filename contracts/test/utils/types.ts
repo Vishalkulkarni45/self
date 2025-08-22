@@ -77,6 +77,7 @@ export interface DeployedActorsV2 {
   registryAadhaarImpl: IdentityRegistryAadhaarImplV1;
   registryAadhaar: IdentityRegistryAadhaarImplV1;
   vcAndDisclose: VcAndDiscloseVerifier;
+  vcAndDiscloseAadhaar: VcAndDiscloseAadhaarVerifier;
   aadhaarPubkey: bigint;
   vcAndDiscloseId: VcAndDiscloseIdVerifier;
   register: RegisterVerifier;

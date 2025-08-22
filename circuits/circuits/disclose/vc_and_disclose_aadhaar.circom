@@ -174,7 +174,6 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     var revealed_data_packed_chunk_length = computeIntChunkLength(119);
     signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(119)(revealData);
-
 }
 
 component main { public

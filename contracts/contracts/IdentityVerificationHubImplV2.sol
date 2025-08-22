@@ -17,6 +17,7 @@ import {IAadhaarRegisterCircuitVerifier} from "./interfaces/IRegisterCircuitVeri
 import {IDscCircuitVerifier} from "./interfaces/IDscCircuitVerifier.sol";
 import {CircuitConstantsV2} from "./constants/CircuitConstantsV2.sol";
 import {Formatter} from "./libraries/Formatter.sol";
+import {VcAndDiscloseProof} from "./interfaces/IVcAndDiscloseCircuitVerifier.sol";
 
 contract IdentityVerificationHubImplV2 is ImplRoot {
     /// @custom:storage-location erc7201:self.storage.IdentityVerificationHub
@@ -610,7 +611,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _basicVerification(
         SelfStructs.HubInputHeader memory header,
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        VcAndDiscloseProof memory vcAndDiscloseProof,
         bytes calldata userContextData,
         uint256 userIdentifier
     ) internal returns (bytes memory output) {
@@ -828,7 +829,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performScopeCheck(
         uint256 headerScope,
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        VcAndDiscloseProof memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         // Get scope from proof using the scope index from indices
@@ -844,7 +845,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performRootCheck(
         bytes32 attestationId,
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        VcAndDiscloseProof memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
@@ -862,6 +863,10 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             }
         } else if (attestationId == AttestationId.EU_ID_CARD) {
             if (!IIdentityRegistryIdCardV1($._registries[attestationId]).checkIdentityCommitmentRoot(merkleRoot)) {
+                revert InvalidIdentityCommitmentRoot();
+            }
+        } else if (attestationId == AttestationId.AADHAAR) {
+            if (!IIdentityRegistryAadhaarV1($._registries[attestationId]).checkIdentityCommitmentRoot(merkleRoot)) {
                 revert InvalidIdentityCommitmentRoot();
             }
         } else {
@@ -1129,7 +1134,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performUserIdentifierCheck(
         bytes calldata userContextData,
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        VcAndDiscloseProof memory vcAndDiscloseProof,
         bytes32 attestationId,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal pure {

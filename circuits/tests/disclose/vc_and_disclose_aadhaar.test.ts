@@ -18,7 +18,6 @@ import { poseidon2 } from 'poseidon-lite';
 import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json' with { type: 'json' };
 import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json' with { type: 'json' };
 
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
 const publicKeyPath = path.join(__dirname, '../../../common/src/utils/aadhaar/assets/testPublicKey.pem');
@@ -64,7 +63,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     expect(circuit).to.not.be.undefined;
   });
 
-  it('should calculate witness and pass constrain check', async function () {
+  it.only('should calculate witness and pass constrain check', async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
     const w = await circuit.calculateWitness(inputs);

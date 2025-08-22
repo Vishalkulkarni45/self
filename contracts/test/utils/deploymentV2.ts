@@ -13,6 +13,7 @@ import { hashEndpointWithScope } from "@selfxyz/common/utils/scope";
 // Verifier artifacts (local staging)
 import VcAndDiscloseVerifierArtifactLocal from "../../artifacts/contracts/verifiers/local/staging/disclose/Verifier_vc_and_disclose_staging.sol/Verifier_vc_and_disclose_staging.json";
 import VcAndDiscloseIdVerifierArtifactLocal from "../../artifacts/contracts/verifiers/local/staging/disclose/Verifier_vc_and_disclose_id_staging.sol/Verifier_vc_and_disclose_id_staging.json";
+import VcAndDiscloseAadhaarVerifierArtifactLocal from "../../artifacts/contracts/verifiers/local/staging/disclose/Verifier_vc_and_disclose_aadhaar_staging.sol/Verifier_vc_and_disclose_aadhaar_staging.json";
 import RegisterVerifierArtifactLocal from "../../artifacts/contracts/verifiers/local/staging/register/Verifier_register_sha256_sha256_sha256_rsa_65537_4096_staging.sol/Verifier_register_sha256_sha256_sha256_rsa_65537_4096_staging.json";
 import RegisterIdVerifierArtifactLocal from "../../artifacts/contracts/verifiers/local/staging/register_id/Verifier_register_id_sha256_sha256_sha256_rsa_65537_4096_staging.sol/Verifier_register_id_sha256_sha256_sha256_rsa_65537_4096_staging.json";
 import RegisterAadhaarVerifierArtifactLocal from "../../artifacts/contracts/verifiers/local/staging/register/Verifier_register_aadhaar_staging.sol/Verifier_register_aadhaar_staging.json";
@@ -29,6 +30,7 @@ export async function deploySystemFixturesV2(): Promise<DeployedActorsV2> {
   let identityRegistryAadhaarProxy: any;
   let vcAndDiscloseVerifier: any;
   let vcAndDiscloseIdVerifier: any;
+  let vcAndDiscloseAadhaarVerifier: any;
   let registerVerifier: any;
   let registerIdVerifier: any;
   let registerAadhaarVerifier: any;
@@ -71,6 +73,17 @@ export async function deploySystemFixturesV2(): Promise<DeployedActorsV2> {
     );
     vcAndDiscloseIdVerifier = await vcAndDiscloseIdVerifierFactory.connect(owner).deploy();
     await vcAndDiscloseIdVerifier.waitForDeployment();
+  }
+
+  let vcAndDiscloseAadhaarVerifierArtifact;
+  {
+    vcAndDiscloseAadhaarVerifierArtifact = VcAndDiscloseAadhaarVerifierArtifactLocal;
+    const vcAndDiscloseAadhaarVerifierFactory = await ethers.getContractFactory(
+      vcAndDiscloseAadhaarVerifierArtifact.abi,
+      vcAndDiscloseAadhaarVerifierArtifact.bytecode,
+    );
+    vcAndDiscloseAadhaarVerifier = await vcAndDiscloseAadhaarVerifierFactory.connect(owner).deploy();
+    await vcAndDiscloseAadhaarVerifier.waitForDeployment();
   }
 
   // Deploy register verifier
@@ -296,6 +309,7 @@ export async function deploySystemFixturesV2(): Promise<DeployedActorsV2> {
   // Update VC and Disclose verifiers
   await hubContract.updateVcAndDiscloseCircuit(E_PASSPORT, vcAndDiscloseVerifier.target);
   await hubContract.updateVcAndDiscloseCircuit(EU_ID_CARD, vcAndDiscloseIdVerifier.target);
+  await hubContract.updateVcAndDiscloseCircuit(AADHAAR, vcAndDiscloseAadhaarVerifier.target);
 
   // Update register verifiers
   await hubContract.updateRegisterCircuitVerifier(
@@ -336,6 +350,7 @@ export async function deploySystemFixturesV2(): Promise<DeployedActorsV2> {
     registryAadhaar: registryAadhaarContract,
     vcAndDisclose: vcAndDiscloseVerifier,
     vcAndDiscloseId: vcAndDiscloseIdVerifier,
+    vcAndDiscloseAadhaar: vcAndDiscloseAadhaarVerifier,
     aadhaarPubkey: aadhaarPubkeyCommitment,
     register: registerVerifier,
     registerId: RegisterVerifierId.register_sha256_sha256_sha256_rsa_65537_4096,
