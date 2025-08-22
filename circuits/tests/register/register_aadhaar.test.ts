@@ -14,7 +14,7 @@ import {
 import assert from 'assert';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
 import { customHasher } from '@selfxyz/common/utils/hash';
-import { prepareAadhaarRegisterTestData } from '@selfxyz/common/utils/aadhaar/mockData';
+import { prepareAadhaarRegisterTestData } from '@selfxyz/common';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 

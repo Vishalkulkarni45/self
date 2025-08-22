@@ -627,7 +627,11 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             CircuitConstantsV2.DiscloseIndices memory indices =
                 CircuitConstantsV2.getDiscloseIndices(header.attestationId);
             _performRootCheck(header.attestationId, vcAndDiscloseProof, indices);
-            _performCurrentDateCheck(vcAndDiscloseProof, indices);
+            if (header.attestationId == AttestationId.AADHAAR) {
+                _performNumericCurrentDateCheck(vcAndDiscloseProof, indices);
+            } else {
+                _performCurrentDateCheck(vcAndDiscloseProof, indices);
+            }
         }
 
         // Scope 3: Groth16 proof verification
@@ -869,7 +873,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @notice Performs current date validation
      */
     function _performCurrentDateCheck(
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        VcAndDiscloseProof memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         uint256[6] memory dateNum;
@@ -885,21 +889,60 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         }
     }
 
+    function _performNumericCurrentDateCheck(
+        VcAndDiscloseProof memory vcAndDiscloseProof,
+        CircuitConstantsV2.DiscloseIndices memory indices
+    ) internal view {
+        // date is going to be 2025, 12, 13
+        uint256[3] memory dateNum;
+        dateNum[0] = vcAndDiscloseProof.pubSignals[indices.currentDateIndex];
+        dateNum[1] = vcAndDiscloseProof.pubSignals[indices.currentDateIndex + 1];
+        dateNum[2] = vcAndDiscloseProof.pubSignals[indices.currentDateIndex + 2];
+
+        uint256 currentTimestamp = Formatter.proofDateToUnixTimestampNumeric(dateNum);
+        uint256 startOfDay = _getStartOfDayTimestamp();
+
+        if (currentTimestamp < startOfDay - 1 days + 1 || currentTimestamp > startOfDay + 1 days - 1) {
+            revert CurrentDateNotInValidRange();
+        }
+    }
+
     /**
      * @notice Performs Groth16 proof verification
      */
     function _performGroth16ProofVerification(
         bytes32 attestationId,
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof
+        VcAndDiscloseProof memory vcAndDiscloseProof
     ) internal view {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
 
-        if (
-            !IVcAndDiscloseCircuitVerifier($._discloseVerifiers[attestationId]).verifyProof(
-                vcAndDiscloseProof.a, vcAndDiscloseProof.b, vcAndDiscloseProof.c, vcAndDiscloseProof.pubSignals
-            )
-        ) {
-            revert InvalidVcAndDiscloseProof();
+        if (attestationId == AttestationId.E_PASSPORT || attestationId == AttestationId.EU_ID_CARD) {
+            uint256[21] memory pubSignals = new uint256[](21);
+            for (uint256 i = 0; i < 21; i++) {
+                pubSignals[i] = vcAndDiscloseProof.pubSignals[i];
+            }
+            if (
+                !IVcAndDiscloseCircuitVerifier($._discloseVerifiers[attestationId]).verifyProof(
+                    vcAndDiscloseProof.a, vcAndDiscloseProof.b, vcAndDiscloseProof.c, pubSignals
+                )
+            ) {
+                revert InvalidVcAndDiscloseProof();
+            }
+        } else if (attestationId == AttestationId.AADHAAR) {
+            uint256[21] memory pubSignals = new uint256[](21);
+            for (uint256 i = 0; i < 21; i++) {
+                pubSignals[i] = vcAndDiscloseProof.pubSignals[i];
+            }
+
+            if (!
+                !IVcAndDiscloseAadhaarCircuitVerifier($._discloseVerifiers[attestationId]).verifyProof(
+                    vcAndDiscloseProof.a, vcAndDiscloseProof.b, vcAndDiscloseProof.c, pubSignals
+                )
+            ) {
+                revert InvalidVcAndDiscloseProof();
+            }
+        } else {
+            revert InvalidAttestationId();
         }
     }
 

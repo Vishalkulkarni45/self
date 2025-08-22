@@ -231,6 +231,19 @@ library Formatter {
     }
 
     /**
+     * @notice Converts an array of 3 numerical values representing a date into a Unix timestamp.
+     * @dev The input is expected to be in the format [year, month, day] and is not padded with 0s.
+     * @param dateNum An array of 3 unsigned integers representing a date in YYMMDD format.
+     * @return timestamp The Unix timestamp corresponding to the provided date.
+     */
+    function proofDateToUnixTimestampNumeric(uint256[3] memory dateNum) internal pure returns (uint256) {
+        if (dateNum[1] > 12 || dateNum[2] > 31) {
+            revert InvalidDateDigit();
+        }
+        return toTimestamp(dateNum[0], dateNum[1], dateNum[2]);
+    }
+
+    /**
      * @notice Converts a date string in YYMMDD format into a Unix timestamp.
      * @dev Parses the date string by extracting year, month, and day components using substring,
      *      converts each component to an integer, and then computes the timestamp via toTimestamp.
