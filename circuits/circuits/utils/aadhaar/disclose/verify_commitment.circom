@@ -58,7 +58,7 @@ template VERIFY_COMMITMENT(nLevels) {
         nullifierHasher.in[i + 71] <== aadhaar_last_4digits[i];
     }
 
-    signal output nullifier <== nullifierHasher.out;
+    signal nullifier <== nullifierHasher.out;
 
     component packedCommitment = PackBytesAndPoseidon(42);
     packedCommitment.in[0] <== attestation_id;

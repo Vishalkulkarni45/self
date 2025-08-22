@@ -83,7 +83,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     const revealedData = await circuit.getOutput(w, [
       `revealData_packed[4]`,
-      'isMinimumAgeValid'
     ]);
 
     const revealedData_packed = getPackedRevealData(revealedData);
@@ -94,8 +93,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE');
 
     assert(gender === 'M', 'Gender should be Male');
-    assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
-    assert(minimumAge === Number(inputs.minimumAge[0]), 'Minimum Age should match input');
+    assert(minimumAge === 0, 'Minimum Age should be 0');
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
@@ -112,7 +110,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const revealedData = await circuit.getOutput(w, [
       `revealData_packed[4]`,
       'reveal_photoHash',
-      'isMinimumAgeValid'
     ]);
 
     const revealedData_packed = getPackedRevealData(revealedData);
@@ -137,8 +134,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
 
     assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
-    assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
-    assert(minimumAge === Number(inputs.minimumAge[0]), 'Minimum Age should match input');
+    assert(minimumAge === 0, 'Minimum Age should be 0');
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
@@ -155,7 +151,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     const revealedData = await circuit.getOutput(w, [
       `revealData_packed[4]`,
-      'isMinimumAgeValid'
     ]);
 
     const revealedData_packed = getPackedRevealData(revealedData);
@@ -174,7 +169,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     // Verify OFAC checks show person is in OFAC list
     assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
     assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
-    assert(revealedData.isMinimumAgeValid === '0');
-    assert(minimumAge === Number(inputs.minimumAge[0]), 'Minimum Age should match input');
+    assert(minimumAge === 100, 'Minimum Age should be 100');
   });
 });

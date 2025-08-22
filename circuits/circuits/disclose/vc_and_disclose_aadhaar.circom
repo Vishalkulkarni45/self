@@ -125,7 +125,9 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     // verify age is greater than minimum age
     signal age <== AgeExtractor()(yob, mob, dob, currentYear, currentMonth, currentDay);
 
-    signal output isMinimumAgeValid <== GreaterEqThan(7)([age, minimumAge]);
+    signal isAgeGreaterThanMinimumAge <== GreaterEqThan(7)([age, minimumAge]);
+
+    signal isMinimumAgeValid <== (1 - isAgeGreaterThanMinimumAge) * minimumAge ;
 
 
     // reveal fields based on selector
@@ -172,7 +174,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     revealData[116] <== ofac_name_dob.ofacCheckResult * sel_bits[117];
     revealData[117] <== ofac_name_yob.ofacCheckResult * sel_bits[118];
-    revealData[118] <== minimumAge;
+    revealData[118] <== isMinimumAgeValid;
 
     var revealed_data_packed_chunk_length = computeIntChunkLength(119);
     signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(119)(revealData);
