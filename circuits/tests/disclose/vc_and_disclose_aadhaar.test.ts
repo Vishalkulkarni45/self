@@ -93,6 +93,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     assert(revealedDataUnpacked[0] === 'M', 'Gender should be Male');
     assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
+    assert(revealedDataUnpacked[118].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
@@ -120,7 +121,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     const revealedData = await circuit.getOutput(w, [
       `revealData_packed[4]`,
-      'reveal_photoHash'
+      'reveal_photoHash',
+      'isMinimumAgeValid'
     ]);
     const revealedData_packed = [
                 revealedData['revealData_packed[0]'],
@@ -147,6 +149,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
     }
     assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
+    assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
+    assert(revealedDataUnpacked[118].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
@@ -156,6 +160,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     sel_bits[117] = 1;
     sel_bits[118] = 1;
     inputs.selector = formatInput(selectorToField(sel_bits))[0];
+    inputs.minimumAge = ['100'];
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -178,6 +183,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     assert(revealedDataUnpacked[117].charCodeAt(0) === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
     assert(revealedDataUnpacked[116].charCodeAt(0) === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
-    assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
+    assert(revealedData.isMinimumAgeValid === '0');
+    assert(revealedDataUnpacked[118].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
   });
 });
