@@ -77,7 +77,7 @@ export const SELECTOR_BITS = {
   PINCODE: [75, 76, 77, 78, 79, 80] as const,
   STATE: Array.from({ length: MAX_FIELD_BYTE_SIZE }, (_, i) => i + 81) as number[], // indices 81-111
   PHONE_LAST_4_DIGITS: [112, 113, 114, 115] as const,
-  PHOTO_HASH: 116, 
+  PHOTO_HASH: 116,
   OFAC_NAME_DOB_CHECK: 117,
   OFAC_NAME_YOB_CHECK: 118,
 } as const;

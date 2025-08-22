@@ -63,7 +63,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     expect(circuit).to.not.be.undefined;
   });
 
-  it.only('should calculate witness and pass constrain check', async function () {
+  it('should calculate witness and pass constrain check', async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
     const w = await circuit.calculateWitness(inputs);
