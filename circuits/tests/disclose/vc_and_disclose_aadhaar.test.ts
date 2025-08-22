@@ -93,7 +93,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE');
 
     assert(gender === 'M', 'Gender should be Male');
-    assert(minimumAge === 0, 'Minimum Age should be 0');
+    assert(minimumAge.toString() === inputs.minimumAge[0], 'Minimum Age should be 0');
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
@@ -134,7 +134,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
 
     assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
-    assert(minimumAge === 0, 'Minimum Age should be 0');
+    assert(minimumAge.toString() === inputs.minimumAge[0], 'Minimum Age should be 0');
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
@@ -169,6 +169,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     // Verify OFAC checks show person is in OFAC list
     assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
     assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
-    assert(minimumAge === 100, 'Minimum Age should be 100');
+    assert(minimumAge.toString() === '0', 'Minimum Age should be 0');
   });
 });

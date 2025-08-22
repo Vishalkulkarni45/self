@@ -127,7 +127,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     signal isAgeGreaterThanMinimumAge <== GreaterEqThan(7)([age, minimumAge]);
 
-    signal isMinimumAgeValid <== (1 - isAgeGreaterThanMinimumAge) * minimumAge ;
+    signal isMinimumAgeValid <== isAgeGreaterThanMinimumAge * minimumAge ;
 
 
     // reveal fields based on selector
