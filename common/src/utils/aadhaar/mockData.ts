@@ -60,11 +60,11 @@ function computePackedCommitment(extractedFields: ReturnType<typeof extractQRDat
 
 // Helper function to compute final commitment
 function computeCommitment(
+  secret: bigint,
   qrHash: bigint,
   nullifier: bigint,
   packedCommitment: bigint,
-  photoHash: bigint,
-  secret: bigint
+  photoHash: bigint
 ): bigint {
   return poseidon5([
     secret,
