@@ -41,13 +41,13 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
   });
   it('should pass constrain check for circuit with Sha256RSA signature', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath);
+    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });
   it('should pass constrain and output correct nullifier and commitment', async function () {
     this.timeout(0);
-    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath);
+    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -58,7 +58,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should not verify the signature of created from different key', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath);
+    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
     const newTestData = generateTestData({ data: testCustomData });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const decodedData = decompressByteArray(QRDataBytes);
@@ -77,7 +77,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should fail when qrdata is tampered', async function () {
     this.timeout(0);
-     const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath);
+     const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
 
     const newTestData = generateTestData({ data: testCustomData,  gender: 'F' });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
@@ -100,7 +100,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should return different commitment when secret is tampered', async function () {
     this.timeout(0);
-    const { inputs, commitment } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath);
+    const { inputs, commitment } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
     inputs.secret = '1235';
     const w = await circuit.calculateWitness(inputs);
 
@@ -110,7 +110,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should pass for different qr data', async function () {
     this.timeout(0);
-    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, 'KL RAHUL', '18-04-1992');
+    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234', 'KL RAHUL', '18-04-1992');
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -121,7 +121,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it("should create the pubkey commitment correctly", async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath);
+    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -133,7 +133,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it("should create the timestamp correctly", async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, "Some Guy", undefined, undefined, undefined, undefined, new Date(Date.now() - 30 * 60 * 1000).getTime().toString());
+    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234', "Some Guy", undefined, undefined, undefined, undefined, new Date(Date.now() - 30 * 60 * 1000).getTime().toString());
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 

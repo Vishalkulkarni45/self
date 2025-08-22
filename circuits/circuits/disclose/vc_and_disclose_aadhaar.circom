@@ -72,6 +72,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     signal input selector;
     signal input scope;
+    signal input user_identifier;
     // convert selector to 119 bits which acts as a bitmap for the fields to reveal
     signal sel_bits[119] <== Num2Bits(119)(selector);
 
@@ -178,6 +179,8 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     var revealed_data_packed_chunk_length = computeIntChunkLength(119);
     signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(119)(revealData);
+
+    signal dummy <== user_identifier + 2;
 }
 
 component main { public
@@ -188,6 +191,7 @@ component main { public
         attestation_id,
         currentYear,
         currentMonth,
-        currentDay
+        currentDay,
+        user_identifier
     ]
 } = VC_AND_DISCLOSE_Aadhaar(33, 64, 64);

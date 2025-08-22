@@ -60,14 +60,14 @@ function computePackedCommitment(extractedFields: ReturnType<typeof extractQRDat
 
 // Helper function to compute final commitment
 function computeCommitment(
-  extractedFields: ReturnType<typeof extractQRDataFields>,
   qrHash: bigint,
   nullifier: bigint,
   packedCommitment: bigint,
-  photoHash: bigint
+  photoHash: bigint,
+  secret: bigint
 ): bigint {
   return poseidon5([
-    BigInt(extractedFields.phoneNoLast4Digits),
+    secret,
     qrHash,
     nullifier,
     packedCommitment,
@@ -87,7 +87,7 @@ interface SharedQRData {
   photoHash: bigint;
 }
 
-function processQRData(privateKeyPath: string, publicKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string): SharedQRData {
+function processQRData(privateKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string): SharedQRData {
   const finalName = name ?? 'Sumit Kumar';
   const finalDateOfBirth = dateOfBirth ?? '01-01-1984';
   const finalGender = gender ?? 'M';
@@ -127,9 +127,9 @@ function processQRData(privateKeyPath: string, publicKeyPath: string, name?: str
   };
 }
 
-export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
+export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKeyPath: string,secret: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
 
-  const sharedData = processQRData(privateKeyPath, publicKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
+  const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
   const delimiterIndices: number[] = [];
   for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
     if (sharedData.qrDataPadded[i] === 255) {
@@ -153,7 +153,7 @@ export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKey
   const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
-    sharedData.extractedFields,
+    BigInt(secret),
     BigInt(sharedData.qrHash),
     nullifier,
     packedCommitment,
@@ -166,7 +166,7 @@ export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKey
     delimiterIndices: delimiterIndices,
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
-    secret: '1234',
+    secret: secret,
     attestation_id: '3',
   };
 
@@ -179,11 +179,12 @@ export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKey
 
 export function prepareAadhaarDiscloseTestData(
   privateKeyPath: string,
-  publicKeyPath: string,
   merkletree: LeanIMT,
   nameAndDob_smt: SMT,
   nameAndYob_smt: SMT,
   scope: string,
+  secret: string,
+  user_identifier: string,
   name?: string,
   dateOfBirth?: string,
   gender?: string,
@@ -191,7 +192,7 @@ export function prepareAadhaarDiscloseTestData(
   state?: string,
   timestamp?: string,
 ) {
-  const sharedData = processQRData(privateKeyPath, publicKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
+  const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
 
   const {age, currentYear, currentMonth, currentDay } = calculateAge(sharedData.extractedFields.dob, sharedData.extractedFields.mob, sharedData.extractedFields.yob);
 
@@ -200,7 +201,7 @@ export function prepareAadhaarDiscloseTestData(
   const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
-    sharedData.extractedFields,
+    BigInt(secret),
     BigInt(sharedData.qrHash),
     nullifier,
     packedCommitment,
@@ -233,7 +234,7 @@ export function prepareAadhaarDiscloseTestData(
 
   const inputs = {
     attestation_id: '3',
-    secret: '1234',
+    secret: secret,
     qrDataHash: sharedData.qrHash,
     gender: genderAscii.toString(),
     yob: stringToAsciiArray(sharedData.extractedFields.yob),
@@ -261,6 +262,7 @@ export function prepareAadhaarDiscloseTestData(
     currentMonth: formatInput(currentMonth),
     currentDay: formatInput(currentDay),
     scope: formatInput(scope),
+    user_identifier: formatInput(user_identifier),
   };
 
   return {
