@@ -2,40 +2,32 @@ import { expect } from 'chai';
 import { wasm as wasmTester } from 'circom_tester';
 import path from 'path';
 
-import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
-import {
-  convertBigIntToByteArray,
-  decompressByteArray,
-  extractPhoto,
-} from '@anon-aadhaar/core';
-
 import assert from 'assert';
-import jsonData from '../assets/dataInput.json' with { type: 'json' };
-import { packBytesAndPoseidon } from '../../../common/src/utils/hash.js';
-import { poseidon2, poseidon5 } from 'poseidon-lite';
-import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
-import { findIndexInTree, formatInput } from '../../../common/src/utils/circuits/generateInputs.js';
-import {
-  generateMerkleProof,
-  generateSMTProof,
-  getNameDobLeafAadhaar,
-  getNameYobLeafAahaar,
-} from '../../../common/src/utils/trees.js';
-import { COMMITMENT_TREE_DEPTH } from '../../../common/src/constants/constants.js';
-import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json' with { type: 'json' };
-import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json' with { type: 'json' };
-import { SMT } from '@openpassport/zk-kit-smt';
-import { stringToAsciiArray } from '../utils/aadhaar/utils.js';
-import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
+import { formatInput } from '../../../common/src/utils/circuits/generateInputs.js';
+
 import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
 import { fileURLToPath } from 'url';
-import { calculateAge } from '@selfxyz/common/utils/aadhaar/utils';
+import { prepareAadhaarDiscloseTestData } from '@selfxyz/common/utils/aadhaar/mockData';
+import { SMT } from '@openpassport/zk-kit-smt';
+import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
+import { poseidon2 } from 'poseidon-lite';
+import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json' with { type: 'json' };
+import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json' with { type: 'json' };
 
-const { testQRData } = jsonData;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
+const publicKeyPath = path.join(__dirname, '../../../common/src/utils/aadhaar/assets/testPublicKey.pem');
 
-let QRData: string = testQRData;
+// Create SMTs at module level
+const nameAndDob_smt = new SMT(poseidon2, true);
+nameAndDob_smt.import(nameAndDobAadhaarjson);
+
+const nameAndYob_smt = new SMT(poseidon2, true);
+nameAndYob_smt.import(nameAndYobAadhaarjson);
+
+// Create Merkle tree at module level
+const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
 
 //Converts 119 selctor to single field
 function selectorToField(bits: number[]): bigint {
@@ -49,110 +41,7 @@ function selectorToField(bits: number[]): bigint {
   return result;
 }
 
-function prepareTestData(name?: string, dateOfBirth?: string) {
 
-  let qrDataBytes: any;
-
-  if(name && dateOfBirth){
-    const newTestData = generateTestData({ data: testCustomData, name: name , dob: dateOfBirth});
-    qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
-  }else{
-    name = 'Sumit Kumar';
-    dateOfBirth = '01-01-1984';
-    qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
-  }
-
-  const decodedData = decompressByteArray(qrDataBytes);
-  const signedData = decodedData.slice(0, decodedData.length - 256);
-  const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
-
-  const [dob, mob, yob] = dateOfBirth.split('-');
-  const {age, currentYear, currentMonth, currentDay } = calculateAge(dob, mob, yob);
-
-  const paddedName = name
-    .padEnd(62, '\0')
-    .split('')
-    .map((char) => char.charCodeAt(0));
-
-  const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
-  const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
-  const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
-
-  const nullifierArgs = [77, ...stringToAsciiArray(yob), ...stringToAsciiArray(mob), ...stringToAsciiArray(dob), ...paddedName, ...stringToAsciiArray('2697')];
-  const nullifier = packBytesAndPoseidon(nullifierArgs);
-
-
-  const packedCommitmentArgs = [3, ...stringToAsciiArray('110051'), ...stringToAsciiArray('Delhi'.padEnd(31, '\0')), ...stringToAsciiArray('1234')];
-  const packedCommitment = packBytesAndPoseidon(packedCommitmentArgs);
-
-  const commitment = poseidon5([BigInt(1234), BigInt(qrHash), BigInt(nullifier), BigInt(packedCommitment), BigInt(photoHash)]);
-
-  const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
-  tree.insert(BigInt(commitment));
-
-  const nameAndDob_smt = new SMT(poseidon2, true);
-  nameAndDob_smt.import(nameAndDobAadhaarjson);
-
-  const nameAndYob_smt = new SMT(poseidon2, true);
-  nameAndYob_smt.import(nameAndYobAadhaarjson);
-
-  const index = findIndexInTree(tree, BigInt(commitment));
-  const {
-    siblings,
-    path: merkle_path,
-    leaf_depth,
-  } = generateMerkleProof(tree, index, COMMITMENT_TREE_DEPTH);
-
-  const namedob_leaf = getNameDobLeafAadhaar(name, yob, mob, dob);
-  const nameyob_leaf = getNameYobLeafAahaar(name, yob);
-
-  const {
-    root: ofac_name_dob_smt_root,
-    closestleaf: ofac_name_dob_smt_leaf_key,
-    siblings: ofac_name_dob_smt_siblings,
-  } = generateSMTProof(nameAndDob_smt, namedob_leaf);
-
-  const {
-    root: ofac_name_yob_smt_root,
-    closestleaf: ofac_name_yob_smt_leaf_key,
-    siblings: ofac_name_yob_smt_siblings,
-  } = generateSMTProof(nameAndYob_smt, nameyob_leaf);
-
-  const inputs = {
-    attestation_id: '3',
-    secret: '1234',
-    qrDataHash: qrHash,
-    gender: '77',
-    yob:stringToAsciiArray(yob),
-    mob:stringToAsciiArray(mob),
-    dob:stringToAsciiArray(dob),
-    name: formatInput(paddedName),
-    aadhaar_last_4digits: stringToAsciiArray('2697'),
-    pincode: stringToAsciiArray('110051'),
-    state: stringToAsciiArray('Delhi'.padEnd(31, '\0')),
-    ph_no_last_4digits: stringToAsciiArray('1234'),
-    photoHash: formatInput(BigInt(photoHash)),
-    merkle_root: formatInput(tree.root),
-    leaf_depth: formatInput(leaf_depth),
-    path: formatInput(merkle_path),
-    siblings: formatInput(siblings),
-    ofac_name_dob_smt_leaf_key: formatInput(ofac_name_dob_smt_leaf_key),
-    ofac_name_dob_smt_root: formatInput(ofac_name_dob_smt_root),
-    ofac_name_dob_smt_siblings: formatInput(ofac_name_dob_smt_siblings),
-    ofac_name_yob_smt_leaf_key: formatInput(ofac_name_yob_smt_leaf_key),
-    ofac_name_yob_smt_root: formatInput(ofac_name_yob_smt_root),
-    ofac_name_yob_smt_siblings: formatInput(ofac_name_yob_smt_siblings),
-    selector: '0',
-    minimumAge: formatInput(age - 2),
-    currentYear: formatInput(currentYear),
-    currentMonth: formatInput(currentMonth),
-    currentDay: formatInput(currentDay),
-  };
-
-  return {
-    inputs,
-  };
-}
 
 describe(' VC and Disclose Aadhaar Circuit Tests', function () {
   let circuit: any;
@@ -175,14 +64,14 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('should calculate witness and pass constrain check', async function () {
     this.timeout(0);
-    const { inputs } = prepareTestData();
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });
 
   it('should reveal gender only', async function () {
     this.timeout(0);
-    const { inputs } = prepareTestData();
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
 
     const sel_bits = Array(119).fill(0);
     sel_bits[0] = 1;
@@ -208,7 +97,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
-    const { inputs } = prepareTestData();
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt);
     const sel_bits = Array(119).fill(0);
     // year selector
     sel_bits[1] = 1;
@@ -262,7 +151,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
     this.timeout(0);
-    const { inputs } = prepareTestData('ABU ABBAS','10-12-1948');
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, publicKeyPath, tree, nameAndDob_smt, nameAndYob_smt, 'ABU ABBAS','10-12-1948');
     const sel_bits = Array(119).fill(0);
     sel_bits[117] = 1;
     sel_bits[118] = 1;
