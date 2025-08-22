@@ -183,12 +183,13 @@ export function prepareAadhaarDiscloseTestData(
   merkletree: LeanIMT,
   nameAndDob_smt: SMT,
   nameAndYob_smt: SMT,
+  scope: string,
   name?: string,
   dateOfBirth?: string,
   gender?: string,
   pincode?: string,
   state?: string,
-  timestamp?: string
+  timestamp?: string,
 ) {
   const sharedData = processQRData(privateKeyPath, publicKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
 
@@ -259,6 +260,7 @@ export function prepareAadhaarDiscloseTestData(
     currentYear: formatInput(currentYear),
     currentMonth: formatInput(currentMonth),
     currentDay: formatInput(currentDay),
+    scope: formatInput(scope),
   };
 
   return {

@@ -71,12 +71,14 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input siblings[nLevels];
 
     signal input selector;
+    signal input scope;
     // convert selector to 119 bits which acts as a bitmap for the fields to reveal
     signal sel_bits[119] <== Num2Bits(119)(selector);
 
+    signal output nullifier <== Poseidon(2)([secret, scope]);
 
     // verify commitment is part of the merkle tree
-    signal output nullifier <== VERIFY_COMMITMENT_GENERATE_NULLIFIER(nLevels)(
+    VERIFY_COMMITMENT(nLevels)(
         attestation_id,
         secret,
         qrDataHash,
