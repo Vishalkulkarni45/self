@@ -3,6 +3,34 @@ export const MAX_FIELD_BYTE_SIZE = 31;
 export const NAME_MAX_LENGTH = 2 * MAX_FIELD_BYTE_SIZE; // 62 bytes
 export const TOTAL_REVEAL_DATA_LENGTH = 119;
 
+// Public signal indices for vc_and_disclose_aadhaar circuit
+export const AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES = {
+  // Public inputs (0-6)
+  MERKLE_ROOT: 0,
+  OFAC_NAME_DOB_SMT_ROOT: 1,
+  OFAC_NAME_YOB_SMT_ROOT: 2,
+  ATTESTATION_ID: 3,
+  CURRENT_YEAR: 4,
+  CURRENT_MONTH: 5,
+  CURRENT_DAY: 6,
+
+} as const;
+
+
+
+export type AadhaarDisclosePublicSignal = keyof typeof AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES;
+
+export function getPublicSignalValue(
+  publicSignals: string[],
+  signalName: AadhaarDisclosePublicSignal
+): string {
+  const index = AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES[signalName];
+  if (index >= publicSignals.length) {
+    throw new Error(`Public signal ${signalName} not found at index ${index}`);
+  }
+  return publicSignals[index];
+}
+
 // Field lengths
 export const FIELD_LENGTHS = {
   GENDER: 1,
