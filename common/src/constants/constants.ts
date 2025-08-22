@@ -250,6 +250,7 @@ export const CIRCUIT_CONSTANTS = {
 export const MAX_BYTES_IN_FIELD = 31;
 export const MAX_PUBKEY_DSC_BYTES = 525;
 
+
 export const MAX_DATAHASHES_LEN = 320; // max formatted and concatenated datagroup hashes length in bytes
 export const n_dsc = 120;
 export const n_dsc_3072 = 120;

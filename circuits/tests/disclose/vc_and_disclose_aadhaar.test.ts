@@ -7,6 +7,11 @@ import { formatInput } from '../../../common/src/utils/circuits/generateInputs.j
 
 import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
 import { fileURLToPath } from 'url';
+import {
+  REVEAL_DATA_INDICES,
+  createSelector,
+  SELECTOR_BITS
+} from '../../../common/src/utils/aadhaar/constants.js';
 import { prepareAadhaarDiscloseTestData } from '@selfxyz/common/utils/aadhaar/mockData';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
@@ -91,9 +96,10 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
             ];
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
-    assert(revealedDataUnpacked[0] === 'M', 'Gender should be Male');
+    // Use constants instead of hardcoded indices
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.GENDER] === 'M', 'Gender should be Male');
     assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
-    assert(revealedDataUnpacked[118].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MINIMUM_AGE].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
   });
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
@@ -132,25 +138,25 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
             ];
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
-    assert(revealedDataUnpacked[1] === '1', 'YOB should be 1');
-    assert(revealedDataUnpacked[2] === '9', 'YOB should be 9');
-    assert(revealedDataUnpacked[3] === '8', 'YOB should be 8');
-    assert(revealedDataUnpacked[4] === '4', 'YOB should be 4');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START] === '1', 'YOB should be 1');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START + 1] === '9', 'YOB should be 9');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START + 2] === '8', 'YOB should be 8');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.YEAR_OF_BIRTH_START + 3] === '4', 'YOB should be 4');
 
-    assert(revealedDataUnpacked[5] === '0', 'MOB should be 1');
-    assert(revealedDataUnpacked[6] === '1', 'MOB should be 2');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MONTH_OF_BIRTH_START] === '0', 'MOB should be 0');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MONTH_OF_BIRTH_START + 1] === '1', 'MOB should be 1');
 
-    assert(revealedDataUnpacked[7] === '0', 'DOB should be 1');
-    assert(revealedDataUnpacked[8] === '1', 'DOB should be 1');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.DAY_OF_BIRTH_START] === '0', 'DOB should be 0');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.DAY_OF_BIRTH_START + 1] === '1', 'DOB should be 1');
 
-    assert(revealedDataUnpacked[117].charCodeAt(0) === 1, 'OFAC Name YOB should be 1 (not in OFAC list)');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.OFAC_NAME_YOB_CHECK].charCodeAt(0) === 1, 'OFAC Name YOB should be 1 (not in OFAC list)');
 
     for (let i = 9; i < 116; i++) {
       assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
     }
     assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
     assert(revealedData.isMinimumAgeValid === '1', 'Age should be greater than minimum age');
-    assert(revealedDataUnpacked[118].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MINIMUM_AGE].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
@@ -181,9 +187,9 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       assert(revealedDataUnpacked[i] === '\0', `Output ${i} should be null character`);
     }
 
-    assert(revealedDataUnpacked[117].charCodeAt(0) === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(revealedDataUnpacked[116].charCodeAt(0) === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.OFAC_NAME_YOB_CHECK].charCodeAt(0) === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.OFAC_NAME_DOB_CHECK].charCodeAt(0) === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
     assert(revealedData.isMinimumAgeValid === '0');
-    assert(revealedDataUnpacked[118].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
+    assert(revealedDataUnpacked[REVEAL_DATA_INDICES.MINIMUM_AGE].charCodeAt(0) === Number(inputs.minimumAge[0]), 'Minimum Age should be 1');
   });
 });
