@@ -283,6 +283,7 @@ export function prepareAadhaarDiscloseTestData(
     currentDay: formatInput(currentDay),
     scope: formatInput(BigInt(scope)),
     user_identifier: formatInput(BigInt(user_identifier)),
+    forbidden_countries_list: [...Array(120)].map((x) => '0')
   };
 
   return {

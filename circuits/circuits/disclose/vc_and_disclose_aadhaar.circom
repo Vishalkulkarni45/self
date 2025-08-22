@@ -7,6 +7,7 @@ include "@openpassport/zk-email-circuits/utils/bytes.circom";
 include "../utils/aadhaar/extractQrData.circom";
 include "../utils/aadhaar/ofac/ofac_name_dob.circom";
 include "../utils/aadhaar/ofac/ofac_name_yob.circom";
+include "../utils/aadhaar/disclose/country_not_in_list.circom";
 
 /// @title VC_AND_DISCLOSE_Aadhaar
 /// @notice Verify user's commitment is part of the merkle tree and optionally disclose data from Aadhaar
@@ -37,7 +38,7 @@ include "../utils/aadhaar/ofac/ofac_name_yob.circom";
 /// @input path Path of the commitment in the merkle tree
 /// @input siblings Siblings of the commitment in the merkle tree
 /// @input selector Bitmap indicating which fields to reveal
-template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
+template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input attestation_id;
     signal input secret;
     signal input qrDataHash;
@@ -81,6 +82,8 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input selector;
     signal input scope;
     signal input user_identifier;
+
+    signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3];
     // convert selector to 121 bits which acts as a bitmap for the fields to reveal
     signal sel_bits[121] <== Num2Bits(121)(selector);
 
@@ -207,6 +210,18 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     var revealed_data_packed_chunk_length = computeIntChunkLength(121);
     signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(121)(revealData);
 
+    component country_not_in_list_circuit = CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH);
+
+    country_not_in_list_circuit.country[0] <== 73;
+    country_not_in_list_circuit.country[1] <== 78;
+    country_not_in_list_circuit.country[2] <== 68;
+
+    country_not_in_list_circuit.forbidden_countries_list <== forbidden_countries_list;
+
+    var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3);
+    signal output forbidden_countries_list_packed[chunkLength] <== country_not_in_list_circuit.forbidden_countries_list_packed;
+
+
     signal dummy <== user_identifier + user_identifier;
 }
 
@@ -224,4 +239,4 @@ component main { public
         scope,
         user_identifier
     ]
-} = VC_AND_DISCLOSE_Aadhaar(33, 64, 64);
+} = VC_AND_DISCLOSE_Aadhaar(40, 33, 64, 64);

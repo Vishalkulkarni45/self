@@ -23,6 +23,8 @@ export const AADHAAR_PUBLIC_SIGNAL_INDICES = {
   REVEAL_PHOTO_HASH: 12,
   REVEAL_DATA_PACKED_START: 13,
   REVEAL_DATA_PACKED_END: 16,
+  FORBIDDEN_COUNTRIES_LIST_PACKED_START: 17,
+  FORBIDDEN_COUNTRIES_LIST_PACKED_END: 20,
 } as const;
 
 export const getRevealDataPackedIndex = (chunkIndex: number): number => {
@@ -30,6 +32,13 @@ export const getRevealDataPackedIndex = (chunkIndex: number): number => {
     throw new Error('revealData_packed chunk index must be 0-3');
   }
   return AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_START + chunkIndex;
+};
+
+export const getForbiddenCountriesListPackedIndex = (chunkIndex: number): number => {
+  if (chunkIndex < 0 || chunkIndex > 3) {
+    throw new Error('forbidden_countries_list_packed chunk index must be 0-3');
+  }
+  return AADHAAR_PUBLIC_SIGNAL_INDICES.FORBIDDEN_COUNTRIES_LIST_PACKED_START + chunkIndex;
 };
 
 export type AadhaarPublicSignal = keyof typeof AADHAAR_PUBLIC_SIGNAL_INDICES;
@@ -49,6 +58,13 @@ export function getRevealDataPackedChunks(publicSignals: string[]): string[] {
   return publicSignals.slice(
     AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_START,
     AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_END + 1
+  );
+}
+
+export function getForbiddenCountriesListPackedChunks(publicSignals: string[]): string[] {
+  return publicSignals.slice(
+    AADHAAR_PUBLIC_SIGNAL_INDICES.FORBIDDEN_COUNTRIES_LIST_PACKED_START,
+    AADHAAR_PUBLIC_SIGNAL_INDICES.FORBIDDEN_COUNTRIES_LIST_PACKED_END + 1
   );
 }
 
