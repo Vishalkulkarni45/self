@@ -4,7 +4,7 @@ export const NAME_MAX_LENGTH = 2 * MAX_FIELD_BYTE_SIZE; // 62 bytes
 export const TOTAL_REVEAL_DATA_LENGTH = 119;
 
 // Public signal indices for vc_and_disclose_aadhaar circuit
-export const AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES = {
+export const AADHAAR_PUBLIC_SIGNAL_INDICES = {
   // Public inputs (0-6)
   MERKLE_ROOT: 0,
   OFAC_NAME_DOB_SMT_ROOT: 1,
@@ -14,21 +14,37 @@ export const AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES = {
   CURRENT_MONTH: 5,
   CURRENT_DAY: 6,
 
+  REVEAL_DATA_PACKED_START: 7,
+  REVEAL_DATA_PACKED_END: 10,
+  IS_MINIMUM_AGE_VALID: 11,
+  REVEAL_PHOTO_HASH: 12,
 } as const;
 
+export const getRevealDataPackedIndex = (chunkIndex: number): number => {
+  if (chunkIndex < 0 || chunkIndex > 3) {
+    throw new Error('revealData_packed chunk index must be 0-3');
+  }
+  return AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_START + chunkIndex;
+};
 
-
-export type AadhaarDisclosePublicSignal = keyof typeof AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES;
+export type AadhaarPublicSignal = keyof typeof AADHAAR_PUBLIC_SIGNAL_INDICES;
 
 export function getPublicSignalValue(
   publicSignals: string[],
-  signalName: AadhaarDisclosePublicSignal
+  signalName: AadhaarPublicSignal
 ): string {
-  const index = AADHAAR_DISCLOSE_PUBLIC_SIGNAL_INDICES[signalName];
+  const index = AADHAAR_PUBLIC_SIGNAL_INDICES[signalName];
   if (index >= publicSignals.length) {
     throw new Error(`Public signal ${signalName} not found at index ${index}`);
   }
   return publicSignals[index];
+}
+
+export function getRevealDataPackedChunks(publicSignals: string[]): string[] {
+  return publicSignals.slice(
+    AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_START,
+    AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_END + 1
+  );
 }
 
 // Field lengths
@@ -174,3 +190,22 @@ export const COMMON_FIELD_COMBINATIONS = {
   OFAC_CHECKS: ['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK'] as AadhaarField[],
   ALL_FIELDS: Object.keys(FIELD_LENGTHS) as AadhaarField[],
 } as const;
+
+/**
+ * Usage Examples:
+ *
+ * // Get specific public signal values
+ * const merkleRoot = getPublicSignalValue(publicSignals, 'MERKLE_ROOT');
+ * const attestationId = getPublicSignalValue(publicSignals, 'ATTESTATION_ID');
+ *
+ * // Extract reveal data chunks
+ * const revealDataChunks = getRevealDataPackedChunks(publicSignals);
+ * const unpackedData = unpackReveal(revealDataChunks, 'id');
+ *
+ * // Extract specific fields from unpacked data
+ * const gender = extractField(unpackedData, 'GENDER');
+ * const ofacCheck = extractField(unpackedData, 'OFAC_NAME_DOB_CHECK');
+ *
+ * // Create selector for revealing specific fields
+ * const selector = createSelector(['GENDER', 'YEAR_OF_BIRTH']);
+ */
