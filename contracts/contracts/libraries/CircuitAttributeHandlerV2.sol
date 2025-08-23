@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {Formatter} from "./Formatter.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
 import {SelfStructs} from "./SelfStructs.sol";
+import {console} from "hardhat/console.sol";
 
 /**
  * @title UnifiedAttributeHandler Library
@@ -88,6 +89,27 @@ library CircuitAttributeHandlerV2 {
                 ofacStart: 92,
                 ofacEnd: 93
             });
+        } else if (attestationId == AttestationId.AADHAAR) {
+            return FieldPositions({
+                issuingStateStart: 999,
+                issuingStateEnd: 999,
+                nameStart: 9,
+                nameEnd: 70,
+                documentNumberStart: 71,
+                documentNumberEnd: 74,
+                nationalityStart: 999,
+                nationalityEnd: 999,
+                dateOfBirthStart: 1,
+                dateOfBirthEnd: 8,
+                genderStart: 0,
+                genderEnd: 0,
+                expiryDateStart: 999,
+                expiryDateEnd: 999,
+                olderThanStart: 118,
+                olderThanEnd: 118,
+                ofacStart: 116,
+                ofacEnd: 117
+            });
         } else {
             revert("Invalid attestation ID");
         }
@@ -146,6 +168,13 @@ library CircuitAttributeHandlerV2 {
     function getDateOfBirth(bytes32 attestationId, bytes memory charcodes) internal pure returns (string memory) {
         FieldPositions memory positions = getFieldPositions(attestationId);
         return Formatter.formatDate(
+            extractStringAttribute(charcodes, positions.dateOfBirthStart, positions.dateOfBirthEnd)
+        );
+    }
+
+    function getDateOfBirthFullYear(bytes32 attestationId, bytes memory charcodes) internal pure returns (string memory) {
+        FieldPositions memory positions = getFieldPositions(attestationId);
+        return Formatter.formatDateFullYear(
             extractStringAttribute(charcodes, positions.dateOfBirthStart, positions.dateOfBirthEnd)
         );
     }
@@ -275,6 +304,16 @@ library CircuitAttributeHandlerV2 {
         returns (bool)
     {
         return getOlderThan(attestationId, charcodes) >= olderThan;
+    }
+
+    function compareOlderThanNumeric(bytes32 attestationId, bytes memory charcodes, uint256 olderThan)
+        internal
+        pure
+        returns (bool)
+    {
+        FieldPositions memory positions = getFieldPositions(attestationId);
+        uint256 extractedAge = uint8(charcodes[positions.olderThanStart]);
+        return extractedAge >= olderThan;
     }
 
     /**

@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { deploySystemFixturesV2 } from "../utils/deploymentV2";
 import { DeployedActorsV2 } from "../utils/types";
 import { AADHAAR_ATTESTATION_ID, CIRCUIT_CONSTANTS, RegisterVerifierId } from "@selfxyz/common";
-import { prepareAadhaarTestData } from "@selfxyz/common";
+import { prepareAadhaarRegisterTestData } from "@selfxyz/common";
 import path from "path";
 import { generateRandomFieldElement } from "../utils/utils";
 import { generateRegisterAadhaarProof } from "../utils/generateProof";
@@ -63,7 +63,7 @@ describe("Aadhaar Registration test", function () {
     let registerSecret: string;
 
     before(async () => {
-      aadhaarData = prepareAadhaarTestData(
+      aadhaarData = prepareAadhaarRegisterTestData(
         privateKeyPath,
         publicKeyPath,
         'Sumit Kumar',
@@ -140,7 +140,7 @@ describe("Aadhaar Registration test", function () {
     });
 
     it("should not fail if timestamp is within 20 minutes", async () => {
-      const newAadhaarData = prepareAadhaarTestData(
+      const newAadhaarData = prepareAadhaarRegisterTestData(
         privateKeyPath,
         publicKeyPath,
         'Sumit Kumar',
@@ -159,7 +159,7 @@ describe("Aadhaar Registration test", function () {
     });
 
     it("should fail with InvalidUidaiTimestamp when UIDAI timestamp is not within 20 minutes of current time", async () => {
-      const newAadhaarData = prepareAadhaarTestData(
+      const newAadhaarData = prepareAadhaarRegisterTestData(
         privateKeyPath,
         publicKeyPath,
         'Sumit Kumar',

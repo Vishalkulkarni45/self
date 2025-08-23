@@ -8,6 +8,7 @@ import {CustomVerifier} from "./libraries/CustomVerifier.sol";
 import {GenericFormatter} from "./libraries/GenericFormatter.sol";
 import {AttestationId} from "./constants/AttestationId.sol";
 import {IVcAndDiscloseCircuitVerifier} from "./interfaces/IVcAndDiscloseCircuitVerifier.sol";
+import {IVcAndDiscloseAadhaarCircuitVerifier} from "./interfaces/IVcAndDiscloseCircuitVerifier.sol";
 import {ISelfVerificationRoot} from "./interfaces/ISelfVerificationRoot.sol";
 import {IIdentityRegistryV1} from "./interfaces/IIdentityRegistryV1.sol";
 import {IIdentityRegistryIdCardV1} from "./interfaces/IIdentityRegistryIdCardV1.sol";
@@ -17,7 +18,8 @@ import {IAadhaarRegisterCircuitVerifier} from "./interfaces/IRegisterCircuitVeri
 import {IDscCircuitVerifier} from "./interfaces/IDscCircuitVerifier.sol";
 import {CircuitConstantsV2} from "./constants/CircuitConstantsV2.sol";
 import {Formatter} from "./libraries/Formatter.sol";
-import {VcAndDiscloseProof} from "./interfaces/IVcAndDiscloseCircuitVerifier.sol";
+
+import {console} from "hardhat/console.sol";
 
 contract IdentityVerificationHubImplV2 is ImplRoot {
     /// @custom:storage-location erc7201:self.storage.IdentityVerificationHub
@@ -611,22 +613,20 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _basicVerification(
         SelfStructs.HubInputHeader memory header,
-        VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         bytes calldata userContextData,
         uint256 userIdentifier
     ) internal returns (bytes memory output) {
         // Scope 1: Basic checks (scope and user identifier)
-        {
             CircuitConstantsV2.DiscloseIndices memory indices =
                 CircuitConstantsV2.getDiscloseIndices(header.attestationId);
+        {
             _performScopeCheck(header.scope, vcAndDiscloseProof, indices);
             _performUserIdentifierCheck(userContextData, vcAndDiscloseProof, header.attestationId, indices);
         }
 
         // Scope 2: Root and date checks
         {
-            CircuitConstantsV2.DiscloseIndices memory indices =
-                CircuitConstantsV2.getDiscloseIndices(header.attestationId);
             _performRootCheck(header.attestationId, vcAndDiscloseProof, indices);
             if (header.attestationId == AttestationId.AADHAAR) {
                 _performNumericCurrentDateCheck(vcAndDiscloseProof, indices);
@@ -640,8 +640,6 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
 
         // Scope 4: Create and return output
         {
-            CircuitConstantsV2.DiscloseIndices memory indices =
-                CircuitConstantsV2.getDiscloseIndices(header.attestationId);
             return _createVerificationOutput(header.attestationId, vcAndDiscloseProof, indices, userIdentifier);
         }
     }
@@ -829,7 +827,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performScopeCheck(
         uint256 headerScope,
-        VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         // Get scope from proof using the scope index from indices
@@ -845,7 +843,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performRootCheck(
         bytes32 attestationId,
-        VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
@@ -878,7 +876,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @notice Performs current date validation
      */
     function _performCurrentDateCheck(
-        VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         uint256[6] memory dateNum;
@@ -895,7 +893,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     }
 
     function _performNumericCurrentDateCheck(
-        VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal view {
         // date is going to be 2025, 12, 13
@@ -917,12 +915,12 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performGroth16ProofVerification(
         bytes32 attestationId,
-        VcAndDiscloseProof memory vcAndDiscloseProof
+        GenericProofStruct memory vcAndDiscloseProof
     ) internal view {
         IdentityVerificationHubStorage storage $ = _getIdentityVerificationHubStorage();
 
         if (attestationId == AttestationId.E_PASSPORT || attestationId == AttestationId.EU_ID_CARD) {
-            uint256[21] memory pubSignals = new uint256[](21);
+            uint256[21] memory pubSignals;
             for (uint256 i = 0; i < 21; i++) {
                 pubSignals[i] = vcAndDiscloseProof.pubSignals[i];
             }
@@ -934,12 +932,12 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
                 revert InvalidVcAndDiscloseProof();
             }
         } else if (attestationId == AttestationId.AADHAAR) {
-            uint256[21] memory pubSignals = new uint256[](21);
-            for (uint256 i = 0; i < 21; i++) {
+            uint256[15] memory pubSignals;
+            for (uint256 i = 0; i < 15; i++) {
                 pubSignals[i] = vcAndDiscloseProof.pubSignals[i];
             }
 
-            if (!
+            if (
                 !IVcAndDiscloseAadhaarCircuitVerifier($._discloseVerifiers[attestationId]).verifyProof(
                     vcAndDiscloseProof.a, vcAndDiscloseProof.b, vcAndDiscloseProof.c, pubSignals
                 )
@@ -1024,7 +1022,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _createVerificationOutput(
         bytes32 attestationId,
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices,
         uint256 userIdentifier
     ) internal pure returns (bytes memory) {
@@ -1032,6 +1030,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
             return _createPassportOutput(vcAndDiscloseProof, indices, attestationId, userIdentifier);
         } else if (attestationId == AttestationId.EU_ID_CARD) {
             return _createEuIdOutput(vcAndDiscloseProof, indices, attestationId, userIdentifier);
+        } else if (attestationId == AttestationId.AADHAAR) {
+            return _createAadhaarOutput(vcAndDiscloseProof, indices, attestationId, userIdentifier);
         } else {
             revert InvalidAttestationId();
         }
@@ -1047,7 +1047,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @return The encoded PassportOutput struct.
      */
     function _createPassportOutput(
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices,
         bytes32 attestationId,
         uint256 userIdentifier
@@ -1083,7 +1083,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      * @return The encoded EuIdOutput struct.
      */
     function _createEuIdOutput(
-        IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         CircuitConstantsV2.DiscloseIndices memory indices,
         bytes32 attestationId,
         uint256 userIdentifier
@@ -1109,6 +1109,26 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         return abi.encode(euIdOutput);
     }
 
+    function _createAadhaarOutput(
+        GenericProofStruct memory vcAndDiscloseProof,
+        CircuitConstantsV2.DiscloseIndices memory indices,
+        bytes32 attestationId,
+        uint256 userIdentifier
+    ) internal pure returns (bytes memory) {
+        SelfStructs.AadhaarOutput memory aadhaarOutput;
+        aadhaarOutput.attestationId = uint256(attestationId);
+        aadhaarOutput.userIdentifier = userIdentifier;
+        aadhaarOutput.nullifier = vcAndDiscloseProof.pubSignals[indices.nullifierIndex];
+
+        uint256[4] memory revealedDataPacked;
+        for (uint256 i = 0; i < 4; i++) {
+            revealedDataPacked[i] = vcAndDiscloseProof.pubSignals[indices.revealedDataPackedIndex + i];
+        }
+        aadhaarOutput.revealedDataPacked = Formatter.fieldElementsToBytesAadhaar(revealedDataPacked);
+
+        return abi.encode(aadhaarOutput);
+    }
+
     /**
      * @notice Decodes VC and Disclose proof from bytes data.
      * @dev Simple wrapper around abi.decode for type safety and clarity.
@@ -1118,9 +1138,9 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     function _decodeVcAndDiscloseProof(bytes memory data)
         internal
         pure
-        returns (IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof memory)
+        returns (GenericProofStruct memory)
     {
-        return abi.decode(data, (IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof));
+        return abi.decode(data, (GenericProofStruct));
     }
 
     /**
@@ -1134,7 +1154,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _performUserIdentifierCheck(
         bytes calldata userContextData,
-        VcAndDiscloseProof memory vcAndDiscloseProof,
+        GenericProofStruct memory vcAndDiscloseProof,
         bytes32 attestationId,
         CircuitConstantsV2.DiscloseIndices memory indices
     ) internal pure {

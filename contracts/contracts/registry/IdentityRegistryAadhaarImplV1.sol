@@ -6,6 +6,7 @@ import {InternalLeanIMT, LeanIMTData} from "@zk-kit/imt.sol/internal/InternalLea
 import {IIdentityRegistryAadhaarV1} from "../interfaces/IIdentityRegistryAadhaarV1.sol";
 import {ImplRoot} from "../upgradeable/ImplRoot.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
+import {console} from "hardhat/console.sol";
 
 /**
  * @notice ⚠️ CRITICAL STORAGE LAYOUT WARNING ⚠️

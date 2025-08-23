@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {CircuitAttributeHandlerV2} from "./CircuitAttributeHandlerV2.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
 import {SelfStructs} from "./SelfStructs.sol";
-import {CircuitAttributeHandlerV2} from "./CircuitAttributeHandlerV2.sol";
 import {Formatter} from "./Formatter.sol";
 import {GenericFormatter} from "./GenericFormatter.sol";
 
@@ -35,6 +34,9 @@ library CustomVerifier {
         } else if (attestationId == AttestationId.EU_ID_CARD) {
             SelfStructs.EuIdOutput memory idCardOutput = abi.decode(proofOutput, (SelfStructs.EuIdOutput));
             return CustomVerifier.verifyIdCard(verificationConfig, idCardOutput);
+        } else if (attestationId == AttestationId.AADHAAR) {
+            SelfStructs.AadhaarOutput memory aadhaarOutput = abi.decode(proofOutput, (SelfStructs.AadhaarOutput));
+            return CustomVerifier.verifyAadhaar(verificationConfig, aadhaarOutput);
         } else {
             revert InvalidAttestationId();
         }
@@ -177,6 +179,72 @@ library CustomVerifier {
                 false,
                 CircuitAttributeHandlerV2.getNameAndDobOfac(AttestationId.EU_ID_CARD, idCardOutput.revealedDataPacked),
                 CircuitAttributeHandlerV2.getNameAndYobOfac(AttestationId.EU_ID_CARD, idCardOutput.revealedDataPacked)
+            ]
+        });
+
+        return genericDiscloseOutput;
+    }
+
+    /**
+     * @notice Verifies an Aadhaar output.
+     * @param verificationConfig The verification configuration.
+     * @param aadhaarOutput The Aadhaar output from the circuit.
+     * @return genericDiscloseOutput The generic disclose output.
+     */
+    function verifyAadhaar(
+        SelfStructs.VerificationConfigV2 memory verificationConfig,
+        SelfStructs.AadhaarOutput memory aadhaarOutput
+    ) internal pure returns (SelfStructs.GenericDiscloseOutputV2 memory) {
+        if (verificationConfig.ofacEnabled[0] || verificationConfig.ofacEnabled[1] || verificationConfig.ofacEnabled[2]) {
+            if (
+                !CircuitAttributeHandlerV2.compareOfac(
+                    AttestationId.AADHAAR,
+                    aadhaarOutput.revealedDataPacked,
+                    false,
+                    verificationConfig.ofacEnabled[1],
+                    verificationConfig.ofacEnabled[2]
+                )
+            ) {
+                revert InvalidOfacCheck();
+            }
+        }
+
+        if (verificationConfig.forbiddenCountriesEnabled) {
+            //check if IND is in forbidden countries list
+            // for (uint256 i = 0; i < forbiddenCountriesList.length; i++) {
+            //     if (keccak256(abi.encodePacked(forbiddenCountriesList[i])) == keccak256(abi.encodePacked('IND'))) {
+            //         revert InvalidForbiddenCountries();
+            //     }
+            // }
+        }
+
+        if (verificationConfig.olderThanEnabled) {
+            if (
+                !CircuitAttributeHandlerV2.compareOlderThanNumeric(
+                    AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked, verificationConfig.olderThan
+                )
+            ) {
+                revert InvalidOlderThan();
+            }
+        }
+
+        SelfStructs.GenericDiscloseOutputV2 memory genericDiscloseOutput = SelfStructs.GenericDiscloseOutputV2({
+            attestationId: AttestationId.AADHAAR,
+            userIdentifier: aadhaarOutput.userIdentifier,
+            nullifier: aadhaarOutput.nullifier,
+            forbiddenCountriesListPacked: verificationConfig.forbiddenCountriesListPacked,
+            issuingState: 'UNAVAILABLE',
+            name: CircuitAttributeHandlerV2.getName(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
+            idNumber: CircuitAttributeHandlerV2.getDocumentNumber(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
+            nationality: 'IND',
+            dateOfBirth: CircuitAttributeHandlerV2.getDateOfBirthFullYear(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
+            gender: CircuitAttributeHandlerV2.getGender(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
+            expiryDate: 'UNAVAILABLE',
+            olderThan: verificationConfig.olderThan,
+            ofac: [
+                false,
+                CircuitAttributeHandlerV2.getNameAndDobOfac(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
+                CircuitAttributeHandlerV2.getNameAndYobOfac(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked)
             ]
         });
 

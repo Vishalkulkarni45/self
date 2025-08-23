@@ -86,6 +86,34 @@ library Formatter {
     }
 
     /**
+     * @notice Formats a full year date string into a human-readable date.
+     * @dev Expects the input date string to have exactly 6 characters in YYMMDD format.
+     *      Returns the date in "DD-MM-YYYY" format.
+     * @param date A string representing the date in YYMMDD format.
+     * @return A formatted date string in the format "DD-MM-YYYY".
+     */
+    function formatDateFullYear(string memory date) internal pure returns (string memory) {
+        bytes memory dateBytes = bytes(date);
+        if (dateBytes.length != 8) {
+            revert InvalidDateLength();
+        }
+
+        if (dateBytes[4] > "1" || (dateBytes[4] == "1" && dateBytes[5] > "2")) {
+            revert InvalidMonthRange();
+        }
+
+        if (dateBytes[6] > "3" || (dateBytes[6] == "3" && dateBytes[7] > "1")) {
+            revert InvalidDayRange();
+        }
+
+        string memory year = substring(date, 0, 4);
+        string memory month = substring(date, 4, 6);
+        string memory day = substring(date, 6, 8);
+
+        return string(abi.encodePacked(day, "-", month, "-", year));
+    }
+
+    /**
      * @notice Converts an ASCII numeral code to its corresponding unsigned integer.
      * @dev The input must represent an ASCII code for digits (0-9), i.e. between 48 and 57.
      *      Reverts with InvalidAsciiCode if the input is out of range.
@@ -144,6 +172,28 @@ library Formatter {
         return bytesArray;
     }
 
+    function fieldElementsToBytesAadhaar(uint256[4] memory publicSignals) internal pure returns (bytes memory) {
+        for (uint256 i = 0; i < 4; i++) {
+            if (publicSignals[i] >= SNARK_SCALAR_FIELD) {
+                revert InvalidFieldElement();
+            }
+        }
+
+        uint8[4] memory bytesCount = [31, 31, 31, 26];
+        bytes memory bytesArray = new bytes(119);
+
+        uint256 index = 0;
+        for (uint256 i = 0; i < 4; i++) {
+            uint256 element = publicSignals[i];
+            for (uint8 j = 0; j < bytesCount[i]; j++) {
+                bytesArray[index++] = bytes1(uint8(element & 0xff));
+                element = element >> 8;
+            }
+        }
+
+        return bytesArray;
+    }
+
     /**
      * @notice Extracts forbidden country codes from a packed uint256.
      * @dev Each forbidden country is represented by 3 bytes in the packed data.
@@ -151,7 +201,6 @@ library Formatter {
      * @param publicSignals A packed uint256 containing encoded forbidden country data.
      * @return forbiddenCountries An array of strings representing the forbidden country codes.
      */
-    // TODO: look at this function a bit
     function extractForbiddenCountriesFromPacked(uint256[4] memory publicSignals)
         internal
         pure

@@ -7,7 +7,7 @@ import type { CircuitSignals, Groth16Proof, PublicSignals } from "snarkjs";
 import { groth16 } from "snarkjs";
 import { PassportData } from "@selfxyz/common/utils/types";
 import { CircuitArtifacts, DscCircuitProof, RegisterAadhaarCircuitProof, RegisterCircuitProof, VcAndDiscloseProof } from "./types.js";
-import { prepareAadhaarTestData } from "@selfxyz/common";
+import { prepareAadhaarDiscloseTestData, prepareAadhaarRegisterTestData } from "@selfxyz/common";
 
 import { BigNumberish } from "ethers";
 import {
@@ -18,7 +18,7 @@ import {
 import { getCircuitNameFromPassportData } from "@selfxyz/common/utils/circuits/circuitsName";
 import serialized_csca_tree from "../../../common/pubkeys/serialized_csca_tree.json";
 import serialized_dsc_tree from "../../../common/pubkeys/serialized_dsc_tree.json";
-import { GenericProofStructStruct, GenericProofStructStructOutput } from "../../typechain-types/contracts/IdentityVerificationHubImplV2.js";
+import { GenericProofStructStruct } from "../../typechain-types/contracts/IdentityVerificationHubImplV2.js";
 
 const registerCircuits: CircuitArtifacts = {
   register_sha256_sha256_sha256_rsa_65537_4096: {
@@ -62,6 +62,14 @@ const vcAndDiscloseIdCircuits: CircuitArtifacts = {
     wasm: "../circuits/build/disclose/vc_and_disclose_id/vc_and_disclose_id_js/vc_and_disclose_id.wasm",
     zkey: "../circuits/build/disclose/vc_and_disclose_id/vc_and_disclose_id_final.zkey",
     vkey: "../circuits/build/disclose/vc_and_disclose_id/vc_and_disclose_id_vkey.json",
+  },
+};
+
+const vcAndDiscloseCircuitsAadhaar: CircuitArtifacts = {
+  vc_and_disclose_aadhaar: {
+    wasm: "../circuits/build/disclose/vc_and_disclose_aadhaar/vc_and_disclose_aadhaar_js/vc_and_disclose_aadhaar.wasm",
+    zkey: "../circuits/build/disclose/vc_and_disclose_aadhaar/vc_and_disclose_aadhaar_final.zkey",
+    vkey: "../circuits/build/disclose/vc_and_disclose_aadhaar/vc_and_disclose_aadhaar_vkey.json",
   },
 };
 
@@ -152,7 +160,7 @@ export async function generateRegisterIdProof(
 export async function generateRegisterAadhaarProof(
   secret: string,
   //return type of prepareAadhaarTestData
-  inputs: ReturnType<typeof prepareAadhaarTestData>["inputs"],
+  inputs: ReturnType<typeof prepareAadhaarRegisterTestData>["inputs"],
 ): Promise<GenericProofStructStruct> {
   const circuitName = "register_aadhaar";
 
@@ -442,6 +450,32 @@ export async function generateVcAndDiscloseIdProof(
 
   const rawCallData = await groth16.exportSolidityCallData(vcAndDiscloseProof.proof, vcAndDiscloseProof.publicSignals);
   const fixedProof = parseSolidityCalldata(rawCallData, {} as VcAndDiscloseProof);
+
+  return fixedProof;
+}
+
+export async function generateVcAndDiscloseAadhaarProof(
+  inputs: ReturnType<typeof prepareAadhaarDiscloseTestData>["inputs"],
+): Promise<GenericProofStructStruct> {
+  const circuitName = "vc_and_disclose_aadhaar";
+
+  const circuitArtifacts = vcAndDiscloseCircuitsAadhaar;
+  const artifactKey = circuitName;
+
+  const vcAndDiscloseProof = await groth16.fullProve(
+    inputs,
+    circuitArtifacts[artifactKey].wasm,
+    circuitArtifacts[artifactKey].zkey,
+  );
+
+  const vKey = JSON.parse(fs.readFileSync(circuitArtifacts[artifactKey].vkey, "utf8"));
+  const isValid = await groth16.verify(vKey, vcAndDiscloseProof.publicSignals, vcAndDiscloseProof.proof);
+  if (!isValid) {
+    throw new Error("Generated register Aadhaar proof verification failed");
+  }
+
+  const rawCallData = await groth16.exportSolidityCallData(vcAndDiscloseProof.proof, vcAndDiscloseProof.publicSignals);
+  const fixedProof = parseSolidityCalldata(rawCallData, {} as GenericProofStructStruct);
 
   return fixedProof;
 }

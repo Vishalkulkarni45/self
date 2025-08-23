@@ -111,16 +111,16 @@ library CircuitConstantsV2 {
             });
         } else if (attestationId == AttestationId.AADHAAR) {
             return DiscloseIndices({
-                revealedDataPackedIndex: 0,
-                forbiddenCountriesListPackedIndex: 4,
-                nullifierIndex: 8,
-                attestationIdIndex: 9,
-                merkleRootIndex: 10,
-                currentDateIndex: 11,
-                namedobSmtRootIndex: 17,
-                nameyobSmtRootIndex: 18,
-                scopeIndex: 19,
-                userIdentifierIndex: 20,
+                revealedDataPackedIndex: 2,
+                forbiddenCountriesListPackedIndex: 99,
+                nullifierIndex: 0,
+                attestationIdIndex: 6,
+                merkleRootIndex: 12,
+                currentDateIndex: 7,
+                namedobSmtRootIndex: 10,
+                nameyobSmtRootIndex: 11,
+                scopeIndex: 13,
+                userIdentifierIndex: 14,
                 passportNoSmtRootIndex: 99
             });
         } else {
