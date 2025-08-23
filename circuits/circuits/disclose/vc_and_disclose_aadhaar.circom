@@ -157,7 +157,6 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
 
     signal isMinimumAgeValid <== isAgeGreaterThanMinimumAge * minimumAge ;
 
-
     // reveal fields based on selector
 
     signal revealData[121];

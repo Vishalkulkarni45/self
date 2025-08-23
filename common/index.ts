@@ -68,4 +68,4 @@ export {
   getSolidityPackedUserContextData,
 };
 
-export { prepareAadhaarRegisterTestData } from './src/utils/aadhaar/mockData.js';
+export { prepareAadhaarRegisterTestData, prepareAadhaarDiscloseTestData } from './src/utils/aadhaar/mockData.js';

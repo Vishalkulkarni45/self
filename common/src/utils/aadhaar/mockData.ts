@@ -128,8 +128,8 @@ function processQRData(privateKeyPath: string, name?: string, dateOfBirth?: stri
 }
 
 export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKeyPath: string,secret: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
-
   const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
+
   const delimiterIndices: number[] = [];
   for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
     if (sharedData.qrDataPadded[i] === 255) {
@@ -187,12 +187,14 @@ export function prepareAadhaarDiscloseTestData(
   scope: string,
   secret: string,
   user_identifier: string,
+  selector: string,
   name?: string,
   dateOfBirth?: string,
   gender?: string,
   pincode?: string,
   state?: string,
   timestamp?: string,
+  // updateTree?: boolean,
 ) {
   const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
 
@@ -210,7 +212,9 @@ export function prepareAadhaarDiscloseTestData(
     BigInt(sharedData.photoHash)
   );
 
-  merkletree.insert(BigInt(commitment));
+  // if (updateTree) {
+    merkletree.insert(BigInt(commitment));
+  // }
 
   const index = findIndexInTree(merkletree, BigInt(commitment));
   const {
@@ -288,5 +292,7 @@ export function prepareAadhaarDiscloseTestData(
 
   return {
     inputs,
+    nullifier,
+    commitment,
   };
 }
