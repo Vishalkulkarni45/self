@@ -1,24 +1,30 @@
 
 export const MAX_FIELD_BYTE_SIZE = 31;
 export const NAME_MAX_LENGTH = 2 * MAX_FIELD_BYTE_SIZE; // 62 bytes
-export const TOTAL_REVEAL_DATA_LENGTH = 119;
+export const TOTAL_REVEAL_DATA_LENGTH = 121;
 
 // Public signal indices for vc_and_disclose_aadhaar circuit
 export const AADHAAR_PUBLIC_SIGNAL_INDICES = {
-  // Public inputs (0-6)
-  MERKLE_ROOT: 0,
-  OFAC_NAME_DOB_SMT_ROOT: 1,
-  OFAC_NAME_YOB_SMT_ROOT: 2,
-  ATTESTATION_ID: 3,
-  CURRENT_YEAR: 4,
-  CURRENT_MONTH: 5,
-  CURRENT_DAY: 6,
+  // Public inputs (0-10)
+  ATTESTATION_ID: 0,
+  CURRENT_YEAR: 1,
+  CURRENT_MONTH: 2,
+  CURRENT_DAY: 3,
+  OFAC_NAME_DOB_SMT_ROOT: 4,
+  OFAC_NAME_YOB_SMT_ROOT: 5,
+  OFAC_NAME_DOB_REVERSE_SMT_ROOT: 6,
+  OFAC_NAME_YOB_REVERSE_SMT_ROOT: 7,
+  MERKLE_ROOT: 8,
+  SCOPE: 9,
+  USER_IDENTIFIER: 10,
 
-  NULLIFIER: 7,
-  REVEAL_DATA_PACKED_START: 10,
-  REVEAL_DATA_PACKED_END: 13,
-  IS_MINIMUM_AGE_VALID: 8,
-  REVEAL_PHOTO_HASH: 9,
+  // Outputs (11+)
+  NULLIFIER: 11,
+  REVEAL_PHOTO_HASH: 12,
+  REVEAL_DATA_PACKED_START: 13,
+  REVEAL_DATA_PACKED_END: 16,
+  FORBIDDEN_COUNTRIES_LIST_PACKED_START: 17,
+  FORBIDDEN_COUNTRIES_LIST_PACKED_END: 20,
 } as const;
 
 export const getRevealDataPackedIndex = (chunkIndex: number): number => {
@@ -26,6 +32,13 @@ export const getRevealDataPackedIndex = (chunkIndex: number): number => {
     throw new Error('revealData_packed chunk index must be 0-3');
   }
   return AADHAAR_PUBLIC_SIGNAL_INDICES.REVEAL_DATA_PACKED_START + chunkIndex;
+};
+
+export const getForbiddenCountriesListPackedIndex = (chunkIndex: number): number => {
+  if (chunkIndex < 0 || chunkIndex > 3) {
+    throw new Error('forbidden_countries_list_packed chunk index must be 0-3');
+  }
+  return AADHAAR_PUBLIC_SIGNAL_INDICES.FORBIDDEN_COUNTRIES_LIST_PACKED_START + chunkIndex;
 };
 
 export type AadhaarPublicSignal = keyof typeof AADHAAR_PUBLIC_SIGNAL_INDICES;
@@ -48,6 +61,13 @@ export function getRevealDataPackedChunks(publicSignals: string[]): string[] {
   );
 }
 
+export function getForbiddenCountriesListPackedChunks(publicSignals: string[]): string[] {
+  return publicSignals.slice(
+    AADHAAR_PUBLIC_SIGNAL_INDICES.FORBIDDEN_COUNTRIES_LIST_PACKED_START,
+    AADHAAR_PUBLIC_SIGNAL_INDICES.FORBIDDEN_COUNTRIES_LIST_PACKED_END + 1
+  );
+}
+
 // Field lengths
 export const FIELD_LENGTHS = {
   GENDER: 1,
@@ -61,7 +81,9 @@ export const FIELD_LENGTHS = {
   PHONE_LAST_4_DIGITS: 4,
   OFAC_NAME_DOB_CHECK: 1,
   OFAC_NAME_YOB_CHECK: 1,
-  MINIMUM_AGE: 1,
+  OFAC_NAME_DOB_REVERSE_CHECK: 1,
+  OFAC_NAME_YOB_REVERSE_CHECK: 1,
+  MINIMUM_AGE_VALID: 1,
 } as const;
 
 export const REVEAL_DATA_INDICES = {
@@ -76,7 +98,9 @@ export const REVEAL_DATA_INDICES = {
   PHONE_LAST_4_DIGITS_START: 112,
   OFAC_NAME_DOB_CHECK: 116,
   OFAC_NAME_YOB_CHECK: 117,
-  MINIMUM_AGE: 118,
+  MINIMUM_AGE_VALID: 118,  // Note: Always revealed, no selector control
+  OFAC_NAME_DOB_REVERSE_CHECK: 119,
+  OFAC_NAME_YOB_REVERSE_CHECK: 120,
 } as const;
 
 // End indices (exclusive) for each field in revealedDataPacked array
@@ -92,7 +116,9 @@ export const REVEAL_DATA_END_INDICES = {
   PHONE_LAST_4_DIGITS_END: REVEAL_DATA_INDICES.PHONE_LAST_4_DIGITS_START + FIELD_LENGTHS.PHONE_LAST_4_DIGITS,
   OFAC_NAME_DOB_CHECK_END: REVEAL_DATA_INDICES.OFAC_NAME_DOB_CHECK + FIELD_LENGTHS.OFAC_NAME_DOB_CHECK,
   OFAC_NAME_YOB_CHECK_END: REVEAL_DATA_INDICES.OFAC_NAME_YOB_CHECK + FIELD_LENGTHS.OFAC_NAME_YOB_CHECK,
-  MINIMUM_AGE_END: REVEAL_DATA_INDICES.MINIMUM_AGE + FIELD_LENGTHS.MINIMUM_AGE,
+  MINIMUM_AGE_VALID_END: REVEAL_DATA_INDICES.MINIMUM_AGE_VALID + FIELD_LENGTHS.MINIMUM_AGE_VALID,
+  OFAC_NAME_DOB_REVERSE_CHECK_END: REVEAL_DATA_INDICES.OFAC_NAME_DOB_REVERSE_CHECK + FIELD_LENGTHS.OFAC_NAME_DOB_REVERSE_CHECK,
+  OFAC_NAME_YOB_REVERSE_CHECK_END: REVEAL_DATA_INDICES.OFAC_NAME_YOB_REVERSE_CHECK + FIELD_LENGTHS.OFAC_NAME_YOB_REVERSE_CHECK,
 } as const;
 
 // Range definitions for easy array slicing
@@ -108,12 +134,14 @@ export const REVEAL_DATA_RANGES = {
   PHONE_LAST_4_DIGITS: [REVEAL_DATA_INDICES.PHONE_LAST_4_DIGITS_START, REVEAL_DATA_END_INDICES.PHONE_LAST_4_DIGITS_END] as const,
   OFAC_NAME_DOB_CHECK: [REVEAL_DATA_INDICES.OFAC_NAME_DOB_CHECK, REVEAL_DATA_END_INDICES.OFAC_NAME_DOB_CHECK_END] as const,
   OFAC_NAME_YOB_CHECK: [REVEAL_DATA_INDICES.OFAC_NAME_YOB_CHECK, REVEAL_DATA_END_INDICES.OFAC_NAME_YOB_CHECK_END] as const,
-  MINIMUM_AGE: [REVEAL_DATA_INDICES.MINIMUM_AGE, REVEAL_DATA_END_INDICES.MINIMUM_AGE_END] as const,
-} as const;
+  MINIMUM_AGE_VALID: [REVEAL_DATA_INDICES.MINIMUM_AGE_VALID, REVEAL_DATA_END_INDICES.MINIMUM_AGE_VALID_END] as const,
+  OFAC_NAME_DOB_REVERSE_CHECK: [REVEAL_DATA_INDICES.OFAC_NAME_DOB_REVERSE_CHECK, REVEAL_DATA_END_INDICES.OFAC_NAME_DOB_REVERSE_CHECK_END] as const,
+  OFAC_NAME_YOB_REVERSE_CHECK: [REVEAL_DATA_INDICES.OFAC_NAME_YOB_REVERSE_CHECK, REVEAL_DATA_END_INDICES.OFAC_NAME_YOB_REVERSE_CHECK_END] as const,
+  } as const;
 
 // Selector bit positions corresponding to each field (for creating selector bitmap)
 export const SELECTOR_BITS = {
-  GENDER: 0,
+  GENDER: [0] as const,
   YEAR_OF_BIRTH: [1, 2, 3, 4] as const,
   MONTH_OF_BIRTH: [5, 6] as const,
   DAY_OF_BIRTH: [7, 8] as const,
@@ -122,9 +150,12 @@ export const SELECTOR_BITS = {
   PINCODE: [75, 76, 77, 78, 79, 80] as const,
   STATE: Array.from({ length: MAX_FIELD_BYTE_SIZE }, (_, i) => i + 81) as number[], // indices 81-111
   PHONE_LAST_4_DIGITS: [112, 113, 114, 115] as const,
-  PHOTO_HASH: 116,
-  OFAC_NAME_DOB_CHECK: 117,
-  OFAC_NAME_YOB_CHECK: 118,
+  PHOTO_HASH: [116] as const,  // This uses sel_bits[116] for reveal_photoHash output
+  OFAC_NAME_DOB_CHECK: [117] as const,  // revealData[116] uses sel_bits[117]
+  OFAC_NAME_YOB_CHECK: [118] as const,  // revealData[117] uses sel_bits[118]
+  OFAC_NAME_DOB_REVERSE_CHECK: [119] as const,  // revealData[119] uses sel_bits[119]
+  OFAC_NAME_YOB_REVERSE_CHECK: [120] as const,  // revealData[120] uses sel_bits[120]
+  // Note: MINIMUM_AGE_VALID has NO selector bit - always revealed (revealData[118])
 } as const;
 
 export type AadhaarField = keyof typeof FIELD_LENGTHS;
@@ -141,7 +172,8 @@ export function extractField(unpackedData: string[], field: AadhaarField): strin
     // Single value field
     const value = unpackedData[range[0]];
     // Handle special cases for numeric/boolean fields
-    if (field === 'OFAC_NAME_DOB_CHECK' || field === 'OFAC_NAME_YOB_CHECK' || field === 'MINIMUM_AGE') {
+    if (field === 'OFAC_NAME_DOB_CHECK' || field === 'OFAC_NAME_YOB_CHECK' || field === 'MINIMUM_AGE_VALID' ||
+        field === 'OFAC_NAME_DOB_REVERSE_CHECK' || field === 'OFAC_NAME_YOB_REVERSE_CHECK') {
       return value.charCodeAt(0);
     }
     return value;
@@ -159,21 +191,22 @@ export function extractField(unpackedData: string[], field: AadhaarField): strin
  * @returns Selector value as bigint
  */
 export function createSelector(fieldsToReveal: AadhaarField[]): bigint {
-  const bits = Array(119).fill(0);
+  const bits = Array(121).fill(0);
 
   for (const field of fieldsToReveal) {
-    const selectorBits = SELECTOR_BITS[field];
-    if (Array.isArray(selectorBits)) {
-      for (const bit of selectorBits) {
-        bits[bit] = 1;
-      }
-    } else {
-      bits[selectorBits] = 1;
+    // MINIMUM_AGE_VALID has no selector bit - it's always revealed
+    if (field === 'MINIMUM_AGE_VALID') {
+      continue;
+    }
+
+    const selectorBits = SELECTOR_BITS[field as keyof typeof SELECTOR_BITS];
+    for (const bit of selectorBits) {
+      bits[bit] = 1;
     }
   }
 
   let result = 0n;
-  for (let i = 0; i < 119; i++) {
+  for (let i = 0; i < 121; i++) {
     if (bits[i]) {
       result += 1n << BigInt(i);
     }
@@ -189,24 +222,8 @@ export const COMMON_FIELD_COMBINATIONS = {
   LOCATION: ['STATE', 'PINCODE'] as AadhaarField[],
   CONTACT: ['PHONE_LAST_4_DIGITS'] as AadhaarField[],
   OFAC_CHECKS: ['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK'] as AadhaarField[],
+  OFAC_REVERSE_CHECKS: ['OFAC_NAME_DOB_REVERSE_CHECK', 'OFAC_NAME_YOB_REVERSE_CHECK'] as AadhaarField[],
+  // Note: ALL_FIELDS excludes MINIMUM_AGE_VALID since it's always revealed and has no selector bit
+  ALL_SELECTABLE_FIELDS: Object.keys(FIELD_LENGTHS).filter(field => field !== 'MINIMUM_AGE_VALID') as AadhaarField[],
   ALL_FIELDS: Object.keys(FIELD_LENGTHS) as AadhaarField[],
 } as const;
-
-/**
- * Usage Examples:
- *
- * // Get specific public signal values
- * const merkleRoot = getPublicSignalValue(publicSignals, 'MERKLE_ROOT');
- * const attestationId = getPublicSignalValue(publicSignals, 'ATTESTATION_ID');
- *
- * // Extract reveal data chunks
- * const revealDataChunks = getRevealDataPackedChunks(publicSignals);
- * const unpackedData = unpackReveal(revealDataChunks, 'id');
- *
- * // Extract specific fields from unpacked data
- * const gender = extractField(unpackedData, 'GENDER');
- * const ofacCheck = extractField(unpackedData, 'OFAC_NAME_DOB_CHECK');
- *
- * // Create selector for revealing specific fields
- * const selector = createSelector(['GENDER', 'YEAR_OF_BIRTH']);
- */

@@ -578,12 +578,12 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     let leaf = BigInt(0);
     if (treetype == 'name_and_dob') {
       leaf = processNameAndDobAadhaar(entry, i);
-      if (i ==0) {
-        console.log("expt leaf ", leaf );
-
-      }
     } else if (treetype == 'name_and_yob') {
       leaf = processNameAndYobAadhaar(entry, i);
+    }else if (treetype == 'name_and_dob_reverse') {
+      leaf = processNameAndDobAadhaar(entry, i, true);
+    }else if (treetype == 'name_and_yob_reverse') {
+      leaf = processNameAndYobAadhaar(entry, i, true);
     }
 
     if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
@@ -598,9 +598,15 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
   return [count, performance.now() - startTime, tree];
 }
 
-const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
-  const firstName = entry.First_Name;
-  const lastName = entry.Last_Name;
+const processNameAndDobAadhaar = (entry: any, i: number,reverse: boolean = false): bigint => {
+
+  let firstName = entry.First_Name;
+  let lastName = entry.Last_Name;
+  if (reverse) {
+    firstName = entry.Last_Name;
+    lastName = entry.First_Name;
+  }
+
   const day = entry.day;
   const month = entry.month;
   const year = entry.year;
@@ -616,9 +622,15 @@ const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
   return generateSmallKey(poseidon5([name[0], name[1], dob[0], dob[1], dob[2]]));
 };
 
-const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
-  const firstName = entry.First_Name;
-  const lastName = entry.Last_Name;
+const processNameAndYobAadhaar = (entry: any, i: number,reverse: boolean = false): bigint => {
+
+  let firstName = entry.First_Name;
+  let lastName = entry.Last_Name;
+  if (reverse) {
+    firstName = entry.Last_Name;
+    lastName = entry.First_Name;
+  }
+
   const year = entry.year;
   if (year == null) {
     console.log('year is null', i, entry);

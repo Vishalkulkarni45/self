@@ -7,6 +7,7 @@ include "@openpassport/zk-email-circuits/utils/bytes.circom";
 include "../utils/aadhaar/extractQrData.circom";
 include "../utils/aadhaar/ofac/ofac_name_dob.circom";
 include "../utils/aadhaar/ofac/ofac_name_yob.circom";
+include "../utils/aadhaar/disclose/country_not_in_list.circom";
 
 /// @title VC_AND_DISCLOSE_Aadhaar
 /// @notice Verify user's commitment is part of the merkle tree and optionally disclose data from Aadhaar
@@ -37,7 +38,7 @@ include "../utils/aadhaar/ofac/ofac_name_yob.circom";
 /// @input path Path of the commitment in the merkle tree
 /// @input siblings Siblings of the commitment in the merkle tree
 /// @input selector Bitmap indicating which fields to reveal
-template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
+template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input attestation_id;
     signal input secret;
     signal input qrDataHash;
@@ -61,9 +62,17 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input ofac_name_dob_smt_root;
     signal input ofac_name_dob_smt_siblings[namedobTreeLevels];
 
+    signal input ofac_name_dob_reverse_smt_leaf_key;
+    signal input ofac_name_dob_reverse_smt_root;
+    signal input ofac_name_dob_reverse_smt_siblings[namedobTreeLevels];
+
     signal input ofac_name_yob_smt_leaf_key;
     signal input ofac_name_yob_smt_root;
     signal input ofac_name_yob_smt_siblings[nameyobTreeLevels];
+
+    signal input ofac_name_yob_reverse_smt_leaf_key;
+    signal input ofac_name_yob_reverse_smt_root;
+    signal input ofac_name_yob_reverse_smt_siblings[nameyobTreeLevels];
 
     signal input merkle_root;
     signal input leaf_depth;
@@ -73,8 +82,10 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     signal input selector;
     signal input scope;
     signal input user_identifier;
-    // convert selector to 119 bits which acts as a bitmap for the fields to reveal
-    signal sel_bits[119] <== Num2Bits(119)(selector);
+
+    signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3];
+    // convert selector to 121 bits which acts as a bitmap for the fields to reveal
+    signal sel_bits[121] <== Num2Bits(121)(selector);
 
     signal output nullifier <== Poseidon(2)([secret, scope]);
 
@@ -115,6 +126,15 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     ofac_name_dob.smt_root <== ofac_name_dob_smt_root;
     ofac_name_dob.smt_siblings <== ofac_name_dob_smt_siblings;
 
+    component ofac_name_dob_reverse = OFAC_NAME_DOB_AADHAAR(namedobTreeLevels);
+    ofac_name_dob_reverse.name <== name_packed;
+    ofac_name_dob_reverse.YOB <== yob_integer;
+    ofac_name_dob_reverse.MOB <== mob_integer;
+    ofac_name_dob_reverse.DOB <== dob_integer;
+    ofac_name_dob_reverse.smt_leaf_key <== ofac_name_dob_reverse_smt_leaf_key;
+    ofac_name_dob_reverse.smt_root <== ofac_name_dob_reverse_smt_root;
+    ofac_name_dob_reverse.smt_siblings <== ofac_name_dob_reverse_smt_siblings;
+
     // verify name-YOB in OFAC list
     component ofac_name_yob = OFAC_NAME_YOB_AADHAAR(nameyobTreeLevels);
     ofac_name_yob.name <== name_packed;
@@ -122,6 +142,13 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     ofac_name_yob.smt_leaf_key <== ofac_name_yob_smt_leaf_key;
     ofac_name_yob.smt_root <== ofac_name_yob_smt_root;
     ofac_name_yob.smt_siblings <== ofac_name_yob_smt_siblings;
+
+    component ofac_name_yob_reverse = OFAC_NAME_YOB_AADHAAR(nameyobTreeLevels);
+    ofac_name_yob_reverse.name <== name_packed;
+    ofac_name_yob_reverse.YOB <== yob_integer;
+    ofac_name_yob_reverse.smt_leaf_key <== ofac_name_yob_reverse_smt_leaf_key;
+    ofac_name_yob_reverse.smt_root <== ofac_name_yob_reverse_smt_root;
+    ofac_name_yob_reverse.smt_siblings <== ofac_name_yob_reverse_smt_siblings;
 
     // verify age is greater than minimum age
     signal age <== AgeExtractor()(yob, mob, dob, currentYear, currentMonth, currentDay);
@@ -133,7 +160,7 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
 
     // reveal fields based on selector
 
-    signal revealData[119];
+    signal revealData[121];
     revealData[0] <== gender * sel_bits[0];
 
 
@@ -177,21 +204,39 @@ template VC_AND_DISCLOSE_Aadhaar(nLevels, namedobTreeLevels, nameyobTreeLevels){
     revealData[117] <== ofac_name_yob.ofacCheckResult * sel_bits[118];
     revealData[118] <== isMinimumAgeValid;
 
-    var revealed_data_packed_chunk_length = computeIntChunkLength(119);
-    signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(119)(revealData);
+    revealData[119] <== ofac_name_dob_reverse.ofacCheckResult * sel_bits[119];
+    revealData[120] <== ofac_name_yob_reverse.ofacCheckResult * sel_bits[120];
 
-    signal dummy <== user_identifier + 2;
+    var revealed_data_packed_chunk_length = computeIntChunkLength(121);
+    signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(121)(revealData);
+
+    component country_not_in_list_circuit = CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH);
+
+    country_not_in_list_circuit.country[0] <== 73;
+    country_not_in_list_circuit.country[1] <== 78;
+    country_not_in_list_circuit.country[2] <== 68;
+
+    country_not_in_list_circuit.forbidden_countries_list <== forbidden_countries_list;
+
+    var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3);
+    signal output forbidden_countries_list_packed[chunkLength] <== country_not_in_list_circuit.forbidden_countries_list_packed;
+
+
+    signal dummy <== user_identifier + user_identifier;
 }
 
 component main { public
     [
-        merkle_root,
-        ofac_name_dob_smt_root,
-        ofac_name_yob_smt_root,
         attestation_id,
         currentYear,
         currentMonth,
         currentDay,
+        ofac_name_dob_smt_root,
+        ofac_name_yob_smt_root,
+        ofac_name_dob_reverse_smt_root,
+        ofac_name_yob_reverse_smt_root,
+        merkle_root,
+        scope,
         user_identifier
     ]
-} = VC_AND_DISCLOSE_Aadhaar(33, 64, 64);
+} = VC_AND_DISCLOSE_Aadhaar(40, 33, 64, 64);
