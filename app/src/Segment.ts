@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import '@ethersproject/shims';
-
 import { SEGMENT_KEY } from '@env';
+import type { SegmentEvent } from '@segment/analytics-react-native';
 import {
   BackgroundFlushPolicy,
   createClient,
   EventPlugin,
   PluginType,
-  SegmentEvent,
-  StartupFlushPolicy,
 } from '@segment/analytics-react-native';
+
+import '@ethersproject/shims';
 
 let segmentClient: ReturnType<typeof createClient> | null = null;
 
@@ -47,7 +46,7 @@ export const createSegmentClient = () => {
     return segmentClient;
   }
 
-  const flushPolicies = [new StartupFlushPolicy(), new BackgroundFlushPolicy()];
+  const flushPolicies = [new BackgroundFlushPolicy()];
 
   const client = createClient({
     writeKey: SEGMENT_KEY,

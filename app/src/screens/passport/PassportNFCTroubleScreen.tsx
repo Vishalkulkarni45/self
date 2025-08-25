@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { YStack } from 'tamagui';
 
-import Tips, { TipProps } from '../../components/Tips';
-import { Caption } from '../../components/typography/Caption';
-import useHapticNavigation from '../../hooks/useHapticNavigation';
-import SimpleScrolledTitleLayout from '../../layouts/SimpleScrolledTitleLayout';
-import analytics from '../../utils/analytics';
-import { slate500 } from '../../utils/colors';
+import type { TipProps } from '@/components/Tips';
+import Tips from '@/components/Tips';
+import { Caption } from '@/components/typography/Caption';
+import useHapticNavigation from '@/hooks/useHapticNavigation';
+import SimpleScrolledTitleLayout from '@/layouts/SimpleScrolledTitleLayout';
+import analytics from '@/utils/analytics';
+import { slate500 } from '@/utils/colors';
 
 const { flush: flushAnalytics } = analytics();
 
@@ -47,7 +48,7 @@ const PassportNFCTrouble: React.FC = () => {
   );
 
   // error screen, flush analytics
-  React.useEffect(() => {
+  useEffect(() => {
     flushAnalytics();
   }, []);
 
@@ -60,15 +61,20 @@ const PassportNFCTrouble: React.FC = () => {
 
   return (
     <SimpleScrolledTitleLayout
-      title="Having trouble scanning your passport?"
+      title="Having trouble verifying your ID?"
       onDismiss={go}
       secondaryButtonText="Open NFC Options"
       onSecondaryButtonPress={goToNFCMethodSelection}
     >
-      <YStack>
+      <YStack
+        paddingTop={24}
+        paddingHorizontal={10}
+        paddingBottom={32}
+        gap={20}
+      >
         <GestureDetector gesture={devModeTap}>
           <Caption size="large" color={slate500}>
-            Here are some tips to help you successfully scan the RFID chip::
+            Here are some tips to help you successfully scan the RFID chip:
           </Caption>
         </GestureDetector>
         <Tips items={tips} />

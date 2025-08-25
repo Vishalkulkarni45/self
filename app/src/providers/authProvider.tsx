@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
 import { ethers } from 'ethers';
+import type { PropsWithChildren } from 'react';
 import React, {
   createContext,
-  PropsWithChildren,
   useCallback,
   useContext,
   useMemo,
@@ -12,9 +12,10 @@ import React, {
 import ReactNativeBiometrics from 'react-native-biometrics';
 import Keychain from 'react-native-keychain';
 
-import { AuthEvents } from '../consts/analytics';
-import { Mnemonic } from '../types/mnemonic';
-import analytics from '../utils/analytics';
+import { AuthEvents } from '@/consts/analytics';
+import { useSettingStore } from '@/stores/settingStore';
+import type { Mnemonic } from '@/types/mnemonic';
+import analytics from '@/utils/analytics';
 
 const { trackEvent } = analytics();
 
@@ -25,13 +26,8 @@ const _getSecurely = async function <T>(
   fn: () => Promise<string | false>,
   formatter: (dataString: string) => T,
 ): Promise<SignedPayload<T> | null> {
-  console.log('Starting _getSecurely');
-
   const dataString = await fn();
-  console.log('Got data string:', dataString ? 'exists' : 'not found');
-
   if (dataString === false) {
-    console.log('No data string available');
     return null;
   }
 
@@ -53,11 +49,12 @@ const _getSecurely = async function <T>(
       signature: 'authenticated',
       data: formatter(dataString),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in _getSecurely:', error);
+    const message = error instanceof Error ? error.message : String(error);
     trackEvent(AuthEvents.BIOMETRIC_AUTH_FAILED, {
       reason: 'unknown_error',
-      error: error.message,
+      error: message,
     });
     throw error;
   }
@@ -68,11 +65,12 @@ async function checkBiometricsAvailable(): Promise<boolean> {
     const { available } = await biometrics.isSensorAvailable();
     trackEvent(AuthEvents.BIOMETRIC_CHECK, { available });
     return available;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error checking biometric availability:', error);
+    const message = error instanceof Error ? error.message : String(error);
     trackEvent(AuthEvents.BIOMETRIC_CHECK, {
       reason: 'unknown_error',
-      error: error.message,
+      error: message,
     });
     return false;
   }
@@ -94,10 +92,10 @@ async function restoreFromMnemonic(mnemonic: string): Promise<string | false> {
     });
     trackEvent(AuthEvents.MNEMONIC_RESTORE_SUCCESS);
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     trackEvent(AuthEvents.MNEMONIC_RESTORE_FAILED, {
       reason: 'unknown_error',
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return false;
   }
@@ -110,23 +108,19 @@ async function loadOrCreateMnemonic(): Promise<string | false> {
   if (storedMnemonic) {
     try {
       JSON.parse(storedMnemonic.password);
-      console.log('Stored mnemonic parsed successfully');
       trackEvent(AuthEvents.MNEMONIC_LOADED);
       return storedMnemonic.password;
-    } catch (e: any) {
-      console.log(
+    } catch (e: unknown) {
+      console.error(
         'Error parsing stored mnemonic, old secret format was used',
         e,
       );
-      console.log('Creating a new one');
       trackEvent(AuthEvents.MNEMONIC_RESTORE_FAILED, {
         reason: 'unknown_error',
-        error: e.message,
+        error: e instanceof Error ? e.message : String(e),
       });
     }
   }
-
-  console.log('No secret found, creating one');
   try {
     const { mnemonic } = ethers.HDNodeWallet.fromMnemonic(
       ethers.Mnemonic.fromEntropy(ethers.randomBytes(32)),
@@ -137,10 +131,10 @@ async function loadOrCreateMnemonic(): Promise<string | false> {
     });
     trackEvent(AuthEvents.MNEMONIC_CREATED);
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     trackEvent(AuthEvents.MNEMONIC_RESTORE_FAILED, {
       reason: 'unknown_error',
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return false;
   }
@@ -208,6 +202,7 @@ export const AuthProvider = ({
 
     setIsAuthenticatingPromise(null);
     setIsAuthenticated(true);
+    useSettingStore.getState().incrementLoginCount();
     trackEvent(AuthEvents.BIOMETRIC_LOGIN_SUCCESS);
     setAuthenticatedTimeout(previousTimeout => {
       if (previousTimeout) {
@@ -218,7 +213,7 @@ export const AuthProvider = ({
         trackEvent(AuthEvents.AUTHENTICATION_TIMEOUT);
       }, authenticationTimeoutinMs);
     });
-  }, [isAuthenticatingPromise]);
+  }, [authenticationTimeoutinMs, isAuthenticatingPromise]);
 
   const getOrCreateMnemonic = useCallback(
     () => _getSecurely<Mnemonic>(loadOrCreateMnemonic, str => JSON.parse(str)),
@@ -244,19 +239,27 @@ export const AuthProvider = ({
       checkBiometricsAvailable,
       _getSecurely,
     }),
-    [isAuthenticated, isAuthenticatingPromise, loginWithBiometrics],
+    [
+      getOrCreateMnemonic,
+      isAuthenticated,
+      isAuthenticatingPromise,
+      loginWithBiometrics,
+      restoreAccountFromMnemonic,
+    ],
   );
 
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
-
 export async function hasSecretStored() {
   const seed = await Keychain.getGenericPassword({ service: SERVICE_NAME });
   return !!seed;
+}
+
+export async function unsafe_clearSecrets() {
+  if (__DEV__) {
+    await Keychain.resetGenericPassword({ service: SERVICE_NAME });
+  }
 }
 
 /**
@@ -273,8 +276,6 @@ export async function unsafe_getPrivateKey() {
   return wallet.privateKey;
 }
 
-export async function unsafe_clearSecrets() {
-  if (__DEV__) {
-    await Keychain.resetGenericPassword({ service: SERVICE_NAME });
-  }
-}
+export const useAuth = () => {
+  return useContext(AuthContext);
+};

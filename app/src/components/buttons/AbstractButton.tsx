@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
-import { Button, Text, ViewProps } from 'tamagui';
+import type { GestureResponderEvent, ViewStyle } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+import type { ViewProps } from 'tamagui';
+import { Button, Text } from 'tamagui';
 
-import { shouldShowAesopRedesign } from '../../hooks/useAesopRedesign';
-import analytics from '../../utils/analytics';
-import { dinot } from '../../utils/fonts';
-import { pressedStyle } from './pressedStyle';
+import { pressedStyle } from '@/components/buttons/pressedStyle';
+import { shouldShowAesopRedesign } from '@/hooks/useAesopRedesign';
+import analytics from '@/utils/analytics';
+import { dinot } from '@/utils/fonts';
 
 export interface ButtonProps extends ViewProps {
   children: React.ReactNode;
@@ -18,8 +20,9 @@ export interface ButtonProps extends ViewProps {
 interface AbstractButtonProps extends ButtonProps {
   bgColor: string;
   borderColor?: string;
+  borderWidth?: number;
   color: string;
-  onPress?: ((e: any) => void) | null | undefined;
+  onPress?: ((e: GestureResponderEvent) => void) | null | undefined;
 }
 
 const { trackEvent: analyticsTrackEvent } = analytics();
@@ -35,6 +38,7 @@ export default function AbstractButton({
   bgColor,
   color,
   borderColor,
+  borderWidth = 4,
   style,
   animatedComponent,
   trackEvent,
@@ -43,7 +47,7 @@ export default function AbstractButton({
 }: AbstractButtonProps) {
   const hasBorder = borderColor ? true : false;
 
-  const handlePress = (e: any) => {
+  const handlePress = (e: GestureResponderEvent) => {
     if (trackEvent) {
       // attempt to remove event category from click event
       const parsedEvent = trackEvent?.split(':')?.[1]?.trim();
@@ -64,8 +68,14 @@ export default function AbstractButton({
       onPress={handlePress}
       style={[
         styles.container,
-        { backgroundColor: bgColor, borderColor: borderColor },
-        hasBorder ? styles.withBorder : {},
+        { backgroundColor: bgColor },
+        hasBorder
+          ? {
+              borderWidth: borderWidth,
+              borderColor: borderColor,
+              padding: 20 - borderWidth, // Adjust padding to maintain total size
+            }
+          : Platform.select({ web: { borderWidth: 0 }, default: {} }),
         style as ViewStyle,
       ]}
       pressStyle={!animatedComponent ? pressedStyle : {}}
@@ -89,10 +99,6 @@ const styles = StyleSheet.create({
     rowGap: 12,
     padding: 20,
     borderRadius: 5,
-  },
-  withBorder: {
-    borderWidth: 4,
-    padding: 16, // plus 4 of border = 20
   },
   text: {
     fontFamily: dinot,

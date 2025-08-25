@@ -1,13 +1,13 @@
-name: Publish to npm
+name: NPM Publish
 
 on:
   push:
     branches:
       - dev
     paths:
-      - 'sdk/core/package.json'
-      - 'sdk/qrcode/package.json'
-      - 'common/package.json'
+      - "sdk/core/package.json"
+      - "sdk/qrcode/package.json"
+      - "common/package.json"
   workflow_dispatch:
 
 jobs:
@@ -51,8 +51,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+          node-version-file: .nvmrc
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install Dependencies
         uses: ./.github/actions/yarn-install
@@ -80,8 +80,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+          node-version-file: .nvmrc
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install Dependencies
         uses: ./.github/actions/yarn-install
@@ -109,8 +109,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+          node-version-file: .nvmrc
+          registry-url: "https://registry.npmjs.org"
       - uses: actions/checkout@v4
       - name: Install Dependencies
         uses: ./.github/actions/yarn-install

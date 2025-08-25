@@ -1,12 +1,10 @@
-import { LeanIMT } from "@openpassport/zk-kit-lean-imt";
-import { ChildNodes, SMT } from "@openpassport/zk-kit-smt";
 import fs from "fs";
 import path from "path";
 import { poseidon2, poseidon3 } from "poseidon-lite";
 import type { CircuitSignals, Groth16Proof, PublicSignals } from "snarkjs";
 import { groth16 } from "snarkjs";
 import { PassportData } from "@selfxyz/common/utils/types";
-import { CircuitArtifacts, DscCircuitProof, RegisterAadhaarCircuitProof, RegisterCircuitProof, VcAndDiscloseProof } from "./types.js";
+import { CircuitArtifacts, DscCircuitProof, RegisterCircuitProof, VcAndDiscloseProof } from "./types.js";
 import { prepareAadhaarDiscloseTestData, prepareAadhaarRegisterTestData } from "@selfxyz/common";
 
 import { BigNumberish } from "ethers";
@@ -19,6 +17,8 @@ import { getCircuitNameFromPassportData } from "@selfxyz/common/utils/circuits/c
 import serialized_csca_tree from "../../../common/pubkeys/serialized_csca_tree.json";
 import serialized_dsc_tree from "../../../common/pubkeys/serialized_dsc_tree.json";
 import { GenericProofStructStruct } from "../../typechain-types/contracts/IdentityVerificationHubImplV2.js";
+const { LeanIMT, ChildNodes } = require("@openpassport/zk-kit-lean-imt");
+const { SMT } = require("@openpassport/zk-kit-smt");
 
 const registerCircuits: CircuitArtifacts = {
   register_sha256_sha256_sha256_rsa_65537_4096: {
@@ -214,11 +214,11 @@ export async function generateVcAndDiscloseRawProof(
   scope: string,
   selectorDg1: string[] = new Array(93).fill("1"),
   selectorOlderThan: string | number = "1",
-  merkletree: LeanIMT<bigint>,
+  merkletree: typeof LeanIMT,
   majority: string = "20",
-  passportNo_smt?: SMT,
-  nameAndDob_smt?: SMT,
-  nameAndYob_smt?: SMT,
+  passportNo_smt?: typeof SMT,
+  nameAndDob_smt?: typeof SMT,
+  nameAndYob_smt?: typeof SMT,
   selectorOfac: string | number = "1",
   forbiddenCountriesList: string[] = ["AAA"],
   userIdentifier: string = "0000000000000000000000000000000000000000",
@@ -274,11 +274,11 @@ export async function generateVcAndDiscloseProof(
   scope: string,
   selectorDg1: string[] = new Array(93).fill("1"),
   selectorOlderThan: string | number = "1",
-  merkletree: LeanIMT<bigint>,
+  merkletree: typeof LeanIMT,
   majority: string = "20",
-  passportNo_smt?: SMT,
-  nameAndDob_smt?: SMT,
-  nameAndYob_smt?: SMT,
+  passportNo_smt?: typeof SMT,
+  nameAndDob_smt?: typeof SMT,
+  nameAndYob_smt?: typeof SMT,
   selectorOfac: string | number = "1",
   forbiddenCountriesList: string[] = [
     "AAA",
@@ -354,11 +354,11 @@ export async function generateVcAndDiscloseIdProof(
   scope: string,
   selectorDg1: string[] = new Array(90).fill("1"),
   selectorOlderThan: string | number = "1",
-  merkletree: LeanIMT<bigint>,
+  merkletree: typeof LeanIMT,
   majority: string = "20",
-  passportNo_smt?: SMT,
-  nameAndDob_smt?: SMT,
-  nameAndYob_smt?: SMT,
+  passportNo_smt?: typeof SMT,
+  nameAndDob_smt?: typeof SMT,
+  nameAndYob_smt?: typeof SMT,
   selectorOfac: string | number = "1",
   forbiddenCountriesList: string[] = [
     "AAA",
@@ -502,11 +502,13 @@ export function parseSolidityCalldata<T>(rawCallData: string, _type: T): T {
 }
 
 export function getSMTs() {
-  const passportNo_smt = importSMTFromJsonFile("../common/ofacdata/outputs/passportNoAndNationalitySMT.json") as SMT;
-  const nameAndDob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobSMT.json") as SMT;
-  const nameAndYob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobSMT.json") as SMT;
-  const nameAndDobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobReverseAadhaarSMT.json") as SMT;
-  const nameAndYobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobReverseAadhaarSMT.json") as SMT;
+  const passportNo_smt = importSMTFromJsonFile("../common/ofacdata/outputs/passportNoAndNationalitySMT.json") as typeof SMT;
+  const nameAndDob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobSMT.json") as typeof SMT;
+  const nameAndYob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobSMT.json") as typeof SMT;
+  const nameAndDobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobReverseAadhaarSMT.json") as typeof SMT;
+  const nameAndYobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobReverseAadhaarSMT.json") as typeof SMT;
+  const nameAndDob_id_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobSMT_ID.json") as typeof SMT;
+  const nameAndYob_id_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobSMT_ID.json") as typeof SMT;
 
   return {
     passportNo_smt,
@@ -514,16 +516,18 @@ export function getSMTs() {
     nameAndYob_smt,
     nameAndDobReverse_smt,
     nameAndYobReverse_smt,
+    nameAndDob_id_smt,
+    nameAndYob_id_smt,
   };
 }
 
-function importSMTFromJsonFile(filePath?: string): SMT | null {
+function importSMTFromJsonFile(filePath?: string): typeof SMT | null {
   try {
     const jsonString = fs.readFileSync(path.resolve(process.cwd(), filePath as string), "utf8");
 
     const data = JSON.parse(jsonString);
 
-    const hash2 = (childNodes: ChildNodes) => (childNodes.length === 2 ? poseidon2(childNodes) : poseidon3(childNodes));
+    const hash2 = (childNodes: typeof ChildNodes) => (childNodes.length === 2 ? poseidon2(childNodes) : poseidon3(childNodes));
     const smt = new SMT(hash2, true);
     smt.import(data);
 

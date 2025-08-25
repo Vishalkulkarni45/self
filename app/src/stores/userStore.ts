@@ -1,35 +1,44 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { DEFAULT_DOB, DEFAULT_DOE, DEFAULT_PNUMBER } from '@env';
 import { create } from 'zustand';
+import { DEFAULT_DOB, DEFAULT_DOE, DEFAULT_PNUMBER } from '@env';
+
+import type { IdDocInput } from '@selfxyz/common/utils';
 
 interface UserState {
+  documentType: string;
+  countryCode: string;
   passportNumber: string;
   dateOfBirth: string;
   dateOfExpiry: string;
   deepLinkName?: string;
   deepLinkSurname?: string;
-  deepLinkNationality?: string;
+  deepLinkNationality?: IdDocInput['nationality'];
   deepLinkBirthDate?: string;
+  deepLinkGender?: string;
   update: (patch: Partial<UserState>) => void;
   deleteMrzFields: () => void;
   setDeepLinkUserDetails: (details: {
     name?: string;
     surname?: string;
-    nationality?: string;
+    nationality?: IdDocInput['nationality'];
     birthDate?: string;
+    gender?: string;
   }) => void;
   clearDeepLinkUserDetails: () => void;
 }
 
 const useUserStore = create<UserState>((set, _get) => ({
   passportNumber: DEFAULT_PNUMBER ?? '',
+  documentType: '',
+  countryCode: '',
   dateOfBirth: DEFAULT_DOB ?? '',
   dateOfExpiry: DEFAULT_DOE ?? '',
   deepLinkName: undefined,
   deepLinkSurname: undefined,
   deepLinkNationality: undefined,
   deepLinkBirthDate: undefined,
+  deepLinkGender: undefined,
 
   update: patch => {
     set(state => ({ ...state, ...patch }));
@@ -37,7 +46,9 @@ const useUserStore = create<UserState>((set, _get) => ({
 
   deleteMrzFields: () =>
     set({
+      documentType: '',
       passportNumber: '',
+      countryCode: '',
       dateOfBirth: '',
       dateOfExpiry: '',
     }),
@@ -48,6 +59,7 @@ const useUserStore = create<UserState>((set, _get) => ({
       deepLinkSurname: details.surname,
       deepLinkNationality: details.nationality,
       deepLinkBirthDate: details.birthDate,
+      deepLinkGender: details.gender,
     }),
 
   clearDeepLinkUserDetails: () =>
@@ -56,6 +68,7 @@ const useUserStore = create<UserState>((set, _get) => ({
       deepLinkSurname: undefined,
       deepLinkNationality: undefined,
       deepLinkBirthDate: undefined,
+      deepLinkGender: undefined,
     }),
 }));
 

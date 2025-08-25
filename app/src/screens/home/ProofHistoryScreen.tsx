@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { useNavigation } from '@react-navigation/native';
-import { CheckSquare2, Wallet } from '@tamagui/lucide-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,24 +9,26 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Image, Text, View, XStack, YStack } from 'tamagui';
+import { useNavigation } from '@react-navigation/native';
+import { CheckSquare2, Wallet, XCircle } from '@tamagui/lucide-icons';
 
-import { BodyText } from '../../components/typography/BodyText';
-import {
-  ProofHistory,
-  useProofHistoryStore,
-} from '../../stores/proofHistoryStore';
+import { BodyText } from '@/components/typography/BodyText';
+import type { ProofHistory } from '@/stores/proof-types';
+import { ProofStatus } from '@/stores/proof-types';
+import { useProofHistoryStore } from '@/stores/proofHistoryStore';
 import {
   black,
   blue100,
   blue600,
+  red500,
   slate50,
   slate200,
   slate300,
   slate500,
   white,
-} from '../../utils/colors';
-import { extraYPadding } from '../../utils/constants';
-import { dinot } from '../../utils/fonts';
+} from '@/utils/colors';
+import { extraYPadding } from '@/utils/constants';
+import { dinot } from '@/utils/fonts';
 
 type Section = {
   title: string;
@@ -270,6 +270,25 @@ const ProofHistoryScreen: React.FC = () => {
                     </Text>
                     <CheckSquare2 color={blue600} height={14} width={14} />
                   </XStack>
+                  {item.status === ProofStatus.FAILURE && (
+                    <XStack
+                      paddingVertical={2}
+                      paddingHorizontal={8}
+                      borderRadius={4}
+                      alignItems="center"
+                      marginLeft={4}
+                    >
+                      <Text
+                        color={red500}
+                        fontSize={14}
+                        fontWeight="600"
+                        marginRight={4}
+                      >
+                        FAIL
+                      </Text>
+                      <XCircle color={red500} height={14} width={14} />
+                    </XStack>
+                  )}
                 </XStack>
               </Card>
             </YStack>
@@ -280,7 +299,7 @@ const ProofHistoryScreen: React.FC = () => {
         return null;
       }
     },
-    [],
+    [navigation],
   );
 
   const renderSectionHeader = useCallback(
@@ -352,7 +371,11 @@ const ProofHistoryScreen: React.FC = () => {
   }, [isLoading, refreshing]);
 
   return (
-    <YStack flex={1} bg={slate50} pb={bottom + extraYPadding}>
+    <YStack
+      flex={1}
+      backgroundColor={slate50}
+      paddingBottom={bottom + extraYPadding}
+    >
       <SectionList
         sections={groupedProofs}
         renderItem={renderItem}

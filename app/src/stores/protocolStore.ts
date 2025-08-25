@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
+import { create } from 'zustand';
+
 import {
   API_URL,
   API_URL_STAGING,
@@ -15,8 +17,9 @@ import {
   IDENTITY_TREE_URL_ID_CARD,
   IDENTITY_TREE_URL_STAGING,
   IDENTITY_TREE_URL_STAGING_ID_CARD,
-} from '@selfxyz/common';
-import { create } from 'zustand';
+} from '@selfxyz/common/constants';
+
+import { fetchOfacTrees } from '@/utils/ofac';
 
 interface ProtocolState {
   passport: {
@@ -26,6 +29,11 @@ interface ProtocolState {
     deployed_circuits: any;
     circuits_dns_mapping: any;
     alternative_csca: Record<string, string>;
+    ofac_trees: {
+      passportNoAndNationality: any;
+      nameAndDob: any;
+      nameAndYob: any;
+    } | null;
     fetch_deployed_circuits: (environment: 'prod' | 'stg') => Promise<void>;
     fetch_circuits_dns_mapping: (environment: 'prod' | 'stg') => Promise<void>;
     fetch_csca_tree: (environment: 'prod' | 'stg') => Promise<void>;
@@ -36,6 +44,7 @@ interface ProtocolState {
       ski: string,
     ) => Promise<void>;
     fetch_all: (environment: 'prod' | 'stg', ski: string) => Promise<void>;
+    fetch_ofac_trees: (environment: 'prod' | 'stg') => Promise<void>;
   };
   id_card: {
     commitment_tree: any;
@@ -44,6 +53,11 @@ interface ProtocolState {
     deployed_circuits: any;
     circuits_dns_mapping: any;
     alternative_csca: Record<string, string>;
+    ofac_trees: {
+      passportNoAndNationality: any;
+      nameAndDob: any;
+      nameAndYob: any;
+    } | null;
     fetch_deployed_circuits: (environment: 'prod' | 'stg') => Promise<void>;
     fetch_circuits_dns_mapping: (environment: 'prod' | 'stg') => Promise<void>;
     fetch_csca_tree: (environment: 'prod' | 'stg') => Promise<void>;
@@ -54,6 +68,7 @@ interface ProtocolState {
       ski: string,
     ) => Promise<void>;
     fetch_all: (environment: 'prod' | 'stg', ski: string) => Promise<void>;
+    fetch_ofac_trees: (environment: 'prod' | 'stg') => Promise<void>;
   };
 }
 
@@ -65,6 +80,7 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
     deployed_circuits: null,
     circuits_dns_mapping: null,
     alternative_csca: {},
+    ofac_trees: null,
     fetch_all: async (environment: 'prod' | 'stg', ski: string) => {
       await Promise.all([
         get().passport.fetch_deployed_circuits(environment),
@@ -72,6 +88,7 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
         get().passport.fetch_csca_tree(environment),
         get().passport.fetch_dsc_tree(environment),
         get().passport.fetch_identity_tree(environment),
+        get().passport.fetch_ofac_trees(environment),
         get().passport.fetch_alternative_csca(environment, ski),
       ]);
     },
@@ -79,7 +96,7 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
       environment: 'prod' | 'stg',
       ski: string,
     ) => {
-      const url = `${environment === 'prod' && false ? API_URL : API_URL_STAGING}/ski-pems/${ski.toLowerCase()}`; // TODO: remove false once we have the endpoint in production
+      const url = `${environment === 'prod' ? API_URL : API_URL_STAGING}/ski-pems/${ski.toLowerCase()}`; // TODO: remove false once we have the endpoint in production
       try {
         const response = await fetch(url, {
           method: 'GET',
@@ -194,7 +211,15 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
         set({ passport: { ...get().passport, commitment_tree: data.data } });
       } catch (error) {
         console.error(`Failed fetching identity tree from ${url}:`, error);
-        // Optionally handle error state
+      }
+    },
+    fetch_ofac_trees: async (environment: 'prod' | 'stg') => {
+      try {
+        const trees = await fetchOfacTrees(environment, 'passport');
+        set({ passport: { ...get().passport, ofac_trees: trees } });
+      } catch (error) {
+        console.error('Failed fetching OFAC trees:', error);
+        set({ passport: { ...get().passport, ofac_trees: null } });
       }
     },
   },
@@ -205,6 +230,7 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
     deployed_circuits: null,
     circuits_dns_mapping: null,
     alternative_csca: {},
+    ofac_trees: null,
     fetch_all: async (environment: 'prod' | 'stg', ski: string) => {
       await Promise.all([
         get().id_card.fetch_deployed_circuits(environment),
@@ -212,6 +238,7 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
         get().id_card.fetch_csca_tree(environment),
         get().id_card.fetch_dsc_tree(environment),
         get().id_card.fetch_identity_tree(environment),
+        get().id_card.fetch_ofac_trees(environment),
         get().id_card.fetch_alternative_csca(environment, ski),
       ]);
     },
@@ -328,7 +355,7 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
       environment: 'prod' | 'stg',
       ski: string,
     ) => {
-      const url = `${environment === 'prod' && false ? API_URL : API_URL_STAGING}/ski-pems/${ski.toLowerCase()}`; // TODO: remove false once we have the endpoint in production
+      const url = `${environment === 'prod' ? API_URL : API_URL_STAGING}/ski-pems/${ski.toLowerCase()}`; // TODO: remove false once we have the endpoint in production
       try {
         const response = await fetch(url, {
           method: 'GET',
@@ -344,6 +371,15 @@ export const useProtocolStore = create<ProtocolState>((set, get) => ({
       } catch (error) {
         console.error(`Failed fetching alternative CSCA from ${url}:`, error);
         set({ id_card: { ...get().id_card, alternative_csca: {} } });
+      }
+    },
+    fetch_ofac_trees: async (environment: 'prod' | 'stg') => {
+      try {
+        const trees = await fetchOfacTrees(environment, 'id_card');
+        set({ id_card: { ...get().id_card, ofac_trees: trees } });
+      } catch (error) {
+        console.error('Failed fetching OFAC trees:', error);
+        set({ id_card: { ...get().id_card, ofac_trees: null } });
       }
     },
   },

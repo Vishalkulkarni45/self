@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { Platform, ScrollView } from 'react-native';
 import { Input, YStack } from 'tamagui';
+import { useNavigation } from '@react-navigation/native';
 
-import { PrimaryButton } from '../../components/buttons/PrimaryButton';
-import { SecondaryButton } from '../../components/buttons/SecondaryButton';
-import ButtonsContainer from '../../components/ButtonsContainer';
-import { BodyText } from '../../components/typography/BodyText';
-import Description from '../../components/typography/Description';
-import { Title } from '../../components/typography/Title';
-import { ExpandableBottomLayout } from '../../layouts/ExpandableBottomLayout';
-import useUserStore from '../../stores/userStore';
-import { white } from '../../utils/colors';
+import { PrimaryButton } from '@/components/buttons/PrimaryButton';
+import { SecondaryButton } from '@/components/buttons/SecondaryButton';
+import ButtonsContainer from '@/components/ButtonsContainer';
+import { BodyText } from '@/components/typography/BodyText';
+import Description from '@/components/typography/Description';
+import { Title } from '@/components/typography/Title';
+import { ExpandableBottomLayout } from '@/layouts/ExpandableBottomLayout';
+import useUserStore from '@/stores/userStore';
+import { white } from '@/utils/colors';
 
 type NFCParams = {
   skipPACE?: boolean;
@@ -21,6 +21,7 @@ type NFCParams = {
   useCan?: boolean;
   skipCA?: boolean;
   extendedMode?: boolean;
+  usePacePolling?: boolean;
 };
 
 const NFC_METHODS = [
@@ -30,6 +31,13 @@ const NFC_METHODS = [
     description: 'Use the default NFC scan method (MRZ-based authentication).',
     platform: ['ios'],
     params: {},
+  },
+  {
+    key: 'usePacePolling',
+    label: 'Use PACE Polling',
+    description: 'To be used with certain ID cards.',
+    platform: ['ios'],
+    params: { usePacePolling: true },
   },
   {
     // We try PACE first, but if it fails, we try BAC authentication.

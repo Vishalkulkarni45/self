@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import React from 'react';
+import type { ErrorInfo } from 'react';
+import React, { Component } from 'react';
 import { Text, View } from 'react-native';
 
-import analytics from '../utils/analytics';
+import { captureException } from '@/Sentry';
+import analytics from '@/utils/analytics';
 
 const { flush: flushAnalytics } = analytics();
 
@@ -15,7 +17,7 @@ interface State {
   hasError: boolean;
 }
 
-class ErrorBoundary extends React.Component<Props, State> {
+class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -25,9 +27,13 @@ class ErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch() {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     // Flush analytics before the app crashes
     flushAnalytics();
+    captureException(error, {
+      componentStack: info.componentStack,
+      errorBoundary: true,
+    });
   }
 
   render() {

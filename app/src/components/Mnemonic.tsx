@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import Clipboard from '@react-native-clipboard/clipboard';
 import React, { useCallback, useState } from 'react';
 import { Button, Text, XStack, YStack } from 'tamagui';
+import Clipboard from '@react-native-clipboard/clipboard';
 
+import { useSettingStore } from '@/stores/settingStore';
 import {
   black,
   slate50,
@@ -12,8 +13,8 @@ import {
   slate500,
   teal500,
   white,
-} from '../utils/colors';
-import { confirmTap } from '../utils/haptic';
+} from '@/utils/colors';
+import { confirmTap } from '@/utils/haptic';
 
 interface MnemonicProps {
   words?: string[];
@@ -50,17 +51,19 @@ const REDACTED = new Array(24)
 const Mnemonic = ({ words = REDACTED, onRevealWords }: MnemonicProps) => {
   const [revealWords, setRevealWords] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { setHasViewedRecoveryPhrase } = useSettingStore();
   const copyToClipboardOrReveal = useCallback(async () => {
     confirmTap();
     if (!revealWords) {
       // TODO: container jumps when words are revealed on android
       await onRevealWords?.();
+      setHasViewedRecoveryPhrase(true);
       return setRevealWords(previous => !previous);
     }
     Clipboard.setString(words.join(' '));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-  }, [words, revealWords]);
+  }, [onRevealWords, revealWords, setHasViewedRecoveryPhrase, words]);
 
   return (
     <YStack position="relative" alignItems="stretch" gap={0}>
@@ -95,7 +98,7 @@ const Mnemonic = ({ words = REDACTED, onRevealWords }: MnemonicProps) => {
           borderTopWidth={0}
           borderBottomLeftRadius="$5"
           borderBottomRightRadius="$5"
-          py="$2"
+          paddingVertical={16}
           onPress={copyToClipboardOrReveal}
           width="100%"
           textAlign="center"

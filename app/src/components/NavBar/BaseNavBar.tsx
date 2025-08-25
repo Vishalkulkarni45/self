@@ -1,23 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { ChevronLeft, X } from '@tamagui/lucide-icons';
 import React, { useMemo } from 'react';
-import { StatusBar, StatusBarStyle } from 'react-native';
-import {
-  Button,
-  TextProps,
-  View,
-  ViewProps,
-  XStack,
-  XStackProps,
-} from 'tamagui';
+import type { SystemBarStyle } from 'react-native-edge-to-edge';
+import { SystemBars } from 'react-native-edge-to-edge';
+import type { TextProps, ViewProps, XStackProps } from 'tamagui';
+import { Button, View, XStack } from 'tamagui';
+import { ChevronLeft, X } from '@tamagui/lucide-icons';
 
-import { Title } from '../typography/Title';
+import { Title } from '@/components/typography/Title';
 
 interface NavBarProps extends XStackProps {
   children: React.ReactNode;
   backgroundColor?: string;
-  barStyle?: StatusBarStyle;
+  barStyle?: SystemBarStyle;
 }
 interface LeftActionProps extends ViewProps {
   component?: 'back' | 'close' | React.ReactNode;
@@ -39,7 +34,7 @@ export const LeftAction: React.FC<LeftActionProps> = ({
   onPress,
   ...props
 }) => {
-  let children: React.ReactNode = useMemo(() => {
+  const children: React.ReactNode = useMemo(() => {
     switch (component) {
       case 'back':
         return (
@@ -69,29 +64,13 @@ export const LeftAction: React.FC<LeftActionProps> = ({
           </Button>
         );
     }
-  }, [component]);
+  }, [color, component, onPress]);
 
   if (!children) {
     return null;
   }
 
   return <View {...props}>{children}</View>;
-};
-
-export const RightAction: React.FC<RightActionProps> = ({
-  component,
-  onPress,
-  ...props
-}) => {
-  if (!component) {
-    return null;
-  }
-
-  return (
-    <View onPress={onPress} {...props}>
-      {component}
-    </View>
-  );
 };
 
 const NavBarTitle: React.FC<NavBarTitleProps> = ({ children, ...props }) => {
@@ -114,7 +93,7 @@ const Container: React.FC<NavBarProps> = ({
 }) => {
   return (
     <>
-      <StatusBar backgroundColor={backgroundColor} barStyle={barStyle} />
+      <SystemBars style={barStyle} />
       <XStack
         backgroundColor={backgroundColor}
         flexGrow={1}
@@ -125,6 +104,22 @@ const Container: React.FC<NavBarProps> = ({
         {children}
       </XStack>
     </>
+  );
+};
+
+export const RightAction: React.FC<RightActionProps> = ({
+  component,
+  onPress,
+  ...props
+}) => {
+  if (!component) {
+    return null;
+  }
+
+  return (
+    <View onPress={onPress} {...props}>
+      {component}
+    </View>
   );
 };
 

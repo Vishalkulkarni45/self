@@ -1,71 +1,95 @@
-import { Country3LetterCode as Country3LetterCode1 } from './src/constants/countries.js';
-import {
-  Country3LetterCode as Country3LetterCode2,
-  REDIRECT_URL,
-} from './src/constants/constants.js';
-import {
+// Type exports from constants
+export type {
   CertificateData,
+  DocumentCategory,
+  IdDocInput,
+  PassportData,
+  PassportMetadata,
   PublicKeyDetailsECDSA,
   PublicKeyDetailsRSA,
-} from './src/utils/certificate_parsing/dataStructure.js';
-import { parseCertificateSimple } from './src/utils/certificate_parsing/parseCertificateSimple.js';
-import {
-  findStartPubKeyIndex,
-  generateCommitment,
-  generateNullifier,
-} from './src/utils/passports/passport.js';
-import { parseDscCertificateData } from './src/utils/passports/passport_parsing/parseDscCertificateData.js';
-import { getLeafCscaTree, getLeafDscTree } from './src/utils/trees.js';
-import {
-  genMockIdDoc,
-  genMockIdDocAndInitDataParsing,
-  IdDocInput,
-} from './src/utils/passports/genMockIdDoc.js';
-import { brutforceSignatureAlgorithmDsc } from './src/utils/passports/passport_parsing/brutForceDscSignature.js';
-import { buildSMT } from './src/utils/trees.js';
-export { initElliptic } from './src/utils/certificate_parsing/elliptic.js';
-export { getSKIPEM } from './src/utils/csca.js';
-export { formatMrz } from './src/utils/passports/format.js';
-export { getCircuitNameFromPassportData } from './src/utils/circuits/circuitsName.js';
-import * as Hash from './src/utils/hash.js';
-import { calculateUserIdentifierHash, getSolidityPackedUserContextData } from './src/utils/hash.js';
-export * from './src/constants/countries.js';
-export * from './src/constants/constants.js';
-export * from './src/utils/appType.js';
-export * from './src/utils/scope.js';
-export type { PassportData, DocumentType, DocumentCategory } from './src/utils/types.js';
-export type Country3LetterCode = Country3LetterCode1 & Country3LetterCode2;
-export { initPassportDataParsing } from './src/utils/passports/passport.js';
-export { genAndInitMockPassportData } from './src/utils/passports/genMockPassportData.js';
+  SelfApp,
+  SelfAppDisclosureConfig,
+  UserIdType,
+} from './src/utils/index.js';
 
-export type { UserIdType } from './src/utils/circuits/uuid.js';
+// Constants exports
+export type { Country3LetterCode } from './src/constants/index.js';
+
+// Utils exports
 export {
+  API_URL,
+  API_URL_STAGING,
+  CSCA_TREE_URL,
+  CSCA_TREE_URL_ID_CARD,
+  CSCA_TREE_URL_STAGING,
+  CSCA_TREE_URL_STAGING_ID_CARD,
+  DEFAULT_MAJORITY,
+  DSC_TREE_URL,
+  DSC_TREE_URL_ID_CARD,
+  DSC_TREE_URL_STAGING,
+  DSC_TREE_URL_STAGING_ID_CARD,
+  IDENTITY_TREE_URL,
+  IDENTITY_TREE_URL_ID_CARD,
+  IDENTITY_TREE_URL_STAGING,
+  IDENTITY_TREE_URL_STAGING_ID_CARD,
+  ID_CARD_ATTESTATION_ID,
+  PASSPORT_ATTESTATION_ID,
+  PCR0_MANAGER_ADDRESS,
+  REDIRECT_URL,
+  RPC_URL,
+  TREE_URL,
+  TREE_URL_STAGING,
+  WS_DB_RELAYER,
+  WS_DB_RELAYER_STAGING,
+  attributeToPosition,
+  attributeToPosition_ID,
+  commonNames,
+  countries,
+  countryCodes,
+} from './src/constants/index.js';
+
+// Type exports
+export {
+  EndpointType,
+  Mode,
+  SelfAppBuilder,
+  bigIntToString,
+  brutforceSignatureAlgorithmDsc,
+  findStartPubKeyIndex,
+  formatEndpoint,
+  formatMrz,
+  genAndInitMockPassportData,
   generateCircuitInputsDSC,
   generateCircuitInputsRegister,
   generateCircuitInputsVCandDisclose,
-} from './src/utils/circuits/generateInputs.js';
-export type { PassportMetadata } from './src/utils/passports/passport_parsing/parsePassportData.js';
-
-export {
-  REDIRECT_URL,
-  IdDocInput,
-  CertificateData,
-  brutforceSignatureAlgorithmDsc,
-  Hash,
   generateCommitment,
+  generateMockDSC,
   generateNullifier,
-  findStartPubKeyIndex,
+  getCircuitNameFromPassportData,
   getLeafCscaTree,
   getLeafDscTree,
+  getSKIPEM,
+  getUniversalLink,
+  hashEndpointWithScope,
+  initElliptic,
+  initPassportDataParsing,
   parseCertificateSimple,
   parseDscCertificateData,
-  PublicKeyDetailsECDSA,
-  PublicKeyDetailsRSA,
   genMockIdDoc,
   genMockIdDocAndInitDataParsing,
   buildSMT,
   calculateUserIdentifierHash,
   getSolidityPackedUserContextData,
-};
+  stringToBigInt,
+} from './src/utils/index.js';
 
 export { prepareAadhaarRegisterTestData, prepareAadhaarDiscloseTestData } from './src/utils/aadhaar/mockData.js';
+
+// Hash utilities
+export {
+  customHasher,
+  flexiblePoseidon,
+  getHashLen,
+  hash,
+  packBytesAndPoseidon,
+} from './src/utils/hash.js';

@@ -1,60 +1,37 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
+import { poseidon2 } from 'poseidon-lite';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { SMT } from '@openpassport/zk-kit-smt';
+
 import {
   attributeToPosition,
   attributeToPosition_ID,
   DEFAULT_MAJORITY,
-  DocumentCategory,
   ID_CARD_ATTESTATION_ID,
   PASSPORT_ATTESTATION_ID,
-  SelfAppDisclosureConfig,
-} from '@selfxyz/common';
-import { SelfApp } from '@selfxyz/common';
-import { getCircuitNameFromPassportData } from '@selfxyz/common';
+} from '@selfxyz/common/constants';
+import type { DocumentCategory, PassportData } from '@selfxyz/common/types';
+import type { SelfApp, SelfAppDisclosureConfig } from '@selfxyz/common/utils';
 import {
+  calculateUserIdentifierHash,
   generateCircuitInputsDSC,
   generateCircuitInputsRegister,
   generateCircuitInputsVCandDisclose,
-} from '@selfxyz/common';
-import { hashEndpointWithScope } from '@selfxyz/common';
-import { calculateUserIdentifierHash } from '@selfxyz/common';
-import { PassportData } from '@selfxyz/common';
-import nameAndDobSMTData from '@selfxyz/common/ofacdata/outputs/nameAndDobSMT.json';
-import nameAndDobSMTDataID from '@selfxyz/common/ofacdata/outputs/nameAndDobSMT_ID.json';
-import nameAndYobSMTData from '@selfxyz/common/ofacdata/outputs/nameAndYobSMT.json';
-import nameAndYobSMTDataID from '@selfxyz/common/ofacdata/outputs/nameAndYobSMT_ID.json';
-import passportNoAndNationalitySMTData from '@selfxyz/common/ofacdata/outputs/passportNoAndNationalitySMT.json';
-import { poseidon2 } from 'poseidon-lite';
+  getCircuitNameFromPassportData,
+  hashEndpointWithScope,
+} from '@selfxyz/common/utils';
 
-import { useProtocolStore } from '../../stores/protocolStore';
-
-export function generateTEEInputsRegister(
-  secret: string,
-  passportData: PassportData,
-  dscTree: string,
-) {
-  const inputs = generateCircuitInputsRegister(secret, passportData, dscTree);
-  const circuitName = getCircuitNameFromPassportData(passportData, 'register');
-  const endpointType =
-    passportData.documentType && passportData.documentType !== 'passport'
-      ? 'staging_celo'
-      : 'celo';
-  const endpoint = 'https://self.xyz';
-  return { inputs, circuitName, endpointType, endpoint };
-}
+import { useProtocolStore } from '@/stores/protocolStore';
 
 export function generateTEEInputsDSC(
   passportData: PassportData,
   cscaTree: string[][],
+  env: 'prod' | 'stg',
 ) {
   const inputs = generateCircuitInputsDSC(passportData, cscaTree);
   const circuitName = getCircuitNameFromPassportData(passportData, 'dsc');
-  const endpointType =
-    passportData.documentType && passportData.documentType !== 'passport'
-      ? 'staging_celo'
-      : 'celo';
+  const endpointType = env === 'stg' ? 'staging_celo' : 'celo';
   const endpoint = 'https://self.xyz';
   return { inputs, circuitName, endpointType, endpoint };
 }
@@ -83,13 +60,20 @@ export function generateTEEInputsDisclose(
 
   const selector_ofac = disclosures.ofac ? 1 : 0;
 
-  const {
-    passportNoAndNationalitySMT,
-    nameAndDobSMT,
-    nameAndYobSMT,
-    nameAndDobSMTID,
-    nameAndYobSMTID,
-  } = getOfacSMTs();
+  const ofac_trees = useProtocolStore.getState()[document].ofac_trees;
+  if (!ofac_trees) {
+    throw new Error('OFAC trees not loaded');
+  }
+  let passportNoAndNationalitySMT: SMT | null = null;
+  const nameAndDobSMT = new SMT(poseidon2, true);
+  const nameAndYobSMT = new SMT(poseidon2, true);
+  if (document === 'passport') {
+    passportNoAndNationalitySMT = new SMT(poseidon2, true);
+    passportNoAndNationalitySMT.import(ofac_trees.passportNoAndNationality);
+  }
+  nameAndDobSMT.import(ofac_trees.nameAndDob);
+  nameAndYobSMT.import(ofac_trees.nameAndYob);
+
   const serialized_tree = useProtocolStore.getState()[document].commitment_tree;
   const tree = LeanIMT.import((a, b) => poseidon2([a, b]), serialized_tree);
   const inputs = generateCircuitInputsVCandDisclose(
@@ -102,8 +86,8 @@ export function generateTEEInputsDisclose(
     tree,
     majority,
     passportNoAndNationalitySMT,
-    document === 'passport' ? nameAndDobSMT : nameAndDobSMTID,
-    document === 'passport' ? nameAndYobSMT : nameAndYobSMTID,
+    nameAndDobSMT,
+    nameAndYobSMT,
     selector_ofac,
     disclosures.excludedCountries ?? [],
     userIdentifierHash.toString(),
@@ -119,28 +103,20 @@ export function generateTEEInputsDisclose(
   };
 }
 
-/*** DISCLOSURE ***/
-
-function getOfacSMTs() {
-  // TODO: get the SMT from an endpoint
-  const passportNoAndNationalitySMT = new SMT(poseidon2, true);
-  passportNoAndNationalitySMT.import(passportNoAndNationalitySMTData);
-  const nameAndDobSMT = new SMT(poseidon2, true);
-  nameAndDobSMT.import(nameAndDobSMTData);
-  const nameAndYobSMT = new SMT(poseidon2, true);
-  nameAndYobSMT.import(nameAndYobSMTData);
-  const nameAndDobSMTID = new SMT(poseidon2, true);
-  nameAndDobSMTID.import(nameAndDobSMTDataID);
-  const nameAndYobSMTID = new SMT(poseidon2, true);
-  nameAndYobSMTID.import(nameAndYobSMTDataID);
-  return {
-    passportNoAndNationalitySMT,
-    nameAndDobSMT,
-    nameAndYobSMT,
-    nameAndDobSMTID,
-    nameAndYobSMTID,
-  };
+export function generateTEEInputsRegister(
+  secret: string,
+  passportData: PassportData,
+  dscTree: string,
+  env: 'prod' | 'stg',
+) {
+  const inputs = generateCircuitInputsRegister(secret, passportData, dscTree);
+  const circuitName = getCircuitNameFromPassportData(passportData, 'register');
+  const endpointType = env === 'stg' ? 'staging_celo' : 'celo';
+  const endpoint = 'https://self.xyz';
+  return { inputs, circuitName, endpointType, endpoint };
 }
+
+/*** DISCLOSURE ***/
 
 function getSelectorDg1(
   document: DocumentCategory,

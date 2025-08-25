@@ -1,32 +1,78 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import queryString from 'query-string';
-import { Linking } from 'react-native';
+import { parseUrl } from 'query-string';
+import { Linking, Platform } from 'react-native';
 
-import { navigationRef } from '../navigation';
-import { useSelfAppStore } from '../stores/selfAppStore';
-import useUserStore from '../stores/userStore';
+import { countries } from '@selfxyz/common/constants/countries';
+import type { IdDocInput } from '@selfxyz/common/utils';
 
-/**
- * Decodes a URL-encoded string.
- * @param {string} encodedUrl
- * @returns {string}
- */
-const decodeUrl = (encodedUrl: string): string => {
-  try {
-    return decodeURIComponent(encodedUrl);
-  } catch (error) {
-    console.error('Error decoding URL:', error);
-    return encodedUrl;
-  }
+import { navigationRef } from '@/navigation';
+import { useSelfAppStore } from '@/stores/selfAppStore';
+import useUserStore from '@/stores/userStore';
+
+// Validation patterns for each expected parameter
+const VALIDATION_PATTERNS = {
+  sessionId: /^[a-zA-Z0-9_-]+$/,
+  selfApp: /^[\s\S]*$/, // JSON strings can contain any characters, we'll validate JSON parsing separately
+  mock_passport: /^[\s\S]*$/, // JSON strings can contain any characters, we'll validate JSON parsing separately
+} as const;
+
+type ValidatedParams = {
+  sessionId?: string;
+  selfApp?: string;
+  mock_passport?: string;
 };
 
-const handleUrl = (uri: string) => {
-  const decodedUri = decodeUrl(uri);
-  const encodedData = queryString.parseUrl(decodedUri).query;
-  const sessionId = encodedData.sessionId;
-  const selfAppStr = encodedData.selfApp as string | undefined;
-  const mock_passport = encodedData.mock_passport as string | undefined;
+// Define proper types for the mock data structure
+type MockDataDeepLinkRawParams = {
+  name?: string;
+  surname?: string;
+  nationality?: string;
+  birth_date?: string;
+  gender?: string;
+};
+
+/**
+ * Validates and sanitizes a query parameter value
+ * @param key - The parameter key
+ * @param value - The parameter value to validate
+ * @returns The sanitized value or undefined if invalid
+ */
+const validateAndSanitizeParam = (
+  key: string,
+  value: string,
+): string | undefined => {
+  if (!value) return undefined;
+
+  // Decode the value first
+  let decodedValue: string;
+  try {
+    decodedValue = decodeURIComponent(value);
+  } catch (error) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.error(`Error decoding parameter ${key}:`, error);
+    }
+    return undefined;
+  }
+
+  // Validate against pattern if we have one for this key
+  if (key in VALIDATION_PATTERNS) {
+    const pattern =
+      VALIDATION_PATTERNS[key as keyof typeof VALIDATION_PATTERNS];
+    if (!pattern.test(decodedValue)) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error(`Parameter ${key} failed validation:`, decodedValue);
+      }
+      return undefined;
+    }
+  }
+
+  return decodedValue;
+};
+
+export const handleUrl = (uri: string) => {
+  const validatedParams = parseAndValidateUrlParams(uri);
+  const { sessionId, selfApp: selfAppStr, mock_passport } = validatedParams;
 
   if (selfAppStr) {
     try {
@@ -37,7 +83,9 @@ const handleUrl = (uri: string) => {
 
       return;
     } catch (error) {
-      console.error('Error parsing selfApp:', error);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error('Error parsing selfApp:', error);
+      }
       navigationRef.navigate('QRCodeTrouble');
     }
   } else if (sessionId && typeof sessionId === 'string') {
@@ -47,30 +95,73 @@ const handleUrl = (uri: string) => {
   } else if (mock_passport) {
     try {
       const data = JSON.parse(mock_passport);
-      type MockDataDeepLinkRawParams = {
-        name?: string;
-        surname?: string;
-        nationality?: string;
-        birth_date?: string;
-      };
       const rawParams = data as MockDataDeepLinkRawParams;
+
+      // Validate nationality is a valid country code
+      const isValidCountryCode = (
+        code: string | undefined,
+      ): code is IdDocInput['nationality'] => {
+        if (!code) return false;
+        // Check if the code exists as a value in the countries object
+        return Object.values(countries).some(
+          countryCode => countryCode === code,
+        );
+      };
 
       useUserStore.getState().setDeepLinkUserDetails({
         name: rawParams.name,
         surname: rawParams.surname,
-        nationality: rawParams.nationality,
+        nationality: isValidCountryCode(rawParams.nationality)
+          ? rawParams.nationality
+          : undefined,
         birthDate: rawParams.birth_date,
+        gender: rawParams.gender,
       });
 
       navigationRef.navigate('MockDataDeepLink');
     } catch (error) {
-      console.error('Error parsing mock_passport data or navigating:', error);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error('Error parsing mock_passport data or navigating:', error);
+      }
       navigationRef.navigate('QRCodeTrouble');
     }
+  } else if (Platform.OS === 'web') {
+    // TODO: web handle links if we need to idk if we do
+    // For web, we can handle the URL some other way if we dont do this loading app in web always navigates to QRCodeTrouble
   } else {
-    console.error('No sessionId or selfApp found in the data');
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.error('No sessionId or selfApp found in the data');
+    }
     navigationRef.navigate('QRCodeTrouble');
   }
+};
+
+/**
+ * Parses and validates query parameters from a URL
+ * @param uri - The URL to parse
+ * @returns Validated and sanitized parameters
+ */
+export const parseAndValidateUrlParams = (uri: string): ValidatedParams => {
+  // Parse the URL directly without pre-decoding to avoid issues with fragment separators
+  const parsed = parseUrl(uri);
+  const query = parsed.query || {};
+
+  const validatedParams: ValidatedParams = {};
+
+  // Only process expected parameters and validate them
+  for (const [key, value] of Object.entries(query)) {
+    if (key in VALIDATION_PATTERNS && typeof value === 'string') {
+      const sanitizedValue = validateAndSanitizeParam(key, value);
+      if (sanitizedValue !== undefined) {
+        validatedParams[key as keyof ValidatedParams] = sanitizedValue;
+      }
+    } else if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      // Log unexpected parameters in development
+      console.warn(`Unexpected or invalid parameter ignored: ${key}`);
+    }
+  }
+
+  return validatedParams;
 };
 
 export const setupUniversalLinkListenerInNavigation = () => {

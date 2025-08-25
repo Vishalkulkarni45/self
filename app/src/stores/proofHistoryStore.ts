@@ -1,35 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import type { EndpointType } from '@selfxyz/common';
-import { WS_DB_RELAYER } from '@selfxyz/common';
-import { UserIdType } from '@selfxyz/common';
-import { Platform } from 'react-native';
-import SQLite from 'react-native-sqlite-storage';
 import { io } from 'socket.io-client';
 import { create } from 'zustand';
 
-SQLite.enablePromise(true);
+import { WS_DB_RELAYER } from '@selfxyz/common/constants';
 
-export interface ProofHistory {
-  id: string;
-  appName: string;
-  sessionId: string;
-  userId: string;
-  userIdType: UserIdType;
-  endpointType: EndpointType;
-  status: ProofStatus;
-  errorCode?: string;
-  errorReason?: string;
-  timestamp: number;
-  disclosures: string;
-  logoBase64?: string;
-}
-
-export enum ProofStatus {
-  PENDING = 'pending',
-  SUCCESS = 'success',
-  FAILURE = 'failure',
-}
+import { database } from '@/stores/database';
+import type { ProofHistory } from '@/stores/proof-types';
+import { ProofStatus } from '@/stores/proof-types';
 
 interface ProofHistoryState {
   proofHistory: ProofHistory[];
@@ -50,24 +28,27 @@ interface ProofHistoryState {
   resetHistory: () => void;
 }
 
-const PAGE_SIZE = 20;
-const DB_NAME = Platform.OS === 'ios' ? 'proof_history.db' : 'proof_history.db';
-const TABLE_NAME = 'proof_history';
+const SYNC_THROTTLE_MS = 30 * 1000; // 30 seconds throttle for sync calls
 
 export const useProofHistoryStore = create<ProofHistoryState>()((set, get) => {
+  let lastSyncTime = 0; // Track last sync time for throttling
+
   const syncProofHistoryStatus = async () => {
     try {
+      // Throttling mechanism - prevent sync if called too frequently
+      const now = Date.now();
+      if (now - lastSyncTime < SYNC_THROTTLE_MS) {
+        return;
+      }
+      lastSyncTime = now;
+
       set({ isLoading: true });
-      const db = await SQLite.openDatabase({
-        name: DB_NAME,
-        location: 'default',
-      });
-      const [pendingProofs] = await db.executeSql(`
-        SELECT * FROM ${TABLE_NAME} WHERE status = '${ProofStatus.PENDING}'
-      `);
+
+      await database.updateStaleProofs(get().updateProofStatus);
+
+      const pendingProofs = await database.getPendingProofs();
 
       if (pendingProofs.rows.length === 0) {
-        console.log('No pending proofs to sync');
         return;
       }
 
@@ -75,26 +56,30 @@ export const useProofHistoryStore = create<ProofHistoryState>()((set, get) => {
         path: '/',
         transports: ['websocket'],
       });
+      setTimeout(() => {
+        if (websocket.connected) {
+          websocket.disconnect();
+        }
+        // disconnect after 2 minutes
+      }, SYNC_THROTTLE_MS * 4);
 
       for (let i = 0; i < pendingProofs.rows.length; i++) {
-        const proof = pendingProofs.rows.item(i);
+        const proof = pendingProofs.rows[i];
         websocket.emit('subscribe', proof.sessionId);
       }
 
-      websocket.on('status', message => {
+      websocket.timeout(SYNC_THROTTLE_MS * 3).on('status', message => {
         const data =
           typeof message === 'string' ? JSON.parse(message) : message;
 
         if (data.status === 3) {
-          console.log('Failed to generate proof');
           get().updateProofStatus(data.request_id, ProofStatus.FAILURE);
         } else if (data.status === 4) {
-          console.log('Proof verified');
           get().updateProofStatus(data.request_id, ProofStatus.SUCCESS);
         } else if (data.status === 5) {
-          console.log('Failed to verify proof');
           get().updateProofStatus(data.request_id, ProofStatus.FAILURE);
         }
+        websocket.emit('unsubscribe', data.request_id);
       });
     } catch (error) {
       console.error('Error syncing proof status', error);
@@ -111,31 +96,7 @@ export const useProofHistoryStore = create<ProofHistoryState>()((set, get) => {
 
     initDatabase: async () => {
       try {
-        const db = await SQLite.openDatabase({
-          name: DB_NAME,
-          location: 'default',
-        });
-
-        await db.executeSql(`
-          CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            appName TEXT NOT NULL,
-            sessionId TEXT NOT NULL UNIQUE,
-            userId TEXT NOT NULL,
-            userIdType TEXT NOT NULL,
-            endpointType TEXT NOT NULL,
-            status TEXT NOT NULL,
-            errorCode TEXT,
-            errorReason TEXT,
-            timestamp INTEGER NOT NULL,
-            disclosures TEXT NOT NULL,
-            logoBase64 TEXT
-          )
-        `);
-
-        await db.executeSql(`
-          CREATE INDEX IF NOT EXISTS idx_proof_history_timestamp ON ${TABLE_NAME} (timestamp)
-        `);
+        await database.init();
 
         // Load initial data
         const state = get();
@@ -152,33 +113,10 @@ export const useProofHistoryStore = create<ProofHistoryState>()((set, get) => {
 
     addProofHistory: async proof => {
       try {
-        const db = await SQLite.openDatabase({
-          name: DB_NAME,
-          location: 'default',
-        });
+        const insertResult = await database.insertProof(proof);
 
-        const timestamp = Date.now();
-
-        const [insertResult] = await db.executeSql(
-          `INSERT OR IGNORE INTO ${TABLE_NAME} (appName, endpointType, status, errorCode, errorReason, timestamp, disclosures, logoBase64, userId, userIdType, sessionId)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            proof.appName,
-            proof.endpointType,
-            proof.status,
-            proof.errorCode || null,
-            proof.errorReason || null,
-            timestamp,
-            proof.disclosures,
-            proof.logoBase64 || null,
-            proof.userId,
-            proof.userIdType,
-            proof.sessionId,
-          ],
-        );
-
-        if (insertResult.rowsAffected > 0 && insertResult.insertId) {
-          const id = insertResult.insertId.toString();
+        if (insertResult.rowsAffected > 0 && insertResult.id) {
+          const { id, timestamp } = insertResult;
           set(state => ({
             proofHistory: [
               {
@@ -198,17 +136,12 @@ export const useProofHistoryStore = create<ProofHistoryState>()((set, get) => {
 
     updateProofStatus: async (sessionId, status, errorCode, errorReason) => {
       try {
-        const db = await SQLite.openDatabase({
-          name: DB_NAME,
-          location: 'default',
-        });
-        await db.executeSql(
-          `
-          UPDATE ${TABLE_NAME} SET status = ?, errorCode = ?, errorReason = ? WHERE sessionId = ?
-        `,
-          [status, errorCode, errorReason, sessionId],
+        await database.updateProofStatus(
+          status,
+          errorCode,
+          errorReason,
+          sessionId,
         );
-
         // Update the status in the state
         set(state => ({
           proofHistory: state.proofHistory.map(proof =>
@@ -229,29 +162,12 @@ export const useProofHistoryStore = create<ProofHistoryState>()((set, get) => {
       set({ isLoading: true });
 
       try {
-        const db = await SQLite.openDatabase({
-          name: DB_NAME,
-          location: 'default',
-        });
-        const offset = (state.currentPage - 1) * PAGE_SIZE;
-
-        const [results] = await db.executeSql(
-          `WITH data AS (
-            SELECT *, COUNT(*) OVER() as total_count
-            FROM ${TABLE_NAME}
-            ORDER BY timestamp DESC
-            LIMIT ? OFFSET ?
-          )
-          SELECT * FROM data`,
-          [PAGE_SIZE, offset],
-        );
+        const results = await database.getHistory(state.currentPage);
 
         const proofs: ProofHistory[] = [];
-        let totalCount = 0;
-
+        const totalCount = results.total_count || 0;
         for (let i = 0; i < results.rows.length; i++) {
-          const row = results.rows.item(i);
-          totalCount = row.total_count; // same for all rows
+          const row = results.rows[i];
           proofs.push({
             id: row.id.toString(),
             sessionId: row.sessionId,

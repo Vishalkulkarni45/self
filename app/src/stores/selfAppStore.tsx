@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import type { SelfApp } from '@selfxyz/common';
-import { WS_DB_RELAYER } from '@selfxyz/common';
-import io, { Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import socketIo from 'socket.io-client';
 import { create } from 'zustand';
+
+import { WS_DB_RELAYER } from '@selfxyz/common/constants';
+import type { SelfApp } from '@selfxyz/common/utils/appType';
 
 interface SelfAppState {
   selfApp: SelfApp | null;
@@ -32,7 +34,7 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
     const socketUrl = `${connectionUrl}/websocket`;
 
     // Create a new socket connection using the updated URL.
-    const socket = io(socketUrl, {
+    const socket = socketIo(socketUrl, {
       path: '/',
       transports: ['websocket'],
       forceNew: true, // Ensure a new connection is established
@@ -49,20 +51,13 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
   },
 
   startAppListener: (sessionId: string) => {
-    console.log(
-      `[SelfAppStore] Initializing WS connection with sessionId: ${sessionId}`,
-    );
     const currentSocket = get().socket;
 
     // If a socket connection exists for a different session, disconnect it.
     if (currentSocket && get().sessionId !== sessionId) {
-      console.log(
-        '[SelfAppStore] Disconnecting existing socket for old session.',
-      );
       currentSocket.disconnect();
       set({ socket: null, sessionId: null, selfApp: null });
     } else if (currentSocket && get().sessionId === sessionId) {
-      console.log('[SelfAppStore] Already connected with the same session ID.');
       return; // Avoid reconnecting if already connected with the same session
     }
 
@@ -70,18 +65,13 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
       const socket = get()._initSocket(sessionId);
       set({ socket, sessionId });
 
-      socket.on('connect', () => {
-        console.log(
-          `[SelfAppStore] Mobile WS connected (id: ${socket.id}) with sessionId: ${sessionId}`,
-        );
-      });
+      socket.on('connect', () => {});
 
       // Listen for the event only once per connection attempt
-      socket.once('self_app', (data: any) => {
-        console.log('[SelfAppStore] Received self_app event with data:', data);
+      socket.once('self_app', (data: unknown) => {
         try {
           const appData: SelfApp =
-            typeof data === 'string' ? JSON.parse(data) : data;
+            typeof data === 'string' ? JSON.parse(data) : (data as SelfApp);
 
           // Basic validation
           if (!appData || typeof appData !== 'object' || !appData.sessionId) {
@@ -99,10 +89,6 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
             return;
           }
 
-          console.log(
-            '[SelfAppStore] Processing valid app data:',
-            JSON.stringify(appData),
-          );
           set({ selfApp: appData });
         } catch (error) {
           console.error('[SelfAppStore] Error processing app data:', error);
@@ -121,11 +107,9 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
         // Consider if cleanup is needed here as well
       });
 
-      socket.on('disconnect', (reason: string) => {
-        console.log('[SelfAppStore] Mobile WS disconnected:', reason);
+      socket.on('disconnect', (_reason: string) => {
         // Prevent cleaning up if disconnect was initiated by cleanSelfApp
         if (get().socket === socket) {
-          console.log('[SelfAppStore] Cleaning up state on disconnect.');
           set({ socket: null, sessionId: null, selfApp: null });
         }
       });
@@ -136,7 +120,6 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
   },
 
   cleanSelfApp: () => {
-    console.log('[SelfAppStore] Cleaning up SelfApp state and WS connection.');
     const socket = get().socket;
     if (socket) {
       socket.disconnect();
@@ -160,26 +143,11 @@ export const useSelfAppStore = create<SelfAppState>((set, get) => ({
       return;
     }
 
-    console.log(
-      `[SelfAppStore] handleProofResult called for sessionId: ${sessionId}, verified: ${proof_verified}`,
-    );
-
     if (proof_verified) {
-      console.log('[SelfAppStore] Emitting proof_verified event with data:', {
-        session_id: sessionId,
-      });
       socket.emit('proof_verified', {
         session_id: sessionId,
       });
     } else {
-      console.log(
-        '[SelfAppStore] Emitting proof_generation_failed event with data:',
-        {
-          session_id: sessionId,
-          error_code,
-          reason,
-        },
-      );
       socket.emit('proof_generation_failed', {
         session_id: sessionId,
         error_code,

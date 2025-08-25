@@ -1,18 +1,20 @@
-import { UserIdType, validateUserId } from './circuits/uuid.js';
-
-export type Mode = 'register' | 'dsc' | 'vc_and_disclose';
-export type EndpointType = 'https' | 'celo' | 'staging_celo' | 'staging_https';
-
 import { v4 } from 'uuid';
+
 import { REDIRECT_URL } from '../constants/constants.js';
-import { Country3LetterCode } from '../constants/countries.js';
+import type { Country3LetterCode } from '../constants/countries.js';
+import type { UserIdType } from './circuits/uuid.js';
+import { validateUserId } from './circuits/uuid.js';
 import { formatEndpoint } from './scope.js';
+
+export type EndpointType = 'https' | 'celo' | 'staging_celo' | 'staging_https';
+export type Mode = 'register' | 'dsc' | 'vc_and_disclose';
 
 export interface SelfApp {
   appName: string;
   logoBase64: string;
   endpointType: EndpointType;
   endpoint: string;
+  deeplinkCallback: string;
   header: string;
   scope: string;
   sessionId: string;
@@ -78,6 +80,13 @@ export class SelfAppBuilder {
     if (config.endpointType === 'celo' && !config.endpoint.startsWith('0x')) {
       throw new Error('endpoint must be a valid address');
     }
+    // Validate that localhost endpoints are not allowed
+    if (
+      config.endpoint &&
+      (config.endpoint.includes('localhost') || config.endpoint.includes('127.0.0.1'))
+    ) {
+      throw new Error('localhost endpoints are not allowed');
+    }
     if (config.userIdType === 'hex') {
       if (!config.userId.startsWith('0x')) {
         throw new Error('userId as hex must start with 0x');
@@ -95,6 +104,7 @@ export class SelfAppBuilder {
       endpointType: 'https',
       header: '',
       logoBase64: '',
+      deeplinkCallback: '',
       disclosures: {},
       chainID: config.endpointType === 'staging_celo' ? 44787 : 42220,
       version: config.version ?? 2,
@@ -110,4 +120,10 @@ export class SelfAppBuilder {
 
 export function getUniversalLink(selfApp: SelfApp): string {
   return `${REDIRECT_URL}?selfApp=${encodeURIComponent(JSON.stringify(selfApp))}`;
+}
+
+export interface DeferredLinkingTokenResponse {
+  campaign_id: string;
+  campaign_user_id: string;
+  self_app: string; // SelfApp is serialized as a string
 }

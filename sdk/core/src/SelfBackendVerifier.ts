@@ -10,10 +10,15 @@ import {
 import { discloseIndices } from './utils/constants.js';
 import { formatRevealedDataPacked } from './utils/id.js';
 import { AttestationId, VcAndDiscloseProof, VerificationConfig } from './types/types.js';
-import { Country3LetterCode } from '@selfxyz/common';
+import { Country3LetterCode } from '@selfxyz/common/constants';
 import { calculateUserIdentifierHash } from './utils/hash.js';
 import { castToUserIdentifier, UserIdType } from '@selfxyz/common/utils/circuits/uuid';
-import { ConfigMismatch, ConfigMismatchError } from './errors.js';
+import {
+  ConfigMismatch,
+  ConfigMismatchError,
+  RegistryContractError,
+  VerifierContractError,
+} from './errors/index.js';
 import { IConfigStorage } from './store/interface.js';
 import { unpackForbiddenCountriesList } from './utils/utils.js';
 import { BigNumberish } from 'ethers';
@@ -21,7 +26,7 @@ import { BigNumberish } from 'ethers';
 const CELO_MAINNET_RPC_URL = 'https://forno.celo.org';
 const CELO_TESTNET_RPC_URL = 'https://alfajores-forno.celo-testnet.org';
 
-const IDENTITY_VERIFICATION_HUB_ADDRESS = '0x0000000000000000000000000000000000000000';
+const IDENTITY_VERIFICATION_HUB_ADDRESS = '0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF';
 const IDENTITY_VERIFICATION_HUB_ADDRESS_STAGING = '0x68c931C9a534D37aa78094877F46fE46a49F1A51';
 
 export class SelfBackendVerifier {
@@ -66,10 +71,15 @@ export class SelfBackendVerifier {
     const allowedId = this.allowedIds.get(attestationId);
     let issues: Array<{ type: ConfigMismatch; message: string }> = [];
     if (!allowedId) {
-      issues.push({ type: ConfigMismatch.InvalidId, message: 'Attestation ID is not allowed' });
+      issues.push({
+        type: ConfigMismatch.InvalidId,
+        message: 'Attestation ID is not allowed, received: ' + attestationId,
+      });
     }
 
-    const publicSignals = pubSignals.map(String).map((x) => (/[a-f]/g.test(x) ? '0x' + x : x));
+    const publicSignals = pubSignals
+      .map(String)
+      .map((x) => (/[a-f]/g.test(x) && x.length > 0 ? '0x' + x : x));
     //check if user context hash matches
     const userContextHashInCircuit = BigInt(
       publicSignals[discloseIndices[attestationId].userIdentifierIndex]
@@ -81,7 +91,11 @@ export class SelfBackendVerifier {
     if (userContextHashInCircuit !== userContextHash) {
       issues.push({
         type: ConfigMismatch.InvalidUserContextHash,
-        message: 'User context hash does not match with the one in the circuit',
+        message:
+          'User context hash does not match with the one in the circuit\nCircuit: ' +
+          userContextHashInCircuit +
+          '\nUser context hash: ' +
+          userContextHash,
       });
     }
 
@@ -90,7 +104,11 @@ export class SelfBackendVerifier {
     if (!isValidScope) {
       issues.push({
         type: ConfigMismatch.InvalidScope,
-        message: 'Scope does not match with the one in the circuit',
+        message:
+          'Scope does not match with the one in the circuit\nCircuit: ' +
+          publicSignals[discloseIndices[attestationId].scopeIndex] +
+          '\nScope: ' +
+          this.scope,
       });
     }
 
@@ -100,7 +118,7 @@ export class SelfBackendVerifier {
         '0x' + attestationId.toString(16).padStart(64, '0')
       );
       if (registryAddress === '0x0000000000000000000000000000000000000000') {
-        throw new Error('Registry contract not found');
+        throw new RegistryContractError('Registry contract not found');
       }
       const registryContract = Registry__factory.connect(registryAddress, this.provider);
       const currentRoot = await registryContract.checkIdentityCommitmentRoot(
@@ -109,11 +127,13 @@ export class SelfBackendVerifier {
       if (!currentRoot) {
         issues.push({
           type: ConfigMismatch.InvalidRoot,
-          message: 'Onchain root does not match with the one in the circuit',
+          message:
+            'Onchain root does not exist, received: ' +
+            publicSignals[discloseIndices[attestationId].merkleRootIndex],
         });
       }
     } catch (error) {
-      throw new Error('Registry contract not found');
+      throw new RegistryContractError('Registry contract not found');
     }
 
     //check if attestation id matches
@@ -132,13 +152,29 @@ export class SelfBackendVerifier {
     );
     const userDefinedData = userContextData.slice(128);
     const configId = await this.configStorage.getActionId(userIdentifier, userDefinedData);
+    if (!configId) {
+      issues.push({
+        type: ConfigMismatch.ConfigNotFound,
+        message: 'Config Id not found',
+      });
+    }
+
     let verificationConfig: VerificationConfig | null;
     try {
       verificationConfig = await this.configStorage.getConfig(configId);
     } catch (error) {
-      issues.push({ type: ConfigMismatch.ConfigNotFound, message: 'Config not found' });
+      issues.push({
+        type: ConfigMismatch.ConfigNotFound,
+        message: `Config not found for ${configId}`,
+      });
     } finally {
-      if (!verificationConfig) throw new ConfigMismatchError(issues);
+      if (!verificationConfig) {
+        issues.push({
+          type: ConfigMismatch.ConfigNotFound,
+          message: `Config not found for ${configId}`,
+        });
+        throw new ConfigMismatchError(issues);
+      }
     }
 
     //check if forbidden countries list matches
@@ -155,21 +191,29 @@ export class SelfBackendVerifier {
     if (!isForbiddenCountryListValid) {
       issues.push({
         type: ConfigMismatch.InvalidForbiddenCountriesList,
-        message: 'Forbidden countries list in config does not match with the one in the circuit',
+        message:
+          'Forbidden countries list in config does not match with the one in the circuit\nCircuit: ' +
+          forbiddenCountriesList.join(', ') +
+          '\nConfig: ' +
+          forbiddenCountriesListVerificationConfig.join(', '),
       });
     }
 
     const genericDiscloseOutput = formatRevealedDataPacked(attestationId, publicSignals);
     //check if minimum age matches
     const isMinimumAgeValid =
-      verificationConfig.olderThan !== undefined
-        ? verificationConfig.olderThan === Number.parseInt(genericDiscloseOutput.olderThan, 10) ||
-          genericDiscloseOutput.olderThan === '00'
+      verificationConfig.minimumAge !== undefined
+        ? verificationConfig.minimumAge === Number.parseInt(genericDiscloseOutput.minimumAge, 10) ||
+          genericDiscloseOutput.minimumAge === '00'
         : true;
     if (!isMinimumAgeValid) {
       issues.push({
         type: ConfigMismatch.InvalidMinimumAge,
-        message: 'Minimum age in config does not match with the one in the circuit',
+        message:
+          'Minimum age in config does not match with the one in the circuit\nCircuit: ' +
+          genericDiscloseOutput.minimumAge +
+          '\nConfig: ' +
+          verificationConfig.minimumAge,
       });
     }
 
@@ -243,11 +287,11 @@ export class SelfBackendVerifier {
         '0x' + attestationId.toString(16).padStart(64, '0')
       );
       if (verifierAddress === '0x0000000000000000000000000000000000000000') {
-        throw new Error('Verifier contract not found');
+        throw new VerifierContractError('Verifier contract not found');
       }
       verifierContract = Verifier__factory.connect(verifierAddress, this.provider);
     } catch (error) {
-      throw new Error('Verifier contract not found');
+      throw new VerifierContractError('Verifier contract not found');
     }
 
     let isValid = false;
@@ -269,9 +313,9 @@ export class SelfBackendVerifier {
       attestationId,
       isValidDetails: {
         isValid,
-        isOlderThanValid:
-          verificationConfig.olderThan !== undefined
-            ? verificationConfig.olderThan <= Number.parseInt(genericDiscloseOutput.olderThan, 10)
+        isMinimumAgeValid:
+          verificationConfig.minimumAge !== undefined
+            ? verificationConfig.minimumAge <= Number.parseInt(genericDiscloseOutput.minimumAge, 10)
             : true,
         isOfacValid:
           verificationConfig.ofac !== undefined && verificationConfig.ofac

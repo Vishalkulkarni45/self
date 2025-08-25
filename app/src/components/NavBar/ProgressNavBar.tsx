@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import {
+import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { TextStyle, ViewStyle } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
+import type {
   NativeStackHeaderProps,
   NativeStackNavigationOptions,
 } from '@react-navigation/native-stack';
-import React from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TextStyle, ViewStyle, XStack, YStack } from 'tamagui';
 
-import { cyan300, slate200, white } from '../../utils/colors';
-import { buttonTap } from '../../utils/haptic';
-import { NavBar } from './BaseNavBar';
+import { NavBar } from '@/components/NavBar/BaseNavBar';
+import { cyan300, slate200, white } from '@/utils/colors';
+import { buttonTap } from '@/utils/haptic';
 
 interface ProgressNavBarProps extends NativeStackHeaderProps {
   currentStep?: number;
@@ -53,8 +54,8 @@ export const ProgressNavBar = (props: NativeStackHeaderProps) => {
         barStyle={
           options.headerTintColor === white ||
           (options.headerTitleStyle as TextStyle)?.color === white
-            ? 'light-content'
-            : 'dark-content'
+            ? 'light'
+            : 'dark'
         }
       >
         <XStack width="100%" alignItems="center">

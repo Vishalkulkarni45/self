@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
 import React, { useCallback } from 'react';
-import {
-  NativeSyntheticEvent,
-  PixelRatio,
-  Platform,
-  requireNativeComponent,
-} from 'react-native';
+import type { NativeSyntheticEvent, StyleProp, ViewStyle } from 'react-native';
+import { PixelRatio, Platform, requireNativeComponent } from 'react-native';
 
-import { extractMRZInfo } from '../../utils/utils';
-import { RCTFragment } from './RCTFragment';
+import { type SelfClient, useSelfClient } from '@selfxyz/mobile-sdk-alpha';
+
+import { RCTFragment } from '@/components/native/RCTFragment';
 
 interface NativePassportOCRViewProps {
   onPassportRead: (
@@ -32,7 +29,7 @@ interface NativePassportOCRViewProps {
       stackTrace: string;
     }>,
   ) => void;
-  style?: any; // Or a more specific style type if available
+  style?: StyleProp<ViewStyle>;
 }
 
 const RCTPassportOCRViewNativeComponent = Platform.select({
@@ -50,7 +47,7 @@ export interface PassportCameraProps {
   isMounted: boolean;
   onPassportRead: (
     error: Error | null,
-    mrzData?: ReturnType<typeof extractMRZInfo>,
+    mrzData?: ReturnType<SelfClient['extractMRZInfo']>,
   ) => void;
 }
 
@@ -58,6 +55,7 @@ export const PassportCamera: React.FC<PassportCameraProps> = ({
   onPassportRead,
   isMounted,
 }) => {
+  const selfClient = useSelfClient();
   const _onError = useCallback(
     (
       event: NativeSyntheticEvent<{
@@ -96,18 +94,31 @@ export const PassportCamera: React.FC<PassportCameraProps> = ({
         return;
       }
       if (typeof event.nativeEvent.data === 'string') {
-        onPassportRead(null, extractMRZInfo(event.nativeEvent.data));
+        onPassportRead(null, selfClient.extractMRZInfo(event.nativeEvent.data));
       } else {
         onPassportRead(null, {
           passportNumber: event.nativeEvent.data.documentNumber,
           dateOfBirth: event.nativeEvent.data.birthDate,
           dateOfExpiry: event.nativeEvent.data.expiryDate,
           documentType: event.nativeEvent.data.documentType,
-          countryCode: event.nativeEvent.data.countryCode,
+          issuingCountry: event.nativeEvent.data.countryCode,
+          nationality: event.nativeEvent.data.countryCode, // TODO: Verify if native module provides separate nationality code instead of defaulting to issuingCountry
+          surname: '', // Fill with defaults as they're required
+          givenNames: '',
+          sex: '',
+          validation: {
+            format: false, // Changed from true - avoid assuming validation success before actual checks
+            passportNumberChecksum: false, // Changed from true - avoid assuming validation success before actual checks
+            dateOfBirthChecksum: false, // Changed from true - avoid assuming validation success before actual checks
+            dateOfExpiryChecksum: false, // Changed from true - avoid assuming validation success before actual checks
+            compositeChecksum: false, // Changed from true - avoid assuming validation success before actual checks
+            overall: false, // Changed from true - avoid assuming validation success before actual checks
+          },
+          // TODO: If raw MRZ lines are accessible from native module, pass them to extractMRZInfo function to perform real checksum validations
         });
       }
     },
-    [onPassportRead, isMounted],
+    [onPassportRead, isMounted, selfClient],
   );
 
   if (Platform.OS === 'ios') {

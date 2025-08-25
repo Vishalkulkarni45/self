@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TextStyle, ViewStyle } from 'tamagui';
+import type { TextStyle, ViewStyle } from 'tamagui';
+import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
 
-import { white } from '../../utils/colors';
-import { extraYPadding } from '../../utils/constants';
-import { buttonTap } from '../../utils/haptic';
-import { NavBar } from './BaseNavBar';
+import { NavBar } from '@/components/NavBar/BaseNavBar';
+import { white } from '@/utils/colors';
+import { extraYPadding } from '@/utils/constants';
+import { buttonTap } from '@/utils/haptic';
 
 export const DefaultNavBar = (props: NativeStackHeaderProps) => {
   const { goBack, canGoBack } = props.navigation;
@@ -25,8 +25,8 @@ export const DefaultNavBar = (props: NativeStackHeaderProps) => {
       barStyle={
         options.headerTintColor === white ||
         (options.headerTitleStyle as TextStyle)?.color === white
-          ? 'light-content'
-          : 'dark-content'
+          ? 'light'
+          : 'dark'
       }
     >
       <NavBar.LeftAction

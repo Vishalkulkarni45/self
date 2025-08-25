@@ -1,37 +1,33 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { Separator, View, XStack, YStack } from 'tamagui';
+import { useNavigation } from '@react-navigation/native';
 
-import { PrimaryButton } from '../../components/buttons/PrimaryButton';
-import { SecondaryButton } from '../../components/buttons/SecondaryButton';
-import { Caption } from '../../components/typography/Caption';
-import Description from '../../components/typography/Description';
-import { Title } from '../../components/typography/Title';
-import { BackupEvents } from '../../consts/analytics';
-import useHapticNavigation from '../../hooks/useHapticNavigation';
-import Keyboard from '../../images/icons/keyboard.svg';
-import RestoreAccountSvg from '../../images/icons/restore_account.svg';
-import { ExpandableBottomLayout } from '../../layouts/ExpandableBottomLayout';
-import { useAuth } from '../../providers/authProvider';
+import { PrimaryButton } from '@/components/buttons/PrimaryButton';
+import { SecondaryButton } from '@/components/buttons/SecondaryButton';
+import { Caption } from '@/components/typography/Caption';
+import Description from '@/components/typography/Description';
+import { Title } from '@/components/typography/Title';
+import { BackupEvents } from '@/consts/analytics';
+import useHapticNavigation from '@/hooks/useHapticNavigation';
+import Keyboard from '@/images/icons/keyboard.svg';
+import RestoreAccountSvg from '@/images/icons/restore_account.svg';
+import { ExpandableBottomLayout } from '@/layouts/ExpandableBottomLayout';
+import { useAuth } from '@/providers/authProvider';
 import {
   loadPassportDataAndSecret,
   reStorePassportDataWithRightCSCA,
-} from '../../providers/passportDataProvider';
-import { useSettingStore } from '../../stores/settingStore';
-import analytics from '../../utils/analytics';
-import { STORAGE_NAME, useBackupMnemonic } from '../../utils/cloudBackup';
-import { black, slate500, slate600, white } from '../../utils/colors';
-import { isUserRegisteredWithAlternativeCSCA } from '../../utils/proving/validateDocument';
+} from '@/providers/passportDataProvider';
+import { useSettingStore } from '@/stores/settingStore';
+import analytics from '@/utils/analytics';
+import { STORAGE_NAME, useBackupMnemonic } from '@/utils/cloudBackup';
+import { black, slate500, slate600, white } from '@/utils/colors';
+import { isUserRegisteredWithAlternativeCSCA } from '@/utils/proving/validateDocument';
 
 const { trackEvent } = analytics();
 
-interface AccountRecoveryChoiceScreenProps {}
-
-const AccountRecoveryChoiceScreen: React.FC<
-  AccountRecoveryChoiceScreenProps
-> = ({}) => {
+const AccountRecoveryChoiceScreen: React.FC = () => {
   const { restoreAccountFromMnemonic } = useAuth();
   const [restoring, setRestoring] = useState(false);
   const { cloudBackupEnabled, toggleCloudBackupEnabled, biometricsAvailable } =
@@ -63,10 +59,9 @@ const AccountRecoveryChoiceScreen: React.FC<
         passportData,
         secret,
       );
-      console.log('User is registered:', isRegistered);
       if (!isRegistered) {
-        console.log(
-          'Secret provided did not match a registered passport. Please try again.',
+        console.warn(
+          'Secret provided did not match a registered ID. Please try again.',
         );
         trackEvent(BackupEvents.CLOUD_RESTORE_FAILED_PASSPORT_NOT_REGISTERED);
         navigation.navigate('Launch');
@@ -81,17 +76,19 @@ const AccountRecoveryChoiceScreen: React.FC<
       trackEvent(BackupEvents.ACCOUNT_RECOVERY_COMPLETED);
       onRestoreFromCloudNext();
       setRestoring(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
       trackEvent(BackupEvents.CLOUD_RESTORE_FAILED_UNKNOWN);
       setRestoring(false);
       throw new Error('Something wrong happened during cloud recovery');
     }
   }, [
-    cloudBackupEnabled,
     download,
     restoreAccountFromMnemonic,
+    cloudBackupEnabled,
     onRestoreFromCloudNext,
+    navigation,
+    toggleCloudBackupEnabled,
   ]);
 
   const handleManualRecoveryPress = useCallback(() => {
@@ -102,12 +99,17 @@ const AccountRecoveryChoiceScreen: React.FC<
   return (
     <ExpandableBottomLayout.Layout backgroundColor={black}>
       <ExpandableBottomLayout.TopSection backgroundColor={black}>
-        <View borderColor={slate600} borderWidth="$1" borderRadius="$10" p="$5">
+        <View
+          borderColor={slate600}
+          borderWidth="$1"
+          borderRadius="$10"
+          padding="$5"
+        >
           <RestoreAccountSvg height={80} width={80} color={white} />
         </View>
       </ExpandableBottomLayout.TopSection>
       <ExpandableBottomLayout.BottomSection backgroundColor={white}>
-        <YStack alignItems="center" gap="$2.5" pb="$2.5">
+        <YStack alignItems="center" gap="$2.5" paddingBottom="$2.5">
           <Title>Restore your Self account</Title>
           <Description>
             By continuing, you certify that this passport belongs to you and is
@@ -120,7 +122,7 @@ const AccountRecoveryChoiceScreen: React.FC<
             )}
           </Description>
 
-          <YStack gap="$2.5" width="100%" pt="$6">
+          <YStack gap="$2.5" width="100%" paddingTop="$6">
             <PrimaryButton
               trackEvent={BackupEvents.CLOUD_BACKUP_STARTED}
               onPress={onRestoreFromCloudPress}
@@ -129,7 +131,7 @@ const AccountRecoveryChoiceScreen: React.FC<
               {restoring ? 'Restoring' : 'Restore'} from {STORAGE_NAME}
               {restoring ? '…' : ''}
             </PrimaryButton>
-            <XStack gap={64} ai="center" justifyContent="space-between">
+            <XStack gap={64} alignItems="center" justifyContent="space-between">
               <Separator flexGrow={1} />
               <Caption>OR</Caption>
               <Separator flexGrow={1} />
@@ -141,7 +143,7 @@ const AccountRecoveryChoiceScreen: React.FC<
             >
               <XStack alignItems="center" justifyContent="center">
                 <Keyboard height={25} width={40} color={slate500} />
-                <View pl={12}>
+                <View paddingLeft={12}>
                   <Description>Enter recovery phrase</Description>
                 </View>
               </XStack>

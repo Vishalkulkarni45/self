@@ -2,13 +2,14 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Text, TextProps } from 'tamagui';
+import type { TextProps } from 'tamagui';
+import { Text } from 'tamagui';
 
-import { shouldShowAesopRedesign } from '../../hooks/useAesopRedesign';
-import { slate500 } from '../../utils/colors';
-import { dinot } from '../../utils/fonts';
+import { shouldShowAesopRedesign } from '@/hooks/useAesopRedesign';
+import { slate500 } from '@/utils/colors';
+import { dinot } from '@/utils/fonts';
 
-interface DescriptionProps extends TextProps {}
+type DescriptionProps = TextProps;
 
 const Description = ({ children, style, ...props }: DescriptionProps) => {
   return (

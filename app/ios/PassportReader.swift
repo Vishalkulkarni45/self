@@ -9,9 +9,12 @@
 
 import Foundation
 import React
+#if !E2E_TESTING
 import NFCPassportReader
+#endif
 import Security
 
+#if !E2E_TESTING
 @available(iOS 13, macOS 10.15, *)
 extension CertificateType {
     func stringValue() -> String {
@@ -23,6 +26,7 @@ extension CertificateType {
         }
     }
 }
+#endif
 
 // Helper function to map the keys of a dictionary
 extension Dictionary {
@@ -31,6 +35,7 @@ extension Dictionary {
     }
 }
 
+#if !E2E_TESTING
 @available(iOS 15, *)
 @objc(PassportReader)
 class PassportReader: NSObject {
@@ -43,7 +48,7 @@ class PassportReader: NSObject {
 
     @objc(configure:enableDebugLogs:)
     func configure(token: String, enableDebugLogs: Bool) {
-        let analytics = Analytics(token: token, enableDebugLogs: enableDebugLogs)
+        let analytics = SelfAnalytics(token: token, enableDebugLogs: enableDebugLogs)
         self.passportReader = NFCPassportReader.PassportReader(analytics: analytics)
     }
 
@@ -87,7 +92,7 @@ class PassportReader: NSObject {
     return (sum % 10)
   }
 
-  @objc(scanPassport:dateOfBirth:dateOfExpiry:canNumber:useCan:skipPACE:skipCA:extendedMode:resolve:reject:)
+  @objc(scanPassport:dateOfBirth:dateOfExpiry:canNumber:useCan:skipPACE:skipCA:extendedMode:usePacePolling:resolve:reject:)
   func scanPassport(
     _ passportNumber: String,
     dateOfBirth: String,
@@ -97,11 +102,13 @@ class PassportReader: NSObject {
     skipPACE: NSNumber,
     skipCA: NSNumber,
     extendedMode: NSNumber,
+    usePacePolling: NSNumber,
     resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
    let useCANBool = useCan.boolValue
    let skipPACEBool = skipPACE.boolValue
    let skipCABool = skipCA.boolValue
    let extendedModeBool = extendedMode.boolValue
+   let usePacePollingBool = usePacePolling.boolValue
 
     let customMessageHandler : (NFCViewDisplayMessage)->String? = { (displayMessage) in
       switch displayMessage {
@@ -117,6 +124,15 @@ class PassportReader: NSObject {
       guard let self = self else {
         return
       }
+
+      NativeLoggerBridge.logInfo(category: "NFC", message: "NFC passport scan started", data: [
+        "passportNumber": passportNumber,
+        "useCAN": useCANBool,
+        "skipPACE": skipPACEBool,
+        "skipCA": skipCABool,
+        "extendedMode": extendedModeBool,
+        "usePacePolling": usePacePollingBool
+      ])
 
       do {
         let password: String
@@ -142,6 +158,7 @@ class PassportReader: NSObject {
           skipCA: skipCABool,
           skipPACE: skipPACEBool,
           useExtendedMode: extendedModeBool,
+          usePacePolling: usePacePollingBool,
           customDisplayMessage: customMessageHandler
         )
 
@@ -413,3 +430,38 @@ func serializePublicKey(_ publicKey: SecKey) -> String? {
     return true
   }
 }
+#else
+// E2E Testing stub implementation
+@available(iOS 15, *)
+@objc(PassportReader)
+class PassportReader: NSObject {
+    override init() {
+        super.init()
+    }
+
+    @objc(configure:enableDebugLogs:)
+    func configure(token: String, enableDebugLogs: Bool) {
+        // No-op for E2E testing
+    }
+
+    @objc(scanPassport:dateOfBirth:dateOfExpiry:canNumber:useCan:skipPACE:skipCA:extendedMode:usePacePolling:resolve:reject:)
+    func scanPassport(
+        _ passportNumber: String,
+        dateOfBirth: String,
+        dateOfExpiry: String,
+        canNumber: String,
+        useCan: NSNumber,
+        skipPACE: NSNumber,
+        skipCA: NSNumber,
+        extendedMode: NSNumber,
+        usePacePolling: NSNumber,
+        resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        reject("E2E_TESTING", "NFC scanning not available in E2E testing mode", nil)
+    }
+
+    @objc
+    static func requiresMainQueueSetup() -> Bool {
+        return true
+    }
+}
+#endif

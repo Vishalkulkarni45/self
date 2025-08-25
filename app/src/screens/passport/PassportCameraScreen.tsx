@@ -1,35 +1,34 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { useIsFocused, useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import React, { useCallback, useRef } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { View, XStack, YStack } from 'tamagui';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 
-import passportScanAnimation from '../../assets/animations/passport_scan.json';
-import { SecondaryButton } from '../../components/buttons/SecondaryButton';
-import {
-  PassportCamera,
-  PassportCameraProps,
-} from '../../components/native/PassportCamera';
-import Additional from '../../components/typography/Additional';
-import Description from '../../components/typography/Description';
-import { Title } from '../../components/typography/Title';
-import { PassportEvents } from '../../consts/analytics';
-import useHapticNavigation from '../../hooks/useHapticNavigation';
-import Bulb from '../../images/icons/passport_camera_bulb.svg';
-import Scan from '../../images/icons/passport_camera_scan.svg';
-import { ExpandableBottomLayout } from '../../layouts/ExpandableBottomLayout';
-import useUserStore from '../../stores/userStore';
-import analytics from '../../utils/analytics';
-import { black, slate800, white } from '../../utils/colors';
-import { checkScannedInfo, formatDateToYYMMDD } from '../../utils/utils';
+import { formatDateToYYMMDD } from '@selfxyz/mobile-sdk-alpha';
 
-interface PassportNFCScanScreen {}
+import passportScanAnimation from '@/assets/animations/passport_scan.json';
+import { SecondaryButton } from '@/components/buttons/SecondaryButton';
+import type { PassportCameraProps } from '@/components/native/PassportCamera';
+import { PassportCamera } from '@/components/native/PassportCamera';
+import Additional from '@/components/typography/Additional';
+import Description from '@/components/typography/Description';
+import { Title } from '@/components/typography/Title';
+import { PassportEvents } from '@/consts/analytics';
+import useHapticNavigation from '@/hooks/useHapticNavigation';
+import Scan from '@/images/icons/passport_camera_scan.svg';
+import { ExpandableBottomLayout } from '@/layouts/ExpandableBottomLayout';
+import useUserStore from '@/stores/userStore';
+import analytics from '@/utils/analytics';
+import { black, slate400, slate800, white } from '@/utils/colors';
+import { dinot } from '@/utils/fonts';
+import { hasAnyValidRegisteredDocument } from '@/utils/proving/validateDocument';
+import { checkScannedInfo } from '@/utils/utils';
 
 const { trackEvent } = analytics();
 
-const PassportCameraScreen: React.FC<PassportNFCScanScreen> = ({}) => {
+const PassportCameraScreen: React.FC = () => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const store = useUserStore();
@@ -66,7 +65,13 @@ const PassportCameraScreen: React.FC<PassportNFCScanScreen> = ({}) => {
         return;
       }
 
-      const { passportNumber, dateOfBirth, dateOfExpiry } = result;
+      const {
+        passportNumber,
+        dateOfBirth,
+        dateOfExpiry,
+        documentType,
+        issuingCountry,
+      } = result;
 
       const formattedDateOfBirth =
         Platform.OS === 'ios' ? formatDateToYYMMDD(dateOfBirth) : dateOfBirth;
@@ -95,6 +100,8 @@ const PassportCameraScreen: React.FC<PassportNFCScanScreen> = ({}) => {
         passportNumber,
         dateOfBirth: formattedDateOfBirth,
         dateOfExpiry: formattedDateOfExpiry,
+        documentType: documentType?.trim() || '',
+        countryCode: issuingCountry?.trim().toUpperCase() || '',
       });
 
       trackEvent(PassportEvents.CAMERA_SCAN_SUCCESS, {
@@ -105,9 +112,21 @@ const PassportCameraScreen: React.FC<PassportNFCScanScreen> = ({}) => {
     },
     [store, navigation],
   );
-  const onCancelPress = useHapticNavigation('Launch', {
+  const navigateToLaunch = useHapticNavigation('Launch', {
     action: 'cancel',
   });
+  const navigateToHome = useHapticNavigation('Home', {
+    action: 'cancel',
+  });
+
+  const onCancelPress = async () => {
+    const hasValidDocument = await hasAnyValidRegisteredDocument();
+    if (hasValidDocument) {
+      navigateToHome();
+    } else {
+      navigateToLaunch();
+    }
+  };
 
   return (
     <ExpandableBottomLayout.Layout backgroundColor={white}>
@@ -124,10 +143,10 @@ const PassportCameraScreen: React.FC<PassportNFCScanScreen> = ({}) => {
       </ExpandableBottomLayout.TopSection>
       <ExpandableBottomLayout.BottomSection backgroundColor={white}>
         <YStack alignItems="center" gap="$2.5">
-          <YStack alignItems="center" gap="$6" pb="$2.5">
-            <Title>Scan your passport</Title>
+          <YStack alignItems="center" gap="$6" paddingBottom="$2.5">
+            <Title>Scan your ID</Title>
             <XStack gap="$6" alignSelf="flex-start" alignItems="flex-start">
-              <View pt="$2">
+              <View paddingTop="$2">
                 <Scan height={40} width={40} color={slate800} />
               </View>
               <View maxWidth="75%">
@@ -135,30 +154,16 @@ const PassportCameraScreen: React.FC<PassportNFCScanScreen> = ({}) => {
                   Open to the photograph page
                 </Description>
                 <Additional style={styles.description}>
-                  Position all four corners of the first passport page clearly
-                  in the frame.
-                </Additional>
-              </View>
-            </XStack>
-            <XStack gap="$6" alignSelf="flex-start" alignItems="flex-start">
-              <View pt="$2">
-                <Bulb height={40} width={40} color={slate800} />
-              </View>
-              <View
-                alignItems="flex-start"
-                justifyContent="flex-start"
-                maxWidth="75%"
-              >
-                <Description style={styles.subheader}>
-                  Avoid dim lighting or glare
-                </Description>
-                <Additional style={styles.description}>
-                  Ensure that the text and photo are clearly readable and well
-                  lit.
+                  Lay your document flat and position the machine readable text
+                  in the viewfinder
                 </Additional>
               </View>
             </XStack>
           </YStack>
+
+          <Additional style={styles.disclaimer}>
+            SELF WILL NOT CAPTURE AN IMAGE OF YOUR PASSPORT.
+          </Additional>
 
           <SecondaryButton
             trackEvent={PassportEvents.CAMERA_SCREEN_CLOSED}
@@ -177,8 +182,8 @@ export default PassportCameraScreen;
 const styles = StyleSheet.create({
   animation: {
     position: 'absolute',
-    width: '130%',
-    height: '130%',
+    width: '100%',
+    height: '100%',
   },
   subheader: {
     color: slate800,
@@ -187,5 +192,17 @@ const styles = StyleSheet.create({
   },
   description: {
     textAlign: 'left',
+  },
+  disclaimer: {
+    fontFamily: dinot,
+    textAlign: 'center',
+    fontSize: 11,
+    color: slate400,
+    textTransform: 'uppercase',
+    width: '100%',
+    alignSelf: 'center',
+    letterSpacing: 0.44,
+    marginTop: 0,
+    marginBottom: 10,
   },
 });

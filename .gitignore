@@ -9,3 +9,7 @@ showcase
 **/.yarn/
 output/*
 *.tsbuildinfo
+.yarnrc.yml
+
+# PR Action Items - prevent accidental commits
+PR-*-ACTION*.md

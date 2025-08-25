@@ -1,44 +1,46 @@
 // SPDX-License-Identifier: BUSL-1.1; Copyright (c) 2025 Social Connect Labs, Inc.; Licensed under BUSL-1.1 (see LICENSE); Apache-2.0 from 2029-06-11
 
-import { StaticScreenProps, useIsFocused } from '@react-navigation/native';
-import { PassportData } from '@selfxyz/common';
 import LottieView from 'lottie-react-native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, YStack } from 'tamagui';
+import type { StaticScreenProps } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 
-import failAnimation from '../../assets/animations/loading/fail.json';
-import proveLoadingAnimation from '../../assets/animations/loading/prove.json';
-import successAnimation from '../../assets/animations/loading/success.json';
-import { PassportEvents, ProofEvents } from '../../consts/analytics';
-import useHapticNavigation from '../../hooks/useHapticNavigation';
-import CloseWarningIcon from '../../images/icons/close-warning.svg';
-import {
-  clearPassportData,
-  loadPassportDataAndSecret,
-} from '../../providers/passportDataProvider';
-import analytics from '../../utils/analytics';
-import { black, slate400, white, zinc500, zinc900 } from '../../utils/colors';
-import { advercase, dinot } from '../../utils/fonts';
-import { loadingScreenProgress } from '../../utils/haptic';
-import { setupNotifications } from '../../utils/notifications/notificationService';
-import { getLoadingScreenText } from '../../utils/proving/loadingScreenStateText';
-import {
-  ProvingStateType,
-  useProvingStore,
-} from '../../utils/proving/provingMachine';
-import { checkPassportSupported } from '../../utils/proving/validateDocument';
+import type { PassportData } from '@selfxyz/common/types';
 
-const { trackEvent } = analytics();
+import failAnimation from '@/assets/animations/loading/fail.json';
+import proveLoadingAnimation from '@/assets/animations/loading/prove.json';
+import successAnimation from '@/assets/animations/loading/success.json';
+import CloseWarningIcon from '@/images/icons/close-warning.svg';
+import { loadPassportDataAndSecret } from '@/providers/passportDataProvider';
+import { black, slate400, white, zinc500, zinc900 } from '@/utils/colors';
+import { extraYPadding } from '@/utils/constants';
+import { advercase, dinot } from '@/utils/fonts';
+import { loadingScreenProgress } from '@/utils/haptic';
+import { setupNotifications } from '@/utils/notifications/notificationService';
+import { getLoadingScreenText } from '@/utils/proving/loadingScreenStateText';
+import type { ProvingStateType } from '@/utils/proving/provingMachine';
+import { useProvingStore } from '@/utils/proving/provingMachine';
 
 type LoadingScreenProps = StaticScreenProps<{}>;
 
+// Define all terminal states that should stop animations and haptics
+const terminalStates: ProvingStateType[] = [
+  'completed',
+  'error',
+  'failure',
+  'passport_not_supported',
+  'account_recovery_choice',
+  'passport_data_not_found',
+];
+
 const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
   // Animation states
-  const [animationSource, setAnimationSource] = useState<any>(
-    proveLoadingAnimation,
-  );
+  const [animationSource, setAnimationSource] = useState<
+    LottieView['props']['source']
+  >(proveLoadingAnimation);
 
   // Passport data state
   const [passportData, setPassportData] = useState<PassportData | null>(null);
@@ -57,32 +59,10 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
   const fcmToken = useProvingStore(state => state.fcmToken);
   const isFocused = useIsFocused();
   const { bottom } = useSafeAreaInsets();
-  const goToUnsupportedScreen = useHapticNavigation('UnsupportedPassport');
-
-  // Define all terminal states that should stop animations and haptics
-  const terminalStates: ProvingStateType[] = [
-    'completed',
-    'error',
-    'failure',
-    'passport_not_supported',
-    'account_recovery_choice',
-    'passport_data_not_found',
-  ];
 
   // States where it's safe to close the app
   const safeToCloseStates = ['proving', 'post_proving', 'completed'];
   const canCloseApp = safeToCloseStates.includes(currentState);
-
-  const handleUnsupportedPassport = async (_passportData: PassportData) => {
-    const isSupported = await checkPassportSupported(_passportData);
-    trackEvent(PassportEvents.UNSUPPORTED_PASSPORT, {
-      reason: isSupported.status,
-      details: isSupported.details,
-    });
-    console.log('Passport not supported');
-    clearPassportData();
-    goToUnsupportedScreen();
-  };
 
   // Initialize notifications and load passport data
   useEffect(() => {
@@ -102,11 +82,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
             const { passportData: _passportData } = JSON.parse(result);
             setPassportData(_passportData);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error loading passport data:', error);
-          trackEvent(PassportEvents.DATA_LOAD_ERROR, {
-            error: error?.message || 'Unknown error',
-          });
         }
       }
 
@@ -122,6 +99,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused]); // Only depend on isFocused
 
   // Handle UI updates and haptic feedback based on state changes
@@ -131,15 +109,6 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
       loadingScreenProgress(false);
       return;
     }
-
-    console.log('[LoadingScreen] Current proving state:', currentState);
-    console.log('[LoadingScreen] FCM token available:', !!fcmToken);
-
-    trackEvent(ProofEvents.PROVING_STATE_CHANGE, {
-      state: currentState,
-      fcmTokenAvailable: !!fcmToken,
-      passportDataAvailable: !!passportData,
-    });
 
     // Update UI if passport data is available
     if (passportData?.passportMetadata) {
@@ -158,8 +127,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
         case 'error':
         case 'failure':
         case 'passport_not_supported':
-          handleUnsupportedPassport(passportData);
-          return;
+          setAnimationSource(failAnimation);
+          break;
         case 'account_recovery_choice':
         case 'passport_data_not_found':
           setAnimationSource(failAnimation);
@@ -191,12 +160,12 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({}) => {
 
   return (
     <YStack
-      bg={black}
+      backgroundColor={black}
       gap={20}
-      jc="space-between"
+      justifyContent="space-between"
       flex={1}
       paddingHorizontal={20}
-      paddingBottom={bottom}
+      paddingBottom={bottom + extraYPadding}
     >
       <View style={styles.container}>
         <View style={styles.card}>

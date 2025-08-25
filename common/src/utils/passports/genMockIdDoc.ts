@@ -1,19 +1,23 @@
 // generate a mock id document
 
-import { DocumentType, PassportData, SignatureAlgorithm } from '../types.js';
-import { hashAlgosTypes } from '../../constants/constants.js';
-import { countries } from '../../constants/countries.js';
-import { genDG1 } from './dg1.js';
-import { getHashLen, hash } from '../hash.js';
-import { formatAndConcatenateDataHashes, formatMrz, generateSignedAttr } from './format.js';
-import forge from 'node-forge';
-import elliptic from 'elliptic';
-import getMockDSC from './getMockDSC.js';
-import { PublicKeyDetailsRSAPSS } from '../certificate_parsing/dataStructure.js';
-import { PublicKeyDetailsECDSA } from '../certificate_parsing/dataStructure.js';
-import { parseCertificateSimple } from '../certificate_parsing/parseCertificateSimple.js';
-import { getCurveForElliptic } from '../certificate_parsing/curves.js';
 import * as asn1 from 'asn1js';
+import elliptic from 'elliptic';
+import forge from 'node-forge';
+
+import type { hashAlgosTypes } from '../../constants/constants.js';
+import { API_URL_STAGING } from '../../constants/constants.js';
+import { countries } from '../../constants/countries.js';
+import { getCurveForElliptic } from '../certificate_parsing/curves.js';
+import type {
+  PublicKeyDetailsECDSA,
+  PublicKeyDetailsRSAPSS,
+} from '../certificate_parsing/dataStructure.js';
+import { parseCertificateSimple } from '../certificate_parsing/parseCertificateSimple.js';
+import { getHashLen, hash } from '../hash.js';
+import type { DocumentType, PassportData, SignatureAlgorithm } from '../types.js';
+import { genDG1 } from './dg1.js';
+import { formatAndConcatenateDataHashes, formatMrz, generateSignedAttr } from './format.js';
+import { getMockDSC } from './getMockDSC.js';
 import { initPassportDataParsing } from './passport.js';
 
 export interface IdDocInput {
@@ -44,12 +48,21 @@ const defaultIdDocInput: IdDocInput = {
   sex: 'M',
 };
 
-export function genMockIdDoc(userInput: Partial<IdDocInput> = {}): PassportData {
+export function genMockIdDoc(
+  userInput: Partial<IdDocInput> = {},
+  mockDSC?: { dsc: string; privateKeyPem: string }
+): PassportData {
   const mergedInput: IdDocInput = {
     ...defaultIdDocInput,
     ...userInput,
   };
-  const { privateKeyPem, dsc } = getMockDSC(mergedInput.signatureType);
+  let privateKeyPem: string, dsc: string;
+  if (mockDSC) {
+    dsc = mockDSC.dsc;
+    privateKeyPem = mockDSC.privateKeyPem;
+  } else {
+    ({ privateKeyPem, dsc } = getMockDSC(mergedInput.signatureType));
+  }
 
   const dg1 = genDG1(mergedInput);
   const dg1_hash = hash(mergedInput.dgHashAlgo, formatMrz(dg1));
@@ -80,6 +93,27 @@ export function genMockIdDocAndInitDataParsing(userInput: Partial<IdDocInput> = 
   return initPassportDataParsing({
     ...genMockIdDoc(userInput),
   });
+}
+
+export async function generateMockDSC(
+  signatureType: string
+): Promise<{ privateKeyPem: string; dsc: string }> {
+  const response = await fetch(`${API_URL_STAGING}/generate-dsc`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ signatureType }),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to generate DSC: ${response.status} ${response.statusText}`);
+  }
+  const data = await response.json();
+  if (!data || !data.data) {
+    throw new Error('Missing data in server response');
+  }
+  if (typeof data.data.privateKeyPem !== 'string' || typeof data.data.dsc !== 'string') {
+    throw new Error('Invalid DSC response format from server');
+  }
+  return { privateKeyPem: data.data.privateKeyPem, dsc: data.data.dsc };
 }
 
 function generateRandomBytes(length: number): number[] {
@@ -126,7 +160,7 @@ function sign(
     return Array.from(signatureBytes, (c: string) => c.charCodeAt(0));
   } else if (signatureAlgorithm === 'ecdsa') {
     const curve = (publicKeyDetails as PublicKeyDetailsECDSA).curve;
-    let curveForElliptic = getCurveForElliptic(curve);
+    const curveForElliptic = getCurveForElliptic(curve);
     const ec = new elliptic.ec(curveForElliptic);
 
     const privateKeyDer = Buffer.from(

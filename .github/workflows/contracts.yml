@@ -1,19 +1,19 @@
-name: Self Contracts CI/CD
+name: Contracts CI
 on:
   push:
     branches:
       - dev
       - main
     paths:
-      - 'contracts/**'
-      - 'common/**'
+      - "contracts/**"
+      - "common/**"
   pull_request:
     branches:
       - dev
       - main
     paths:
-      - 'contracts/**'
-      - 'common/**'
+      - "contracts/**"
+      - "common/**"
 jobs:
   test_contracts:
     if: github.event.pull_request.draft == false
@@ -21,17 +21,31 @@ jobs:
     environment: development
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set Node.js 20.x
+      - name: Read and sanitize Node.js version
+        shell: bash
+        run: |
+          if [ ! -f .nvmrc ] || [ -z "$(cat .nvmrc)" ]; then
+            echo "❌ .nvmrc is missing or empty"; exit 1;
+          fi
+          VERSION="$(tr -d '\r\n' < .nvmrc)"
+          VERSION="${VERSION#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "Invalid .nvmrc content: '$VERSION'"; exit 1;
+          fi
+          echo "NODE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "NODE_VERSION_SANITIZED=${VERSION//\//-}" >> "$GITHUB_ENV"
+      - name: Set Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - uses: actions/checkout@v4
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install Dependencies
         uses: ./.github/actions/yarn-install
+      - name: Prettier Check - Code Formatting
+        run: yarn prettier:check
+        working-directory: ./contracts
       - name: Build Common Dependencies
         run: yarn workspace @selfxyz/common build
-      - name: Build Contracts)
+      - name: Build Contracts
         run: yarn build
         working-directory: ./contracts
       - name: Run Tests (Contracts)

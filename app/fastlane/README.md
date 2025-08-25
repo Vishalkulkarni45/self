@@ -31,13 +31,13 @@ Sync ios version
 
 Push a new build to TestFlight Internal Testing
 
-### ios deploy
+### ios deploy_auto
 
 ```sh
-[bundle exec] fastlane ios deploy
+[bundle exec] fastlane ios deploy_auto
 ```
 
-Prepare a new build for App Store submission
+Deploy iOS app with automatic version management
 
 ----
 
@@ -67,6 +67,14 @@ Push a new build to Google Play Internal Testing
 ```
 
 Push a new build to Google Play Store
+
+### android deploy_auto
+
+```sh
+[bundle exec] fastlane android deploy_auto
+```
+
+Deploy Android app with automatic version management
 
 ----
 
