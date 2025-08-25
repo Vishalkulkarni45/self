@@ -7,10 +7,7 @@ import { formatInput } from '../../../common/src/utils/circuits/generateInputs.j
 
 import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
 import { fileURLToPath } from 'url';
-import {
-  createSelector,
-  extractField
-} from '../../../common/src/utils/aadhaar/constants.js';
+import { createSelector, extractField } from '../../../common/src/utils/aadhaar/constants.js';
 import { prepareAadhaarDiscloseTestData } from '@selfxyz/common';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
@@ -24,7 +21,10 @@ import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
-const privateKeyPem = fs.readFileSync(path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'), 'utf8');
+const privateKeyPem = fs.readFileSync(
+  path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'),
+  'utf8'
+);
 
 // Create SMTs at module level
 const nameAndDob_smt = new SMT(poseidon2, true);
@@ -73,14 +73,50 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('should calculate witness and pass constrain check', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(
+      privateKeyPem,
+      tree,
+      nameAndDob_smt,
+      nameAndYob_smt,
+      nameAndDobReverse_smt,
+      nameAndYobReverse_smt,
+      '333',
+      '1234',
+      '585225',
+      '0',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });
 
   it('should reveal gender only', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(
+      privateKeyPem,
+      tree,
+      nameAndDob_smt,
+      nameAndYob_smt,
+      nameAndDobReverse_smt,
+      nameAndYobReverse_smt,
+      '333',
+      '1234',
+      '585225',
+      '0',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
 
     // Use createSelector to generate selector for revealing only gender
     const selector = createSelector(['GENDER']);
@@ -89,9 +125,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const revealedData = await circuit.getOutput(w, [
-      `revealData_packed[4]`,
-    ]);
+    const revealedData = await circuit.getOutput(w, [`revealData_packed[4]`]);
 
     const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
@@ -106,19 +140,40 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(
+      privateKeyPem,
+      tree,
+      nameAndDob_smt,
+      nameAndYob_smt,
+      nameAndDobReverse_smt,
+      nameAndYobReverse_smt,
+      '333',
+      '1234',
+      '585225',
+      '0',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
 
     // Use createSelector to generate selector for revealing birth date and OFAC check
-    const selector = createSelector(['YEAR_OF_BIRTH', 'MONTH_OF_BIRTH', 'DAY_OF_BIRTH', 'OFAC_NAME_YOB_CHECK', 'OFAC_NAME_DOB_REVERSE_CHECK']);
+    const selector = createSelector([
+      'YEAR_OF_BIRTH',
+      'MONTH_OF_BIRTH',
+      'DAY_OF_BIRTH',
+      'OFAC_NAME_YOB_CHECK',
+      'OFAC_NAME_DOB_REVERSE_CHECK',
+    ]);
     inputs.selector = formatInput(selector)[0];
 
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const revealedData = await circuit.getOutput(w, [
-      `revealData_packed[4]`,
-      'reveal_photoHash',
-    ]);
+    const revealedData = await circuit.getOutput(w, [`revealData_packed[4]`, 'reveal_photoHash']);
 
     const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
@@ -128,7 +183,10 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const monthOfBirth = extractField(revealedDataUnpacked, 'MONTH_OF_BIRTH');
     const dayOfBirth = extractField(revealedDataUnpacked, 'DAY_OF_BIRTH');
     const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
-    const ofacNameDobReverseCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_REVERSE_CHECK');
+    const ofacNameDobReverseCheck = extractField(
+      revealedDataUnpacked,
+      'OFAC_NAME_DOB_REVERSE_CHECK'
+    );
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
     // Verify extracted values
@@ -145,24 +203,44 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
     assert(revealedData.reveal_photoHash === '0', 'Photo Hash should be 0');
     assert(minimumAge.toString() === inputs.minimumAge[0], 'Minimum Age should be 0');
-
   });
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', 'ABU ABBAS','10-12-1948', undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(
+      privateKeyPem,
+      tree,
+      nameAndDob_smt,
+      nameAndYob_smt,
+      nameAndDobReverse_smt,
+      nameAndYobReverse_smt,
+      '333',
+      '1234',
+      '585225',
+      '0',
+      'ABU ABBAS',
+      '10-12-1948',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
 
     // Use createSelector to generate selector for revealing OFAC checks
-    const selector = createSelector(['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK', 'OFAC_NAME_DOB_REVERSE_CHECK', 'OFAC_NAME_YOB_REVERSE_CHECK']);
+    const selector = createSelector([
+      'OFAC_NAME_DOB_CHECK',
+      'OFAC_NAME_YOB_CHECK',
+      'OFAC_NAME_DOB_REVERSE_CHECK',
+      'OFAC_NAME_YOB_REVERSE_CHECK',
+    ]);
     inputs.selector = formatInput(selector)[0];
     inputs.minimumAge = ['100'];
 
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const revealedData = await circuit.getOutput(w, [
-      `revealData_packed[4]`,
-    ]);
+    const revealedData = await circuit.getOutput(w, [`revealData_packed[4]`]);
 
     const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
@@ -170,8 +248,14 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     // Use extractField to get field values
     const ofacNameDobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_CHECK');
     const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
-    const ofacNameDobReverseCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_REVERSE_CHECK');
-    const ofacNameYobReverseCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_REVERSE_CHECK');
+    const ofacNameDobReverseCheck = extractField(
+      revealedDataUnpacked,
+      'OFAC_NAME_DOB_REVERSE_CHECK'
+    );
+    const ofacNameYobReverseCheck = extractField(
+      revealedDataUnpacked,
+      'OFAC_NAME_YOB_REVERSE_CHECK'
+    );
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
     // Verify non-revealed fields are null
@@ -188,7 +272,25 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
   });
   it('ofac_check_result should be 0 if exists in ofac_name_dob_reverse_smt and ofac_name_yob_reverse_smt', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', 'ABBAS ABU','10-12-1948', undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(
+      privateKeyPem,
+      tree,
+      nameAndDob_smt,
+      nameAndYob_smt,
+      nameAndDobReverse_smt,
+      nameAndYobReverse_smt,
+      '333',
+      '1234',
+      '585225',
+      '0',
+      'ABBAS ABU',
+      '10-12-1948',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
 
     // Use createSelector to generate selector for revealing OFAC checks
     const selector = createSelector(['OFAC_NAME_DOB_REVERSE_CHECK', 'OFAC_NAME_YOB_REVERSE_CHECK']);
@@ -198,16 +300,20 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
-    const revealedData = await circuit.getOutput(w, [
-      `revealData_packed[4]`,
-    ]);
+    const revealedData = await circuit.getOutput(w, [`revealData_packed[4]`]);
 
     const revealedData_packed = getPackedRevealData(revealedData);
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     // Use extractField to get field values
-    const ofacNameDobReverseCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_REVERSE_CHECK');
-    const ofacNameYobReverseCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_REVERSE_CHECK');
+    const ofacNameDobReverseCheck = extractField(
+      revealedDataUnpacked,
+      'OFAC_NAME_DOB_REVERSE_CHECK'
+    );
+    const ofacNameYobReverseCheck = extractField(
+      revealedDataUnpacked,
+      'OFAC_NAME_YOB_REVERSE_CHECK'
+    );
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
     // Verify non-revealed fields are null

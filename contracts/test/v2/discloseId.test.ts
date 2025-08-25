@@ -30,7 +30,8 @@ describe("Self Verification Flow V2 - ID Card", () => {
   let baseVcAndDiscloseProof: any;
   let pristineBaseVcAndDiscloseProof: any;
   let vcAndDiscloseProof: any;
-  let registerSecret: any;``
+  let registerSecret: any;
+  ``;
   let imt: any;
   let commitment: any;
   let nullifier: any;

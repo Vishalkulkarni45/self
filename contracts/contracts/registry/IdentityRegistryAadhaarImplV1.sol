@@ -6,7 +6,6 @@ import {InternalLeanIMT, LeanIMTData} from "@zk-kit/imt.sol/internal/InternalLea
 import {IIdentityRegistryAadhaarV1} from "../interfaces/IIdentityRegistryAadhaarV1.sol";
 import {ImplRoot} from "../upgradeable/ImplRoot.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
-import {console} from "hardhat/console.sol";
 
 /**
  * @notice ⚠️ CRITICAL STORAGE LAYOUT WARNING ⚠️
@@ -268,14 +267,17 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @param nameAndDobRoot The name and date of birth OFAC root to validate.
     /// @param nameAndYobRoot The name and year of birth OFAC root to validate.
     /// @return True if all provided roots match the stored values, false otherwise.
-    function checkOfacRoots(uint256 nameAndDobRoot, uint256 nameAndYobRoot, uint256 nameAndDobReverseRoot, uint256 nameAndYobReverseRoot)
-        external
-        view
-        virtual
-        onlyProxy
-        returns (bool)
-    {
-        return _nameAndDobOfacRoot == nameAndDobRoot && _nameAndYobOfacRoot == nameAndYobRoot && _nameAndDobReverseOfacRoot == nameAndDobReverseRoot && _nameAndYobReverseOfacRoot == nameAndYobReverseRoot;
+    function checkOfacRoots(
+        uint256 nameAndDobRoot,
+        uint256 nameAndYobRoot,
+        uint256 nameAndDobReverseRoot,
+        uint256 nameAndYobReverseRoot
+    ) external view virtual onlyProxy returns (bool) {
+        return
+            _nameAndDobOfacRoot == nameAndDobRoot &&
+            _nameAndYobOfacRoot == nameAndYobRoot &&
+            _nameAndDobReverseOfacRoot == nameAndDobReverseRoot &&
+            _nameAndYobReverseOfacRoot == nameAndYobReverseRoot;
     }
 
     /// @notice Checks if the provided UIDAI pubkey is stored in the registry and also if it's not expired.
@@ -294,11 +296,7 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @dev Caller must be the hub. Reverts if the nullifier is already registered.
     /// @param nullifier The nullifier associated with the identity commitment.
     /// @param commitment The identity commitment to register.
-    function registerCommitment(uint256 nullifier, uint256 commitment)
-        external
-        onlyProxy
-        onlyHub
-    {
+    function registerCommitment(uint256 nullifier, uint256 commitment) external onlyProxy onlyHub {
         if (_nullifiers[nullifier]) revert REGISTERED_COMMITMENT();
 
         _nullifiers[nullifier] = true;
@@ -374,11 +372,10 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @dev Callable only via a proxy and restricted to the contract owner.
     /// @param commitment The UIDAI pubkey commitment to update.
     /// @param expiryTimestamp The new expiry timestamp of the commitment.
-    function updateUidaiPubkeyCommitmentExpiryTimestamp(uint256 commitment, uint256 expiryTimestamp)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function updateUidaiPubkeyCommitmentExpiryTimestamp(
+        uint256 commitment,
+        uint256 expiryTimestamp
+    ) external onlyProxy onlyOwner {
         _uidaiPubkeyExpiryTimestamps[commitment] = expiryTimestamp;
         emit UidaiPubkeyCommitmentUpdated(commitment, expiryTimestamp);
     }
@@ -388,11 +385,11 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @param attestationId The identifier for the attestation.
     /// @param nullifier The nullifier associated with the identity commitment.
     /// @param commitment The identity commitment to add.
-    function devAddIdentityCommitment(bytes32 attestationId, uint256 nullifier, uint256 commitment)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function devAddIdentityCommitment(
+        bytes32 attestationId,
+        uint256 nullifier,
+        uint256 commitment
+    ) external onlyProxy onlyOwner {
         _nullifiers[nullifier] = true;
         uint256 imt_root = _identityCommitmentIMT._insert(commitment);
         _rootTimestamps[imt_root] = block.timestamp;
@@ -405,11 +402,11 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @param oldLeaf The current identity commitment to update.
     /// @param newLeaf The new identity commitment.
     /// @param siblingNodes An array of sibling nodes for Merkle proof generation.
-    function devUpdateCommitment(uint256 oldLeaf, uint256 newLeaf, uint256[] calldata siblingNodes)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function devUpdateCommitment(
+        uint256 oldLeaf,
+        uint256 newLeaf,
+        uint256[] calldata siblingNodes
+    ) external onlyProxy onlyOwner {
         uint256 imt_root = _identityCommitmentIMT._update(oldLeaf, newLeaf, siblingNodes);
         _rootTimestamps[imt_root] = block.timestamp;
         emit DevCommitmentUpdated(oldLeaf, newLeaf, imt_root, block.timestamp);

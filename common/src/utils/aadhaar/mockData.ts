@@ -1,25 +1,29 @@
-import { calculateAge, generateTestData, testCustomData } from "./utils.js";
+import { calculateAge, generateTestData, testCustomData } from './utils.js';
 import {
   convertBigIntToByteArray,
   decompressByteArray,
   splitToWords,
   extractPhoto,
 } from '@anon-aadhaar/core';
-import { bufferToHex, Uint8ArrayToCharArray } from "@zk-email/helpers/dist/binary-format.js";
+import { bufferToHex, Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
-import { testQRData } from "./assets/dataInput.js";
-import { stringToAsciiArray } from "./utils.js";
-import { packBytesAndPoseidon } from "../hash.js";
-import { poseidon5 } from "poseidon-lite";
+import { testQRData } from './assets/dataInput.js';
+import { stringToAsciiArray } from './utils.js';
+import { packBytesAndPoseidon } from '../hash.js';
+import { poseidon5 } from 'poseidon-lite';
 import forge from 'node-forge';
-import { LeanIMT } from "@openpassport/zk-kit-lean-imt";
-import { SMT } from "@openpassport/zk-kit-smt";
-import { findIndexInTree, formatInput } from "../circuits/generateInputs.js";
-import { generateMerkleProof, generateSMTProof, getNameDobLeafAadhaar, getNameYobLeafAahaar } from "../trees.js";
+import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
+import { SMT } from '@openpassport/zk-kit-smt';
+import { findIndexInTree, formatInput } from '../circuits/generateInputs.js';
+import {
+  generateMerkleProof,
+  generateSMTProof,
+  getNameDobLeafAadhaar,
+  getNameYobLeafAahaar,
+} from '../trees.js';
 
-import { COMMITMENT_TREE_DEPTH } from "../../constants/constants.js";
+import { COMMITMENT_TREE_DEPTH } from '../../constants/constants.js';
 import { extractQRDataFields } from './utils.js';
-
 
 let QRData: string = testQRData.testQRData;
 
@@ -32,7 +36,10 @@ function computePaddedName(name: string): number[] {
 }
 
 // Helper function to compute nullifier
-function computeNullifier(extractedFields: ReturnType<typeof extractQRDataFields>, paddedName: number[]): bigint {
+function computeNullifier(
+  extractedFields: ReturnType<typeof extractQRDataFields>,
+  paddedName: number[]
+): bigint {
   const genderAscii = stringToAsciiArray(extractedFields.gender)[0];
   const nullifierArgs = [
     genderAscii,
@@ -40,7 +47,7 @@ function computeNullifier(extractedFields: ReturnType<typeof extractQRDataFields
     ...stringToAsciiArray(extractedFields.mob),
     ...stringToAsciiArray(extractedFields.dob),
     ...paddedName,
-    ...stringToAsciiArray(extractedFields.aadhaarLast4Digits)
+    ...stringToAsciiArray(extractedFields.aadhaarLast4Digits),
   ];
   return BigInt(packBytesAndPoseidon(nullifierArgs));
 }
@@ -51,7 +58,7 @@ function computePackedCommitment(extractedFields: ReturnType<typeof extractQRDat
     3,
     ...stringToAsciiArray(extractedFields.pincode),
     ...stringToAsciiArray(extractedFields.state.padEnd(31, '\0')),
-    ...stringToAsciiArray(extractedFields.phoneNoLast4Digits)
+    ...stringToAsciiArray(extractedFields.phoneNoLast4Digits),
   ];
   return BigInt(packBytesAndPoseidon(packedCommitmentArgs));
 }
@@ -64,13 +71,7 @@ function computeCommitment(
   packedCommitment: bigint,
   photoHash: bigint
 ): bigint {
-  return poseidon5([
-    secret,
-    qrHash,
-    nullifier,
-    packedCommitment,
-    photoHash
-  ]);
+  return poseidon5([secret, qrHash, nullifier, packedCommitment, photoHash]);
 }
 
 interface SharedQRData {
@@ -81,11 +82,19 @@ interface SharedQRData {
   qrDataPaddedLen: number;
   extractedFields: ReturnType<typeof extractQRDataFields>;
   qrHash: bigint;
-  photo: { bytes: number[]; };
+  photo: { bytes: number[] };
   photoHash: bigint;
 }
 
-function processQRData(privKeyPem: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string): SharedQRData {
+function processQRData(
+  privKeyPem: string,
+  name?: string,
+  dateOfBirth?: string,
+  gender?: string,
+  pincode?: string,
+  state?: string,
+  timestamp?: string
+): SharedQRData {
   const finalName = name ?? 'Sumit Kumar';
   const finalDateOfBirth = dateOfBirth ?? '01-01-1984';
   const finalGender = gender ?? 'M';
@@ -93,8 +102,17 @@ function processQRData(privKeyPem: string, name?: string, dateOfBirth?: string, 
   const finalState = state ?? 'Delhi';
 
   let qrDataBytes: any;
-  if(name || dateOfBirth || gender || pincode || state) {
-    const newTestData = generateTestData({ privKeyPem, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState, timestamp: timestamp});
+  if (name || dateOfBirth || gender || pincode || state) {
+    const newTestData = generateTestData({
+      privKeyPem,
+      data: testCustomData,
+      name: finalName,
+      dob: finalDateOfBirth,
+      gender: finalGender,
+      pincode: finalPincode,
+      state: finalState,
+      timestamp: timestamp,
+    });
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   } else {
     qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
@@ -121,12 +139,30 @@ function processQRData(privKeyPem: string, name?: string, dateOfBirth?: string, 
     extractedFields,
     qrHash: BigInt(qrHash),
     photo,
-    photoHash: BigInt(photoHash)
+    photoHash: BigInt(photoHash),
   };
 }
 
-export function prepareAadhaarRegisterTestData(privKeyPem: string, pubkeyPem: string,secret: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
-  const sharedData = processQRData(privKeyPem, name, dateOfBirth, gender, pincode, state, timestamp);
+export function prepareAadhaarRegisterTestData(
+  privKeyPem: string,
+  pubkeyPem: string,
+  secret: string,
+  name?: string,
+  dateOfBirth?: string,
+  gender?: string,
+  pincode?: string,
+  state?: string,
+  timestamp?: string
+) {
+  const sharedData = processQRData(
+    privKeyPem,
+    name,
+    dateOfBirth,
+    gender,
+    pincode,
+    state,
+    timestamp
+  );
 
   const delimiterIndices: number[] = [];
   for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
@@ -138,14 +174,16 @@ export function prepareAadhaarRegisterTestData(privKeyPem: string, pubkeyPem: st
     }
   }
 
-  const signatureBytes = sharedData.decodedData.slice(sharedData.decodedData.length - 256, sharedData.decodedData.length);
+  const signatureBytes = sharedData.decodedData.slice(
+    sharedData.decodedData.length - 256,
+    sharedData.decodedData.length
+  );
   const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
 
   const publicKey = forge.pki.publicKeyFromPem(pubkeyPem);
 
   const modulusHex = publicKey.n.toString(16);
   const pubKey = BigInt('0x' + modulusHex);
-
 
   const paddedName = computePaddedName(sharedData.extractedFields.name);
   const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
@@ -192,11 +230,23 @@ export function prepareAadhaarDiscloseTestData(
   pincode?: string,
   state?: string,
   timestamp?: string,
-  updateTree?: boolean,
+  updateTree?: boolean
 ) {
-  const sharedData = processQRData(privateKeyPem, name, dateOfBirth, gender, pincode, state, timestamp);
+  const sharedData = processQRData(
+    privateKeyPem,
+    name,
+    dateOfBirth,
+    gender,
+    pincode,
+    state,
+    timestamp
+  );
 
-  const {age, currentYear, currentMonth, currentDay } = calculateAge(sharedData.extractedFields.dob, sharedData.extractedFields.mob, sharedData.extractedFields.yob);
+  const { age, currentYear, currentMonth, currentDay } = calculateAge(
+    sharedData.extractedFields.dob,
+    sharedData.extractedFields.mob,
+    sharedData.extractedFields.yob
+  );
 
   const paddedName = computePaddedName(sharedData.extractedFields.name);
   const genderAscii = stringToAsciiArray(sharedData.extractedFields.gender)[0];
@@ -221,8 +271,16 @@ export function prepareAadhaarDiscloseTestData(
     leaf_depth,
   } = generateMerkleProof(merkletree, index, COMMITMENT_TREE_DEPTH);
 
-  const namedob_leaf = getNameDobLeafAadhaar(sharedData.extractedFields.name, sharedData.extractedFields.yob, sharedData.extractedFields.mob, sharedData.extractedFields.dob);
-  const nameyob_leaf = getNameYobLeafAahaar(sharedData.extractedFields.name, sharedData.extractedFields.yob);
+  const namedob_leaf = getNameDobLeafAadhaar(
+    sharedData.extractedFields.name,
+    sharedData.extractedFields.yob,
+    sharedData.extractedFields.mob,
+    sharedData.extractedFields.dob
+  );
+  const nameyob_leaf = getNameYobLeafAahaar(
+    sharedData.extractedFields.name,
+    sharedData.extractedFields.yob
+  );
 
   const {
     root: ofac_name_dob_smt_root,
@@ -285,7 +343,7 @@ export function prepareAadhaarDiscloseTestData(
     currentDay: formatInput(currentDay),
     scope: formatInput(BigInt(scope)),
     user_identifier: formatInput(BigInt(user_identifier)),
-    forbidden_countries_list: [...Array(120)].map((x) => '0')
+    forbidden_countries_list: [...Array(120)].map((x) => '0'),
   };
 
   return {

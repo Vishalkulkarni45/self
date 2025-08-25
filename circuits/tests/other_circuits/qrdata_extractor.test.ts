@@ -107,23 +107,42 @@ describe('Aadhaar QR Data Extractor1', function () {
 
     const aadhaarLast4DigitsAscii = '2697'.split('').map((char) => char.charCodeAt(0));
     for (let i = 0; i < 4; i++) {
-      assert(Number(out[`aadhaar_last_4digits[${i}]`]) === aadhaarLast4DigitsAscii[i], `AADHAAR mismatch at index ${i}`);
+      assert(
+        Number(out[`aadhaar_last_4digits[${i}]`]) === aadhaarLast4DigitsAscii[i],
+        `AADHAAR mismatch at index ${i}`
+      );
     }
 
     const phNoLast4DigitsAscii = '1234'.split('').map((char) => char.charCodeAt(0));
     for (let i = 0; i < 4; i++) {
-      assert(Number(out[`ph_no_last_4digits[${i}]`]) === phNoLast4DigitsAscii[i], `PHONE mismatch at index ${i}`);
+      assert(
+        Number(out[`ph_no_last_4digits[${i}]`]) === phNoLast4DigitsAscii[i],
+        `PHONE mismatch at index ${i}`
+      );
     }
 
     for (let i = 0; i < 31; i++) {
-        assert(Number(out[`state[${i}]`]) === 'Delhi'.padEnd(31, '\0').split('').map((char) => char.charCodeAt(0))[i], `STATE mismatch at index ${i}`);
+      assert(
+        Number(out[`state[${i}]`]) ===
+          'Delhi'
+            .padEnd(31, '\0')
+            .split('')
+            .map((char) => char.charCodeAt(0))[i],
+        `STATE mismatch at index ${i}`
+      );
     }
-
   });
 
   it('should extract qr data from the new test data', async function () {
     this.timeout(0);
-    const newTestData = generateTestData({ data: testCustomData, gender: 'F', dob: '15-12-2012', pincode: '554587', state: 'Karnataka', name: 'KL RAHUL' });
+    const newTestData = generateTestData({
+      data: testCustomData,
+      gender: 'F',
+      dob: '15-12-2012',
+      pincode: '554587',
+      state: 'Karnataka',
+      name: 'KL RAHUL',
+    });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const QRDataDecode = decompressByteArray(QRDataBytes);
 
@@ -161,7 +180,10 @@ describe('Aadhaar QR Data Extractor1', function () {
 
     await circuit.checkConstraints(witness);
 
-    const nameAscii = 'KL RAHUL'.padEnd(62, '\0').split('').map((char) => char.charCodeAt(0));
+    const nameAscii = 'KL RAHUL'
+      .padEnd(62, '\0')
+      .split('')
+      .map((char) => char.charCodeAt(0));
     for (let i = 0; i < 62; i++) {
       assert(Number(out[`name[${i}]`]) === nameAscii[i], `NAME mismatch at index ${i}`);
     }
@@ -189,10 +211,14 @@ describe('Aadhaar QR Data Extractor1', function () {
     }
 
     for (let i = 0; i < 31; i++) {
-        assert(Number(out[`state[${i}]`]) === 'Karnataka'.padEnd(31, '\0').split('').map((char) => char.charCodeAt(0))[i], `STATE mismatch at index ${i}`);
+      assert(
+        Number(out[`state[${i}]`]) ===
+          'Karnataka'
+            .padEnd(31, '\0')
+            .split('')
+            .map((char) => char.charCodeAt(0))[i],
+        `STATE mismatch at index ${i}`
+      );
     }
-
-
   });
-
 });

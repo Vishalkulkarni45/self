@@ -72,10 +72,11 @@ contract SelfHappyBirthday is SelfVerificationRoot, Ownable {
      * @param scopeValue The expected proof scope for user registration
      * @param token The USDC token address
      */
-    constructor(address identityVerificationHubAddress, uint256 scopeValue, address token)
-        SelfVerificationRoot(identityVerificationHubAddress, scopeValue)
-        Ownable(_msgSender())
-    {
+    constructor(
+        address identityVerificationHubAddress,
+        uint256 scopeValue,
+        address token
+    ) SelfVerificationRoot(identityVerificationHubAddress, scopeValue) Ownable(_msgSender()) {
         usdc = IERC20(token);
     }
 

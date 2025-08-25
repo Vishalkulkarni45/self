@@ -1,6 +1,7 @@
 how to deploy and update the protocol
 
 Main contracts:
+
 - Hub
 - Registries
   - Passports

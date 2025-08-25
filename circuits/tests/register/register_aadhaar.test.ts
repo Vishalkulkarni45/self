@@ -2,15 +2,8 @@ import { expect } from 'chai';
 import { wasm as wasmTester } from 'circom_tester';
 import path from 'path';
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
-import {
-  bufferToHex,
-  Uint8ArrayToCharArray,
-} from '@zk-email/helpers/dist/binary-format.js';
-import {
-  convertBigIntToByteArray,
-  decompressByteArray,
-  splitToWords,
-} from '@anon-aadhaar/core';
+import { bufferToHex, Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
+import { convertBigIntToByteArray, decompressByteArray, splitToWords } from '@anon-aadhaar/core';
 import assert from 'assert';
 import { customHasher } from '@selfxyz/common/utils/hash';
 import { prepareAadhaarRegisterTestData, generateTestData, testCustomData } from '@selfxyz/common';
@@ -18,9 +11,14 @@ import fs from 'fs';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-
-const privateKeyPem = fs.readFileSync(path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'), 'utf8');
-const publicKeyPem = fs.readFileSync(path.join(__dirname, '../../../common/src/utils/aadhaar/assets/testPublicKey.pem'), 'utf8');
+const privateKeyPem = fs.readFileSync(
+  path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'),
+  'utf8'
+);
+const publicKeyPem = fs.readFileSync(
+  path.join(__dirname, '../../../common/src/utils/aadhaar/assets/testPublicKey.pem'),
+  'utf8'
+);
 
 describe('REGISTER AADHAAR Circuit Tests', function () {
   let circuit: any;
@@ -48,7 +46,11 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
   });
   it('should pass constrain and output correct nullifier and commitment', async function () {
     this.timeout(0);
-    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234');
+    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(
+      privateKeyPem,
+      publicKeyPem,
+      '1234'
+    );
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -78,9 +80,13 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should fail when qrdata is tampered', async function () {
     this.timeout(0);
-     const { inputs } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234');
+    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234');
 
-    const newTestData = generateTestData({ privKeyPem: privateKeyPem, data: testCustomData,  gender: 'F' });
+    const newTestData = generateTestData({
+      privKeyPem: privateKeyPem,
+      data: testCustomData,
+      gender: 'F',
+    });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const decodedData = decompressByteArray(QRDataBytes);
 
@@ -101,7 +107,11 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should return different commitment when secret is tampered', async function () {
     this.timeout(0);
-    const { inputs, commitment } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234');
+    const { inputs, commitment } = prepareAadhaarRegisterTestData(
+      privateKeyPem,
+      publicKeyPem,
+      '1234'
+    );
     inputs.secret = '1235';
     const w = await circuit.calculateWitness(inputs);
 
@@ -111,7 +121,13 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
   it('should pass for different qr data', async function () {
     this.timeout(0);
-    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234', 'KL RAHUL', '18-04-1992');
+    const { inputs, nullifier, commitment } = prepareAadhaarRegisterTestData(
+      privateKeyPem,
+      publicKeyPem,
+      '1234',
+      'KL RAHUL',
+      '18-04-1992'
+    );
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
@@ -120,7 +136,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     assert(BigInt(out.commitment) === BigInt(commitment));
   });
 
-  it("should create the pubkey commitment correctly", async function () {
+  it('should create the pubkey commitment correctly', async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234');
     const w = await circuit.calculateWitness(inputs);
@@ -130,14 +146,24 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
 
     const out = await circuit.getOutput(w, ['pubKeyHash']);
     assert(BigInt(out.pubKeyHash) === BigInt(expectedPubKeyCommitment));
-  })
+  });
 
-  it("should create the timestamp correctly", async function () {
+  it('should create the timestamp correctly', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarRegisterTestData(privateKeyPem, publicKeyPem, '1234', "Some Guy", undefined, undefined, undefined, undefined, new Date(Date.now() - 30 * 60 * 1000).getTime().toString());
+    const { inputs } = prepareAadhaarRegisterTestData(
+      privateKeyPem,
+      publicKeyPem,
+      '1234',
+      'Some Guy',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      new Date(Date.now() - 30 * 60 * 1000).getTime().toString()
+    );
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 
     const out = await circuit.getOutput(w, ['timestamp']);
-  })
+  });
 });

@@ -35,19 +35,20 @@ library SelfCircuitLibrary {
     function extractPassportData(uint256[3] memory revealedDataPacked) internal pure returns (PassportData memory) {
         bytes memory charcodes = Formatter.fieldElementsToBytes(revealedDataPacked);
 
-        return PassportData({
-            issuingState: CircuitAttributeHandler.getIssuingState(charcodes),
-            name: CircuitAttributeHandler.getName(charcodes),
-            passportNumber: CircuitAttributeHandler.getPassportNumber(charcodes),
-            nationality: CircuitAttributeHandler.getNationality(charcodes),
-            dateOfBirth: CircuitAttributeHandler.getDateOfBirth(charcodes),
-            gender: CircuitAttributeHandler.getGender(charcodes),
-            expiryDate: CircuitAttributeHandler.getExpiryDate(charcodes),
-            olderThan: CircuitAttributeHandler.getOlderThan(charcodes),
-            passportNoOfac: CircuitAttributeHandler.getPassportNoOfac(charcodes) == 1,
-            nameAndDobOfac: CircuitAttributeHandler.getNameAndDobOfac(charcodes) == 1,
-            nameAndYobOfac: CircuitAttributeHandler.getNameAndYobOfac(charcodes) == 1
-        });
+        return
+            PassportData({
+                issuingState: CircuitAttributeHandler.getIssuingState(charcodes),
+                name: CircuitAttributeHandler.getName(charcodes),
+                passportNumber: CircuitAttributeHandler.getPassportNumber(charcodes),
+                nationality: CircuitAttributeHandler.getNationality(charcodes),
+                dateOfBirth: CircuitAttributeHandler.getDateOfBirth(charcodes),
+                gender: CircuitAttributeHandler.getGender(charcodes),
+                expiryDate: CircuitAttributeHandler.getExpiryDate(charcodes),
+                olderThan: CircuitAttributeHandler.getOlderThan(charcodes),
+                passportNoOfac: CircuitAttributeHandler.getPassportNoOfac(charcodes) == 1,
+                nameAndDobOfac: CircuitAttributeHandler.getNameAndDobOfac(charcodes) == 1,
+                nameAndYobOfac: CircuitAttributeHandler.getNameAndYobOfac(charcodes) == 1
+            });
     }
 
     /**

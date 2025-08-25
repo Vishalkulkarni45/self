@@ -16,22 +16,22 @@ import { createSelector } from "@selfxyz/common/utils/aadhaar/constants";
 import { formatInput } from "@selfxyz/common/utils/circuits/generateInputs";
 import fs from "fs";
 
-const privateKeyPem = fs.readFileSync(path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem"), "utf8");
+const privateKeyPem = fs.readFileSync(
+  path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem"),
+  "utf8",
+);
 
-export function stringify(
-  value: any,
-  space?: string | number
-): string {
+export function stringify(value: any, space?: string | number): string {
   return JSON.stringify(
     value,
     (key, val) => {
       // Convert BigInt to string
-      if (typeof val === 'bigint' || val instanceof BigInt) {
+      if (typeof val === "bigint" || val instanceof BigInt) {
         return val.toString();
       }
       return val;
     },
-    space
+    space,
   );
 }
 
@@ -69,12 +69,12 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
     const LeanIMT = await import("@openpassport/zk-kit-lean-imt").then((mod) => mod.LeanIMT);
     imt = new LeanIMT<bigint>(hashFunction);
 
-    name = 'Sumit Kumar';
-    dateOfBirth = '01-01-1984';
-    gender = 'M';
-    pincode = '110051';
-    state = 'WB';
-    registerSecret = '1234';
+    name = "Sumit Kumar";
+    dateOfBirth = "01-01-1984";
+    gender = "M";
+    pincode = "110051";
+    state = "WB";
+    registerSecret = "1234";
 
     tree = new LeanIMT<bigint>((a, b) => poseidon2([a, b]), []);
     nameAndDob_smt = getSMTs().nameAndDob_smt;
@@ -101,7 +101,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       scopeAsBigInt.toString(),
       registerSecret,
       userIdentifierHash.toString(),
-      createSelector(['GENDER']).toString(),
+      createSelector(["GENDER"]).toString(),
       name,
       dateOfBirth,
       gender,
@@ -111,7 +111,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       true,
     );
     const aadhaarInputs = testData.inputs;
-    (stringify(aadhaarInputs));
+    stringify(aadhaarInputs);
 
     nullifier = testData.nullifier;
     commitment = testData.commitment;
@@ -139,9 +139,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
     await deployedActors.testSelfVerificationRoot.setVerificationConfig(verificationConfigV2);
 
-    baseVcAndDiscloseProof = await generateVcAndDiscloseAadhaarProof(
-      aadhaarInputs,
-    );
+    baseVcAndDiscloseProof = await generateVcAndDiscloseAadhaarProof(aadhaarInputs);
   });
 
   afterEach(async () => {
@@ -180,7 +178,14 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
@@ -230,14 +235,23 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
       await deployedActors.testSelfVerificationRoot.resetTestState();
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "ConfigNotSet");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "ConfigNotSet");
     });
 
     it("should fail with invalid length of proofData", async () => {
@@ -269,7 +283,9 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const invalidProofData = ethers.toUtf8Bytes("short");
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(invalidProofData, userContextData)).to.be.revertedWithCustomError(deployedActors.testSelfVerificationRoot, "InvalidDataFormat");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(invalidProofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.testSelfVerificationRoot, "InvalidDataFormat");
     });
 
     it("should fail with invalid length of userContextData", async () => {
@@ -279,12 +295,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, invalidUserContextData)).to.be.revertedWithCustomError(deployedActors.testSelfVerificationRoot, "InvalidDataFormat");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, invalidUserContextData),
+      ).to.be.revertedWithCustomError(deployedActors.testSelfVerificationRoot, "InvalidDataFormat");
     });
 
     it("should fail with invalid scope", async () => {
@@ -328,7 +353,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         differentScopeAsBigIntString,
         registerSecret,
         "123",
-        createSelector(['GENDER']).toString(),
+        createSelector(["GENDER"]).toString(),
         name,
         dateOfBirth,
         gender,
@@ -338,18 +363,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         true,
       );
 
-      const differentScopeProof = await generateVcAndDiscloseAadhaarProof(
-        aadhaarInputs.inputs,
-      );
+      const differentScopeProof = await generateVcAndDiscloseAadhaarProof(aadhaarInputs.inputs);
 
       const differentScopeEncodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
         [[differentScopeProof.a, differentScopeProof.b, differentScopeProof.c, differentScopeProof.pubSignals]],
       );
 
-      const differentScopeProofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, differentScopeEncodedProof]);
+      const differentScopeProofData = ethers.solidityPacked(
+        ["bytes32", "bytes"],
+        [attestationId, differentScopeEncodedProof],
+      );
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(differentScopeProofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "ScopeMismatch");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(differentScopeProofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "ScopeMismatch");
     });
 
     it("should fail with invalid user identifier", async () => {
@@ -382,12 +410,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, invalidUserContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "InvalidUserIdentifierInProof");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, invalidUserContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "InvalidUserIdentifierInProof");
     });
 
     it("should fail with invalid root", async () => {
@@ -422,12 +459,24 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const modifiedVcAndDiscloseEncodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[modifiedVcAndDiscloseProof.a, modifiedVcAndDiscloseProof.b, modifiedVcAndDiscloseProof.c, modifiedVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            modifiedVcAndDiscloseProof.a,
+            modifiedVcAndDiscloseProof.b,
+            modifiedVcAndDiscloseProof.c,
+            modifiedVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
-      const modifiedVcAndDiscloseProofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, modifiedVcAndDiscloseEncodedProof]);
+      const modifiedVcAndDiscloseProofData = ethers.solidityPacked(
+        ["bytes32", "bytes"],
+        [attestationId, modifiedVcAndDiscloseEncodedProof],
+      );
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(modifiedVcAndDiscloseProofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "InvalidIdentityCommitmentRoot");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(modifiedVcAndDiscloseProofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "InvalidIdentityCommitmentRoot");
     });
 
     it("should fail with invalid current date + 1 day", async () => {
@@ -471,7 +520,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         scopeAsBigInt.toString(),
         registerSecret,
         userIdentifierHash.toString(),
-        createSelector(['GENDER']).toString(),
+        createSelector(["GENDER"]).toString(),
         name,
         dateOfBirth,
         gender,
@@ -480,7 +529,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         undefined,
         true,
       );
-
 
       aadhaarInputs.inputs.currentDay = formatInput((+aadhaarInputs.inputs.currentDay[0] + 1).toString());
 
@@ -498,9 +546,14 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         [[differentScopeProof.a, differentScopeProof.b, differentScopeProof.c, differentScopeProof.pubSignals]],
       );
 
-      const differentScopeProofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, differentScopeEncodedProof]);
+      const differentScopeProofData = ethers.solidityPacked(
+        ["bytes32", "bytes"],
+        [attestationId, differentScopeEncodedProof],
+      );
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(differentScopeProofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CurrentDateNotInValidRange");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(differentScopeProofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CurrentDateNotInValidRange");
     });
 
     it("should fail with invalid current date - 1 day", async () => {
@@ -528,7 +581,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       await deployedActors.testSelfVerificationRoot.setVerificationConfig(verificationConfigV2);
 
-
       const attestationId = ethers.zeroPadValue(ethers.toBeHex(BigInt(AADHAAR_ATTESTATION_ID)), 32);
 
       const LeanIMT = await import("@openpassport/zk-kit-lean-imt").then((mod) => mod.LeanIMT);
@@ -545,7 +597,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         scopeAsBigInt.toString(),
         registerSecret,
         userIdentifierHash.toString(),
-        createSelector(['GENDER']).toString(),
+        createSelector(["GENDER"]).toString(),
         name,
         dateOfBirth,
         gender,
@@ -571,9 +623,14 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         [[differentScopeProof.a, differentScopeProof.b, differentScopeProof.c, differentScopeProof.pubSignals]],
       );
 
-      const differentScopeProofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, differentScopeEncodedProof]);
+      const differentScopeProofData = ethers.solidityPacked(
+        ["bytes32", "bytes"],
+        [attestationId, differentScopeEncodedProof],
+      );
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(differentScopeProofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CurrentDateNotInValidRange");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(differentScopeProofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CurrentDateNotInValidRange");
     });
 
     it("should fail verification with invalid groth16 proof", async () => {
@@ -620,9 +677,14 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         [[invalidGrothProof.a, invalidGrothProof.b, invalidGrothProof.c, invalidGrothProof.pubSignals]],
       );
 
-      const invalidGrothProofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, invalidGrothProofEncodedProof]);
+      const invalidGrothProofData = ethers.solidityPacked(
+        ["bytes32", "bytes"],
+        [attestationId, invalidGrothProofEncodedProof],
+      );
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(invalidGrothProofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "InvalidVcAndDiscloseProof");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(invalidGrothProofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "InvalidVcAndDiscloseProof");
     });
 
     it("should fail verification with invalid attestation Id", async () => {
@@ -653,12 +715,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [invalidAttestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWith("Invalid attestation ID");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
+      ).to.be.revertedWith("Invalid attestation ID");
     });
 
     it("should fail verification with invalid ofac check", async () => {
@@ -694,12 +765,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidOfacCheck");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidOfacCheck");
     });
 
     it("should fail verification with invalid forbidden countries check", async () => {
@@ -716,12 +796,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         olderThanEnabled: true,
         olderThan: "00",
         forbiddenCountriesEnabled: true,
-        forbiddenCountriesListPacked: [1n, 1n, 1n, 1n] as [
-          BigNumberish,
-          BigNumberish,
-          BigNumberish,
-          BigNumberish,
-        ],
+        forbiddenCountriesListPacked: [1n, 1n, 1n, 1n] as [BigNumberish, BigNumberish, BigNumberish, BigNumberish],
         ofacEnabled: [false, false, false] as [boolean, boolean, boolean],
       };
 
@@ -735,12 +810,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidForbiddenCountries");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidForbiddenCountries");
     });
 
     it("should fail verification with invalid older than check", async () => {
@@ -776,12 +860,21 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
-        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+        [
+          [
+            baseVcAndDiscloseProof.a,
+            baseVcAndDiscloseProof.b,
+            baseVcAndDiscloseProof.c,
+            baseVcAndDiscloseProof.pubSignals,
+          ],
+        ],
       );
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidOlderThan");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidOlderThan");
     });
 
     it("should fail verification with invalid dest chain id", async () => {
@@ -791,10 +884,16 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const userContextData = ethers.solidityPacked(
         ["bytes32", "bytes32", "bytes"],
-        [ethers.zeroPadValue(ethers.toBeHex(destChainId), 32), ethers.zeroPadValue(user1Address, 32), ethers.toUtf8Bytes(userData)],
+        [
+          ethers.zeroPadValue(ethers.toBeHex(destChainId), 32),
+          ethers.zeroPadValue(user1Address, 32),
+          ethers.toUtf8Bytes(userData),
+        ],
       );
 
-      const newUserIdentifierHash = BigInt(calculateUserIdentifierHash(destChainId, user1Address.slice(2), userData).toString());
+      const newUserIdentifierHash = BigInt(
+        calculateUserIdentifierHash(destChainId, user1Address.slice(2), userData).toString(),
+      );
 
       const verificationConfigV2 = {
         olderThanEnabled: true,
@@ -819,7 +918,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         scopeAsBigInt.toString(),
         registerSecret,
         newUserIdentifierHash.toString(),
-        createSelector(['GENDER']).toString(),
+        createSelector(["GENDER"]).toString(),
         name,
         dateOfBirth,
         gender,
@@ -849,7 +948,9 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
 
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
 
-      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CrossChainIsNotSupportedYet");
+      await expect(
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
+      ).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CrossChainIsNotSupportedYet");
     });
 
     it("should fail verification with invalid msg sender to call onVerificationSuccess", async () => {

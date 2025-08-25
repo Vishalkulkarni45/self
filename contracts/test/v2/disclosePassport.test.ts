@@ -646,7 +646,7 @@ describe("Self Verification Flow V2", () => {
       const proofData = ethers.solidityPacked(["bytes32", "bytes"], [invalidAttestationId, encodedProof]);
 
       await expect(
-        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)
+        deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData),
       ).to.be.revertedWith("Invalid attestation ID");
     });
 

@@ -47,7 +47,6 @@ interface IRegisterCircuitVerifier {
 }
 
 interface IAadhaarRegisterCircuitVerifier {
-
     /**
      * @notice Verifies a given register circuit proof.
      * @dev This function checks the validity of the provided proof parameters.

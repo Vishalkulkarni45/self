@@ -9,8 +9,14 @@ import { generateRandomFieldElement } from "../utils/utils";
 import { generateRegisterAadhaarProof } from "../utils/generateProof";
 import fs from "fs";
 
-const privateKeyPem = fs.readFileSync(path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem"), "utf8");
-const pubkeyPem = fs.readFileSync(path.join(__dirname, "../../../common/src/utils/aadhaar/assets/testPublicKey.pem"), "utf8");
+const privateKeyPem = fs.readFileSync(
+  path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem"),
+  "utf8",
+);
+const pubkeyPem = fs.readFileSync(
+  path.join(__dirname, "../../../common/src/utils/aadhaar/assets/testPublicKey.pem"),
+  "utf8",
+);
 
 describe("Aadhaar Registration test", function () {
   this.timeout(0);
@@ -36,18 +42,19 @@ describe("Aadhaar Registration test", function () {
 
   describe("UIDAI Pubkey Commitment", () => {
     it("should successfully register UIDAI pubkey commitment from the owner", async () => {
-      const block = (await ethers.provider.getBlock("latest"));
+      const block = await ethers.provider.getBlock("latest");
       if (!block) {
         throw new Error("Block timestamp not found");
       }
       const blockTimestamp = BigInt(block.timestamp) + 1000n;
-      await expect(
-        deployedActors.registryAadhaar.registerUidaiPubkeyCommitment(1n, blockTimestamp),
-      ).to.emit(deployedActors.registryAadhaar, "UidaiPubkeyCommitmentRegistered");
+      await expect(deployedActors.registryAadhaar.registerUidaiPubkeyCommitment(1n, blockTimestamp)).to.emit(
+        deployedActors.registryAadhaar,
+        "UidaiPubkeyCommitmentRegistered",
+      );
     });
 
     it("should not register UIDAI pubkey commitment if expiry is in the past", async () => {
-      const block = (await ethers.provider.getBlock("latest"));
+      const block = await ethers.provider.getBlock("latest");
       if (!block) {
         throw new Error("Block timestamp not found");
       }
@@ -67,12 +74,12 @@ describe("Aadhaar Registration test", function () {
       aadhaarData = prepareAadhaarRegisterTestData(
         privateKeyPem,
         pubkeyPem,
-        '1234',
-        'Sumit Kumar',
-        '01-01-1984',
-        'M',
-        '110051',
-        'WB'
+        "1234",
+        "Sumit Kumar",
+        "01-01-1984",
+        "M",
+        "110051",
+        "WB",
       );
 
       registerSecret = generateRandomFieldElement();
@@ -81,13 +88,12 @@ describe("Aadhaar Registration test", function () {
     });
 
     it("should successfully register identity commitment", async () => {
-      await expect(
-        deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, registerProof),
-      ).to.emit(deployedActors.registryAadhaar, "CommitmentRegistered");
-
-      const isRegistered = await deployedActors.registryAadhaar.nullifiers(
-        registerProof.pubSignals[1],
+      await expect(deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, registerProof)).to.emit(
+        deployedActors.registryAadhaar,
+        "CommitmentRegistered",
       );
+
+      const isRegistered = await deployedActors.registryAadhaar.nullifiers(registerProof.pubSignals[1]);
       expect(isRegistered).to.be.true;
     });
 
@@ -145,34 +151,33 @@ describe("Aadhaar Registration test", function () {
       const newAadhaarData = prepareAadhaarRegisterTestData(
         privateKeyPem,
         pubkeyPem,
-        '1234',
-        'Sumit Kumar',
-        '01-01-1984',
-        'M',
-        '110051',
-        'WB',
+        "1234",
+        "Sumit Kumar",
+        "01-01-1984",
+        "M",
+        "110051",
+        "WB",
         //timestamp 10 minutes ago and converted to timestamp string
-        new Date(Date.now() - 10 * 60 * 1000).getTime().toString()
+        new Date(Date.now() - 10 * 60 * 1000).getTime().toString(),
       );
       const newRegisterProof = await generateRegisterAadhaarProof(registerSecret, newAadhaarData.inputs);
 
-      await expect(
-        deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, newRegisterProof),
-      ).to.not.be.reverted;
+      await expect(deployedActors.hub.registerCommitment(attestationIdBytes32, 0n, newRegisterProof)).to.not.be
+        .reverted;
     });
 
     it("should fail with InvalidUidaiTimestamp when UIDAI timestamp is not within 20 minutes of current time", async () => {
       const newAadhaarData = prepareAadhaarRegisterTestData(
         privateKeyPem,
         pubkeyPem,
-        '1234',
-        'Sumit Kumar',
-        '01-01-1984',
-        'M',
-        '110051',
-        'WB',
+        "1234",
+        "Sumit Kumar",
+        "01-01-1984",
+        "M",
+        "110051",
+        "WB",
         //timestamp 30 minutes ago and converted to timestamp string
-        new Date(Date.now() - 30 * 60 * 1000).getTime().toString()
+        new Date(Date.now() - 30 * 60 * 1000).getTime().toString(),
       );
       const newRegisterProof = await generateRegisterAadhaarProof(registerSecret, newAadhaarData.inputs);
 

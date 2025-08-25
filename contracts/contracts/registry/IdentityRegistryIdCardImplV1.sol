@@ -5,7 +5,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {InternalLeanIMT, LeanIMTData} from "@zk-kit/imt.sol/internal/InternalLeanIMT.sol";
 import {IIdentityRegistryIdCardV1} from "../interfaces/IIdentityRegistryIdCardV1.sol";
 import {ImplRoot} from "../upgradeable/ImplRoot.sol";
-import {console} from "hardhat/console.sol";
 
 /**
  * @notice ⚠️ CRITICAL STORAGE LAYOUT WARNING ⚠️
@@ -344,11 +343,11 @@ contract IdentityRegistryIdCardImplV1 is IdentityRegistryIdCardStorageV1, IIdent
      * @param nullifier The nullifier associated with the identity commitment.
      * @param commitment The identity commitment to register.
      */
-    function registerCommitment(bytes32 attestationId, uint256 nullifier, uint256 commitment)
-        external
-        onlyProxy
-        onlyHub
-    {
+    function registerCommitment(
+        bytes32 attestationId,
+        uint256 nullifier,
+        uint256 commitment
+    ) external onlyProxy onlyHub {
         if (_nullifiers[attestationId][nullifier]) revert REGISTERED_COMMITMENT();
 
         _nullifiers[attestationId][nullifier] = true;
@@ -423,11 +422,11 @@ contract IdentityRegistryIdCardImplV1 is IdentityRegistryIdCardStorageV1, IIdent
      * @param nullifier The nullifier associated with the identity commitment.
      * @param commitment The identity commitment to add.
      */
-    function devAddIdentityCommitment(bytes32 attestationId, uint256 nullifier, uint256 commitment)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function devAddIdentityCommitment(
+        bytes32 attestationId,
+        uint256 nullifier,
+        uint256 commitment
+    ) external onlyProxy onlyOwner {
         _nullifiers[attestationId][nullifier] = true;
         uint256 imt_root = _addCommitment(_identityCommitmentIMT, commitment);
         _rootTimestamps[imt_root] = block.timestamp;
@@ -442,11 +441,11 @@ contract IdentityRegistryIdCardImplV1 is IdentityRegistryIdCardStorageV1, IIdent
      * @param newLeaf The new identity commitment.
      * @param siblingNodes An array of sibling nodes for Merkle proof generation.
      */
-    function devUpdateCommitment(uint256 oldLeaf, uint256 newLeaf, uint256[] calldata siblingNodes)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function devUpdateCommitment(
+        uint256 oldLeaf,
+        uint256 newLeaf,
+        uint256[] calldata siblingNodes
+    ) external onlyProxy onlyOwner {
         uint256 imt_root = _updateCommitment(_identityCommitmentIMT, oldLeaf, newLeaf, siblingNodes);
         _rootTimestamps[imt_root] = block.timestamp;
         emit DevCommitmentUpdated(oldLeaf, newLeaf, imt_root, block.timestamp);
@@ -483,11 +482,11 @@ contract IdentityRegistryIdCardImplV1 is IdentityRegistryIdCardStorageV1, IIdent
      * @param newLeaf The new DSC key commitment.
      * @param siblingNodes An array of sibling nodes for Merkle proof generation.
      */
-    function devUpdateDscKeyCommitment(uint256 oldLeaf, uint256 newLeaf, uint256[] calldata siblingNodes)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function devUpdateDscKeyCommitment(
+        uint256 oldLeaf,
+        uint256 newLeaf,
+        uint256[] calldata siblingNodes
+    ) external onlyProxy onlyOwner {
         uint256 imt_root = _updateCommitment(_dscKeyCommitmentIMT, oldLeaf, newLeaf, siblingNodes);
         emit DevDscKeyCommitmentUpdated(oldLeaf, newLeaf, imt_root);
     }
@@ -510,11 +509,11 @@ contract IdentityRegistryIdCardImplV1 is IdentityRegistryIdCardStorageV1, IIdent
      * @param nullifier The nullifier whose state is to be updated.
      * @param state The new state of the nullifier (true for registered, false for not registered).
      */
-    function devChangeNullifierState(bytes32 attestationId, uint256 nullifier, bool state)
-        external
-        onlyProxy
-        onlyOwner
-    {
+    function devChangeNullifierState(
+        bytes32 attestationId,
+        uint256 nullifier,
+        bool state
+    ) external onlyProxy onlyOwner {
         _nullifiers[attestationId][nullifier] = state;
         emit DevNullifierStateChanged(attestationId, nullifier, state);
     }
@@ -571,10 +570,11 @@ contract IdentityRegistryIdCardImplV1 is IdentityRegistryIdCardStorageV1, IIdent
      * @param siblingNodes An array of sibling nodes for generating a valid proof.
      * @return imt_root The new Merkle tree root after removal.
      */
-    function _removeCommitment(LeanIMTData storage imt, uint256 oldLeaf, uint256[] calldata siblingNodes)
-        internal
-        returns (uint256 imt_root)
-    {
+    function _removeCommitment(
+        LeanIMTData storage imt,
+        uint256 oldLeaf,
+        uint256[] calldata siblingNodes
+    ) internal returns (uint256 imt_root) {
         imt_root = imt._remove(oldLeaf, siblingNodes);
     }
 }

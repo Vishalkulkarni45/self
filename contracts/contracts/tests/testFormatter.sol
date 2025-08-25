@@ -20,11 +20,9 @@ contract TestFormatter {
         return Formatter.fieldElementsToBytes(publicSignals);
     }
 
-    function testExtractForbiddenCountriesFromPacked(uint256[4] memory publicSignals)
-        external
-        pure
-        returns (string[40] memory)
-    {
+    function testExtractForbiddenCountriesFromPacked(
+        uint256[4] memory publicSignals
+    ) external pure returns (string[40] memory) {
         return Formatter.extractForbiddenCountriesFromPacked(publicSignals);
     }
 
@@ -36,11 +34,11 @@ contract TestFormatter {
         return Formatter.dateToUnixTimestamp(date);
     }
 
-    function testSubstring(string memory str, uint256 startIndex, uint256 endIndex)
-        external
-        pure
-        returns (string memory)
-    {
+    function testSubstring(
+        string memory str,
+        uint256 startIndex,
+        uint256 endIndex
+    ) external pure returns (string memory) {
         return Formatter.substring(str, startIndex, endIndex);
     }
 

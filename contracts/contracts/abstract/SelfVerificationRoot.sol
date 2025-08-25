@@ -6,7 +6,6 @@ import {ISelfVerificationRoot} from "../interfaces/ISelfVerificationRoot.sol";
 import {CircuitConstantsV2} from "../constants/CircuitConstantsV2.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
 
-import {console} from "hardhat/console.sol";
 /**
  * @title SelfVerificationRoot
  * @notice Abstract base contract to be integrated with self's verification infrastructure
@@ -145,8 +144,10 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
             revert UnauthorizedCaller();
         }
 
-        ISelfVerificationRoot.GenericDiscloseOutputV2 memory genericDiscloseOutput =
-            abi.decode(output, (ISelfVerificationRoot.GenericDiscloseOutputV2));
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory genericDiscloseOutput = abi.decode(
+            output,
+            (ISelfVerificationRoot.GenericDiscloseOutputV2)
+        );
 
         // Call the customizable verification hook
         customVerificationHook(genericDiscloseOutput, userData);
@@ -160,12 +161,11 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
      * @param userDefinedData The user defined data
      * @return The configId
      */
-    function getConfigId(bytes32 destinationChainId, bytes32 userIdentifier, bytes memory userDefinedData)
-        public
-        view
-        virtual
-        returns (bytes32)
-    {
+    function getConfigId(
+        bytes32 destinationChainId,
+        bytes32 userIdentifier,
+        bytes memory userDefinedData
+    ) public view virtual returns (bytes32) {
         // Default implementation reverts; must be overridden in derived contract
         revert("SelfVerificationRoot: getConfigId must be overridden");
     }
@@ -178,10 +178,10 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
      * @custom:override Override this function in derived contracts to add custom verification logic
      * @custom:security This function is only called after proper authentication by the hub contract
      */
-    function customVerificationHook(ISelfVerificationRoot.GenericDiscloseOutputV2 memory output, bytes memory userData)
-        internal
-        virtual
-    {
+    function customVerificationHook(
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+        bytes memory userData
+    ) internal virtual {
         // Default implementation is empty - override in derived contracts to add custom logic
     }
 }

@@ -1,7 +1,15 @@
 import countries from 'i18n-iso-countries';
 // @ts-ignore
 import en from 'i18n-iso-countries/langs/en.json' with { type: 'json' };
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon5, poseidon6, poseidon10 } from 'poseidon-lite';
+import {
+  poseidon12,
+  poseidon13,
+  poseidon2,
+  poseidon3,
+  poseidon5,
+  poseidon6,
+  poseidon10,
+} from 'poseidon-lite';
 import {
   CSCA_TREE_DEPTH,
   DSC_TREE_DEPTH,
@@ -583,9 +591,9 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
       leaf = processNameAndDobAadhaar(entry, i);
     } else if (treetype == 'name_and_yob') {
       leaf = processNameAndYobAadhaar(entry, i);
-    }else if (treetype == 'name_and_dob_reverse') {
+    } else if (treetype == 'name_and_dob_reverse') {
       leaf = processNameAndDobAadhaar(entry, i, true);
-    }else if (treetype == 'name_and_yob_reverse') {
+    } else if (treetype == 'name_and_yob_reverse') {
       leaf = processNameAndYobAadhaar(entry, i, true);
     }
 
@@ -601,8 +609,7 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
   return [count, performance.now() - startTime, tree];
 }
 
-const processNameAndDobAadhaar = (entry: any, i: number,reverse: boolean = false): bigint => {
-
+const processNameAndDobAadhaar = (entry: any, i: number, reverse: boolean = false): bigint => {
   let firstName = entry.First_Name;
   let lastName = entry.Last_Name;
   if (reverse) {
@@ -625,8 +632,7 @@ const processNameAndDobAadhaar = (entry: any, i: number,reverse: boolean = false
   return generateSmallKey(poseidon5([name[0], name[1], dob[0], dob[1], dob[2]]));
 };
 
-const processNameAndYobAadhaar = (entry: any, i: number,reverse: boolean = false): bigint => {
-
+const processNameAndYobAadhaar = (entry: any, i: number, reverse: boolean = false): bigint => {
   let firstName = entry.First_Name;
   let lastName = entry.Last_Name;
   if (reverse) {
@@ -679,7 +685,9 @@ export const getNameDobLeafAadhaar = (name: string, year: string, month: string,
     .split('')
     .map((char) => char.charCodeAt(0));
   const namePacked = packBytes(paddedName);
-  return generateSmallKey(poseidon5([namePacked[0], namePacked[1], BigInt(year), BigInt(month), BigInt(day)]));
+  return generateSmallKey(
+    poseidon5([namePacked[0], namePacked[1], BigInt(year), BigInt(month), BigInt(day)])
+  );
 };
 
 export const getNameYobLeafAahaar = (name: string, year: string) => {

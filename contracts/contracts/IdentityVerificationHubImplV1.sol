@@ -277,13 +277,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param types An array of RevealedDataType indicating the types of data expected.
      * @return A ReadableRevealedData struct containing the decoded data.
      */
-    function getReadableRevealedData(uint256[3] memory revealedDataPacked, RevealedDataType[] memory types)
-        external
-        view
-        virtual
-        onlyProxy
-        returns (ReadableRevealedData memory)
-    {
+    function getReadableRevealedData(
+        uint256[3] memory revealedDataPacked,
+        RevealedDataType[] memory types
+    ) external view virtual onlyProxy returns (ReadableRevealedData memory) {
         bytes memory charcodes = Formatter.fieldElementsToBytes(revealedDataPacked);
 
         ReadableRevealedData memory attrs;
@@ -323,13 +320,9 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param forbiddenCountriesListPacked Packed data representing forbidden countries.
      * @return An array of strings with a maximum length of MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH.
      */
-    function getReadableForbiddenCountries(uint256[4] memory forbiddenCountriesListPacked)
-        external
-        view
-        virtual
-        onlyProxy
-        returns (string[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH] memory)
-    {
+    function getReadableForbiddenCountries(
+        uint256[4] memory forbiddenCountriesListPacked
+    ) external view virtual onlyProxy returns (string[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH] memory) {
         return Formatter.extractForbiddenCountriesFromPacked(forbiddenCountriesListPacked);
     }
 
@@ -339,30 +332,30 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param proof The VcAndDiscloseHubProof containing the proof data.
      * @return result A VcAndDiscloseVerificationResult struct with the verification results.
      */
-    function verifyVcAndDisclose(VcAndDiscloseHubProof memory proof)
-        external
-        view
-        virtual
-        onlyProxy
-        returns (VcAndDiscloseVerificationResult memory)
-    {
+    function verifyVcAndDisclose(
+        VcAndDiscloseHubProof memory proof
+    ) external view virtual onlyProxy returns (VcAndDiscloseVerificationResult memory) {
         VcAndDiscloseVerificationResult memory result;
 
         result.identityCommitmentRoot = _verifyVcAndDiscloseProof(proof);
 
         for (uint256 i = 0; i < 3; i++) {
-            result.revealedDataPacked[i] =
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i];
+            result.revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstants.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+            ];
         }
         for (uint256 i = 0; i < 4; i++) {
-            result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[CircuitConstants
-                .VC_AND_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i];
+            result.forbiddenCountriesListPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstants.VC_AND_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+            ];
         }
         result.nullifier = proof.vcAndDiscloseProof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_NULLIFIER_INDEX];
-        result.attestationId =
-            proof.vcAndDiscloseProof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_ATTESTATION_ID_INDEX];
-        result.userIdentifier =
-            proof.vcAndDiscloseProof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX];
+        result.attestationId = proof.vcAndDiscloseProof.pubSignals[
+            CircuitConstants.VC_AND_DISCLOSE_ATTESTATION_ID_INDEX
+        ];
+        result.userIdentifier = proof.vcAndDiscloseProof.pubSignals[
+            CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX
+        ];
         result.scope = proof.vcAndDiscloseProof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_SCOPE_INDEX];
         return result;
     }
@@ -422,12 +415,9 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @notice Updates the VC and Disclose circuit verifier address.
      * @param vcAndDiscloseCircuitVerifierAddress The new VC and Disclose circuit verifier address.
      */
-    function updateVcAndDiscloseCircuit(address vcAndDiscloseCircuitVerifierAddress)
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    function updateVcAndDiscloseCircuit(
+        address vcAndDiscloseCircuitVerifierAddress
+    ) external virtual onlyProxy onlyOwner {
         _vcAndDiscloseCircuitVerifier = vcAndDiscloseCircuitVerifierAddress;
         emit VcAndDiscloseCircuitUpdated(vcAndDiscloseCircuitVerifierAddress);
     }
@@ -437,12 +427,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param typeId The signature type identifier.
      * @param verifierAddress The new register circuit verifier address.
      */
-    function updateRegisterCircuitVerifier(uint256 typeId, address verifierAddress)
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    function updateRegisterCircuitVerifier(
+        uint256 typeId,
+        address verifierAddress
+    ) external virtual onlyProxy onlyOwner {
         _sigTypeToRegisterCircuitVerifiers[typeId] = verifierAddress;
         emit RegisterCircuitVerifierUpdated(typeId, verifierAddress);
     }
@@ -462,12 +450,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param typeIds An array of signature type identifiers.
      * @param verifierAddresses An array of new register circuit verifier addresses.
      */
-    function batchUpdateRegisterCircuitVerifiers(uint256[] calldata typeIds, address[] calldata verifierAddresses)
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    function batchUpdateRegisterCircuitVerifiers(
+        uint256[] calldata typeIds,
+        address[] calldata verifierAddresses
+    ) external virtual onlyProxy onlyOwner {
         if (typeIds.length != verifierAddresses.length) {
             revert LENGTH_MISMATCH();
         }
@@ -482,12 +468,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param typeIds An array of signature type identifiers.
      * @param verifierAddresses An array of new DSC circuit verifier addresses.
      */
-    function batchUpdateDscCircuitVerifiers(uint256[] calldata typeIds, address[] calldata verifierAddresses)
-        external
-        virtual
-        onlyProxy
-        onlyOwner
-    {
+    function batchUpdateDscCircuitVerifiers(
+        uint256[] calldata typeIds,
+        address[] calldata verifierAddresses
+    ) external virtual onlyProxy onlyOwner {
         if (typeIds.length != verifierAddresses.length) {
             revert LENGTH_MISMATCH();
         }
@@ -507,11 +491,9 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
      * @param proof The VcAndDiscloseHubProof containing the proof data.
      * @return identityCommitmentRoot The verified identity commitment root from the proof.
      */
-    function _verifyVcAndDiscloseProof(VcAndDiscloseHubProof memory proof)
-        internal
-        view
-        returns (uint256 identityCommitmentRoot)
-    {
+    function _verifyVcAndDiscloseProof(
+        VcAndDiscloseHubProof memory proof
+    ) internal view returns (uint256 identityCommitmentRoot) {
         // verify identity commitment root
         if (
             !IIdentityRegistryV1(_registry).checkIdentityCommitmentRoot(
@@ -529,8 +511,8 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
 
         uint256 currentTimestamp = Formatter.proofDateToUnixTimestamp(dateNum);
         if (
-            currentTimestamp < _getStartOfDayTimestamp() - 1 days + 1
-                || currentTimestamp > _getStartOfDayTimestamp() + 1 days - 1
+            currentTimestamp < _getStartOfDayTimestamp() - 1 days + 1 ||
+            currentTimestamp > _getStartOfDayTimestamp() + 1 days - 1
         ) {
             revert CURRENT_DATE_NOT_IN_VALID_RANGE();
         }
@@ -538,13 +520,15 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
         // verify attributes
         uint256[3] memory revealedDataPacked;
         for (uint256 i = 0; i < 3; i++) {
-            revealedDataPacked[i] =
-                proof.vcAndDiscloseProof.pubSignals[CircuitConstants.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i];
+            revealedDataPacked[i] = proof.vcAndDiscloseProof.pubSignals[
+                CircuitConstants.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX + i
+            ];
         }
         if (proof.olderThanEnabled) {
             if (
                 !CircuitAttributeHandler.compareOlderThan(
-                    Formatter.fieldElementsToBytes(revealedDataPacked), proof.olderThan
+                    Formatter.fieldElementsToBytes(revealedDataPacked),
+                    proof.olderThan
                 )
             ) {
                 revert INVALID_OLDER_THAN();
@@ -574,9 +558,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
         if (proof.forbiddenCountriesEnabled) {
             for (uint256 i = 0; i < 4; i++) {
                 if (
-                    proof.forbiddenCountriesListPacked[i]
-                        != proof.vcAndDiscloseProof.pubSignals[CircuitConstants
-                            .VC_AND_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i]
+                    proof.forbiddenCountriesListPacked[i] !=
+                    proof.vcAndDiscloseProof.pubSignals[
+                        CircuitConstants.VC_AND_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX + i
+                    ]
                 ) {
                     revert INVALID_FORBIDDEN_COUNTRIES();
                 }
@@ -623,7 +608,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
 
         if (
             !IRegisterCircuitVerifier(verifier).verifyProof(
-                registerCircuitProof.a, registerCircuitProof.b, registerCircuitProof.c, registerCircuitProof.pubSignals
+                registerCircuitProof.a,
+                registerCircuitProof.b,
+                registerCircuitProof.c,
+                registerCircuitProof.pubSignals
             )
         ) {
             revert INVALID_REGISTER_PROOF();
@@ -655,7 +643,10 @@ contract IdentityVerificationHubImplV1 is IdentityVerificationHubStorageV1, IIde
 
         if (
             !IDscCircuitVerifier(verifier).verifyProof(
-                dscCircuitProof.a, dscCircuitProof.b, dscCircuitProof.c, dscCircuitProof.pubSignals
+                dscCircuitProof.a,
+                dscCircuitProof.b,
+                dscCircuitProof.c,
+                dscCircuitProof.pubSignals
             )
         ) {
             revert INVALID_DSC_PROOF();
