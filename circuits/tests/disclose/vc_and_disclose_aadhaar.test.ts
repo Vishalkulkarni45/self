@@ -3,11 +3,10 @@ import { wasm as wasmTester } from 'circom_tester';
 import path from 'path';
 
 import assert from 'assert';
-import { formatInput } from '../../../common/src/utils/circuits/generateInputs.js';
-
-import { unpackReveal } from '../../../common/src/utils/circuits/formatOutputs.js';
+import { formatInput } from '@selfxyz/common/utils/circuits/generateInputs';
+import { unpackReveal } from '@selfxyz/common/utils/circuits/formatOutputs';
 import { fileURLToPath } from 'url';
-import { createSelector, extractField } from '../../../common/src/utils/aadhaar/constants.js';
+import { createSelector, extractField } from '@selfxyz/common/utils/aadhaar/constants';
 import { prepareAadhaarDiscloseTestData } from '@selfxyz/common';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
@@ -266,8 +265,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     // Verify OFAC checks show person is in OFAC list
     assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
     assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
-    assert(ofacNameYobReverseCheck === 1, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(ofacNameDobReverseCheck === 1, 'OFAC Name DOB should be 0 (in OFAC list)');
+    assert(ofacNameYobReverseCheck === 1, 'OFAC Name YOB Reverse should be 1 (in OFAC list)');
+    assert(ofacNameDobReverseCheck === 1, 'OFAC Name DOB Reverse should be 1 (in OFAC list)');
     assert(minimumAge.toString() === '0', 'Minimum Age should be 0');
   });
   it('ofac_check_result should be 0 if exists in ofac_name_dob_reverse_smt and ofac_name_yob_reverse_smt', async function () {

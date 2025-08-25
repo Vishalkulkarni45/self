@@ -87,10 +87,10 @@ library Formatter {
 
     /**
      * @notice Formats a full year date string into a human-readable date.
-     * @dev Expects the input date string to have exactly 6 characters in YYMMDD format.
-     *      Returns the date in "DD-MM-YYYY" format.
-     * @param date A string representing the date in YYMMDD format.
-     * @return A formatted date string in the format "DD-MM-YYYY".
+     * @dev Expects the input date string to have exactly 8 characters in YYYYMMDD format.
+     *      Returns the date in "YYYY-MM-DD" format.
+     * @param date A string representing the date in YYYYMMDD format.
+     * @return A formatted date string in the format "YYYY-MM-DD".
      */
     function formatDateFullYear(string memory date) internal pure returns (string memory) {
         bytes memory dateBytes = bytes(date);

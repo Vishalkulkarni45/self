@@ -140,6 +140,8 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     error REGISTERED_COMMITMENT();
     /// @notice Thrown when the expiry timestamp is in the past.
     error EXPIRY_IN_PAST();
+    /// @notice Thrown when the hub address is set to the zero address.
+    error HUB_ADDRESS_ZERO();
 
     // ====================================================
     // Modifiers
@@ -314,6 +316,7 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @dev Callable only via a proxy and restricted to the contract owner.
     /// @param newHubAddress The new address of the hub.
     function updateHub(address newHubAddress) external onlyProxy onlyOwner {
+        if (newHubAddress == address(0)) revert HUB_ADDRESS_ZERO();
         _hub = newHubAddress;
         emit HubUpdated(newHubAddress);
     }
@@ -355,8 +358,8 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
     /// @param commitment The UIDAI pubkey commitment to register.
     /// @param expiryTimestamp The expiry timestamp of the commitment.
     function registerUidaiPubkeyCommitment(uint256 commitment, uint256 expiryTimestamp) external onlyProxy onlyOwner {
-        _uidaiPubkeyExpiryTimestamps[commitment] = expiryTimestamp;
         if (expiryTimestamp < block.timestamp) revert EXPIRY_IN_PAST();
+        _uidaiPubkeyExpiryTimestamps[commitment] = expiryTimestamp;
         emit UidaiPubkeyCommitmentRegistered(commitment, expiryTimestamp);
     }
 
@@ -376,6 +379,7 @@ contract IdentityRegistryAadhaarImplV1 is IdentityRegistryAadhaarStorageV1, IIde
         uint256 commitment,
         uint256 expiryTimestamp
     ) external onlyProxy onlyOwner {
+        if (expiryTimestamp < block.timestamp) revert EXPIRY_IN_PAST();
         _uidaiPubkeyExpiryTimestamps[commitment] = expiryTimestamp;
         emit UidaiPubkeyCommitmentUpdated(commitment, expiryTimestamp);
     }

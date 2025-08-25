@@ -177,6 +177,10 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
     /// @dev Ensures that the timestamp is within 20 minutes of the current block timestamp.
     error InvalidUidaiTimestamp();
 
+    /// @notice Thrown when the attestationId in the proof doesn't match the header.
+    /// @dev Ensures that the attestationId in the proof matches the header.
+    error AttestationIdMismatch();
+
     // ====================================================
     // Constructor
     // ====================================================
@@ -612,6 +616,7 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
         // Scope 1: Basic checks (scope and user identifier)
         CircuitConstantsV2.DiscloseIndices memory indices = CircuitConstantsV2.getDiscloseIndices(header.attestationId);
         {
+            _performAttestationIdCheck(header.attestationId, vcAndDiscloseProof, indices);
             _performScopeCheck(header.scope, vcAndDiscloseProof, indices);
             _performUserIdentifierCheck(userContextData, vcAndDiscloseProof, header.attestationId, indices);
         }
@@ -814,6 +819,19 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
      */
     function _getStartOfDayTimestamp() internal view returns (uint256) {
         return block.timestamp - (block.timestamp % 1 days);
+    }
+
+    /**
+     * @notice Performs attestationId check
+     */
+    function _performAttestationIdCheck(
+        bytes32 attestationId,
+        GenericProofStruct memory vcAndDiscloseProof,
+        CircuitConstantsV2.DiscloseIndices memory indices
+    ) internal pure {
+        if (vcAndDiscloseProof.pubSignals[indices.attestationIdIndex] != uint256(attestationId)) {
+            revert AttestationIdMismatch();
+        }
     }
 
     /**

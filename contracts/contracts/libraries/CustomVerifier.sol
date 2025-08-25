@@ -227,9 +227,7 @@ library CustomVerifier {
         SelfStructs.VerificationConfigV2 memory verificationConfig,
         SelfStructs.AadhaarOutput memory aadhaarOutput
     ) internal pure returns (SelfStructs.GenericDiscloseOutputV2 memory) {
-        if (
-            verificationConfig.ofacEnabled[0] || verificationConfig.ofacEnabled[1] || verificationConfig.ofacEnabled[2]
-        ) {
+        if (verificationConfig.ofacEnabled[1] || verificationConfig.ofacEnabled[2]) {
             if (
                 !CircuitAttributeHandlerV2.compareOfac(
                     AttestationId.AADHAAR,

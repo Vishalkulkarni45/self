@@ -21,19 +21,6 @@ const privateKeyPem = fs.readFileSync(
   "utf8",
 );
 
-export function stringify(value: any, space?: string | number): string {
-  return JSON.stringify(
-    value,
-    (key, val) => {
-      // Convert BigInt to string
-      if (typeof val === "bigint" || val instanceof BigInt) {
-        return val.toString();
-      }
-      return val;
-    },
-    space,
-  );
-}
 
 describe("Self Verification Flow V2 - Aadhaar", () => {
   let deployedActors: DeployedActorsV2;
@@ -111,7 +98,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       true,
     );
     const aadhaarInputs = testData.inputs;
-    stringify(aadhaarInputs);
 
     nullifier = testData.nullifier;
     commitment = testData.commitment;

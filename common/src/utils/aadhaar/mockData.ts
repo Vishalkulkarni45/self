@@ -336,7 +336,7 @@ export function prepareAadhaarDiscloseTestData(
     ofac_name_yob_reverse_smt_leaf_key: formatInput(BigInt(ofac_name_yob_reverse_smt_leaf_key)),
     ofac_name_yob_reverse_smt_root: formatInput(BigInt(ofac_name_yob_reverse_smt_root)),
     ofac_name_yob_reverse_smt_siblings: formatInput(ofac_name_yob_reverse_smt_siblings),
-    selector: '0',
+    selector,
     minimumAge: formatInput(age - 2),
     currentYear: formatInput(currentYear),
     currentMonth: formatInput(currentMonth),
