@@ -59,7 +59,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
   it('should not verify the signature of created from different key', async function () {
     this.timeout(0);
     const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
-    const newTestData = generateTestData({ data: testCustomData });
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const decodedData = decompressByteArray(QRDataBytes);
 
@@ -79,7 +79,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     this.timeout(0);
      const { inputs } = prepareAadhaarRegisterTestData(privateKeyPath, publicKeyPath, '1234');
 
-    const newTestData = generateTestData({ data: testCustomData,  gender: 'F' });
+    const newTestData = generateTestData({ privateKeyPath, data: testCustomData,  gender: 'F' });
     const QRDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
     const decodedData = decompressByteArray(QRDataBytes);
 
