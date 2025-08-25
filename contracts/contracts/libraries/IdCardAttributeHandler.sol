@@ -113,10 +113,8 @@ library IdCardAttributeHandler {
      * @return The extracted age as a uint256.
      */
     function getOlderThan(bytes memory charcodes) internal pure returns (uint256) {
-        return
-            Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START])) *
-            10 +
-            Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START + 1]));
+        return Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START])) * 10
+            + Formatter.numAsciiToUint(uint8(charcodes[OLDER_THAN_START + 1]));
     }
 
     /**
@@ -155,14 +153,13 @@ library IdCardAttributeHandler {
      * @dev Checks are only performed for flags that are set to true. If a flag is false,
      * that particular check is considered to have passed regardless of its actual value.
      */
-    function compareOfac(
-        bytes memory charcodes,
-        bool checkNameAndDob,
-        bool checkNameAndYob
-    ) internal pure returns (bool) {
-        return
-            (!checkNameAndDob || getNameAndDobOfac(charcodes) == 1) &&
-            (!checkNameAndYob || getNameAndYobOfac(charcodes) == 1);
+    function compareOfac(bytes memory charcodes, bool checkNameAndDob, bool checkNameAndYob)
+        internal
+        pure
+        returns (bool)
+    {
+        return (!checkNameAndDob || getNameAndDobOfac(charcodes) == 1)
+            && (!checkNameAndYob || getNameAndYobOfac(charcodes) == 1);
     }
 
     /**
@@ -183,11 +180,11 @@ library IdCardAttributeHandler {
      * @param end The ending index (inclusive) of the attribute in the byte array.
      * @return The extracted attribute as a string.
      */
-    function extractStringAttribute(
-        bytes memory charcodes,
-        uint256 start,
-        uint256 end
-    ) internal pure returns (string memory) {
+    function extractStringAttribute(bytes memory charcodes, uint256 start, uint256 end)
+        internal
+        pure
+        returns (string memory)
+    {
         if (charcodes.length <= end) {
             revert InsufficientCharcodeLen();
         }

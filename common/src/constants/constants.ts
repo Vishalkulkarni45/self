@@ -28,6 +28,7 @@ export const IDENTITY_TREE_URL_STAGING_ID_CARD = 'https://tree.staging.self.xyz/
 
 export const PASSPORT_ATTESTATION_ID = '1'; //"8518753152044246090169372947057357973469996808638122125210848696986717482788"
 export const ID_CARD_ATTESTATION_ID = '2';
+export const AADHAAR_ATTESTATION_ID = '3';
 export const CHAIN_NAME = 'celo';
 export const RPC_URL = 'https://forno.celo.org';
 export const PCR0_MANAGER_ADDRESS = '0xE36d4EE5Fd3916e703A46C21Bb3837dB7680C8B8';
@@ -248,6 +249,7 @@ export const CIRCUIT_CONSTANTS = {
 
 export const MAX_BYTES_IN_FIELD = 31;
 export const MAX_PUBKEY_DSC_BYTES = 525;
+
 
 export const MAX_DATAHASHES_LEN = 320; // max formatted and concatenated datagroup hashes length in bytes
 export const n_dsc = 120;

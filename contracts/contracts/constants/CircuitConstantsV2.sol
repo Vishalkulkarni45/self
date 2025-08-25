@@ -43,6 +43,17 @@ library CircuitConstantsV2 {
      */
     uint256 constant DSC_CSCA_ROOT_INDEX = 1;
 
+    // ---------------------------
+    // Aadhaar Circuit Constants
+    // ---------------------------
+    /**
+     * @notice Index to access the pubkey commitment in the Aadhaar circuit public signals.
+     */
+    uint256 constant AADHAAR_UIDAI_PUBKEY_COMMITMENT_INDEX = 0;
+    uint256 constant AADHAAR_NULLIFIER_INDEX = 1;
+    uint256 constant AADHAAR_COMMITMENT_INDEX = 2;
+    uint256 constant AADHAAR_TIMESTAMP_INDEX = 3;
+
     // -------------------------------------
     // VC and Disclose Circuit Constants
     // -------------------------------------
@@ -59,9 +70,11 @@ library CircuitConstantsV2 {
         uint256 currentDateIndex;
         uint256 namedobSmtRootIndex;
         uint256 nameyobSmtRootIndex;
+        uint256 nameAndDobReverseSmtRootIndex;
+        uint256 nameAndYobReverseSmtRootIndex;
         uint256 scopeIndex;
         uint256 userIdentifierIndex;
-        uint256 passportNoSmtRootIndex; // Only for passport, 99 for ID card
+        uint256 passportNoSmtRootIndex;
     }
 
     /**
@@ -71,35 +84,53 @@ library CircuitConstantsV2 {
      */
     function getDiscloseIndices(bytes32 attestationId) internal pure returns (DiscloseIndices memory indices) {
         if (attestationId == AttestationId.E_PASSPORT) {
-            return
-                DiscloseIndices({
-                    revealedDataPackedIndex: 0,
-                    forbiddenCountriesListPackedIndex: 3,
-                    nullifierIndex: 7,
-                    attestationIdIndex: 8,
-                    merkleRootIndex: 9,
-                    currentDateIndex: 10,
-                    namedobSmtRootIndex: 17,
-                    nameyobSmtRootIndex: 18,
-                    scopeIndex: 19,
-                    userIdentifierIndex: 20,
-                    passportNoSmtRootIndex: 16
-                });
+            return DiscloseIndices({
+                revealedDataPackedIndex: 0,
+                forbiddenCountriesListPackedIndex: 3,
+                nullifierIndex: 7,
+                attestationIdIndex: 8,
+                merkleRootIndex: 9,
+                currentDateIndex: 10,
+                namedobSmtRootIndex: 17,
+                nameyobSmtRootIndex: 18,
+                nameAndDobReverseSmtRootIndex: 99,
+                nameAndYobReverseSmtRootIndex: 99,
+                scopeIndex: 19,
+                userIdentifierIndex: 20,
+                passportNoSmtRootIndex: 16
+            });
         } else if (attestationId == AttestationId.EU_ID_CARD) {
-            return
-                DiscloseIndices({
-                    revealedDataPackedIndex: 0,
-                    forbiddenCountriesListPackedIndex: 4,
-                    nullifierIndex: 8,
-                    attestationIdIndex: 9,
-                    merkleRootIndex: 10,
-                    currentDateIndex: 11,
-                    namedobSmtRootIndex: 17,
-                    nameyobSmtRootIndex: 18,
-                    scopeIndex: 19,
-                    userIdentifierIndex: 20,
-                    passportNoSmtRootIndex: 99
-                });
+            return DiscloseIndices({
+                revealedDataPackedIndex: 0,
+                forbiddenCountriesListPackedIndex: 4,
+                nullifierIndex: 8,
+                attestationIdIndex: 9,
+                merkleRootIndex: 10,
+                currentDateIndex: 11,
+                namedobSmtRootIndex: 17,
+                nameyobSmtRootIndex: 18,
+                nameAndDobReverseSmtRootIndex: 99,
+                nameAndYobReverseSmtRootIndex: 99,
+                scopeIndex: 19,
+                userIdentifierIndex: 20,
+                passportNoSmtRootIndex: 99
+            });
+        } else if (attestationId == AttestationId.AADHAAR) {
+            return DiscloseIndices({
+                revealedDataPackedIndex: 2,
+                forbiddenCountriesListPackedIndex: 6,
+                nullifierIndex: 0,
+                attestationIdIndex: 10,
+                merkleRootIndex: 18,
+                currentDateIndex: 11,
+                namedobSmtRootIndex: 14,
+                nameyobSmtRootIndex: 15,
+                nameAndDobReverseSmtRootIndex: 16,
+                nameAndYobReverseSmtRootIndex: 17,
+                scopeIndex: 19,
+                userIdentifierIndex: 20,
+                passportNoSmtRootIndex: 99
+            });
         } else {
             revert("Invalid attestation ID");
         }

@@ -26,10 +26,9 @@ contract TestSelfVerificationRoot is SelfVerificationRoot {
      * @param identityVerificationHubV2Address The address of the Identity Verification Hub V2
      * @param scopeValue The expected proof scope for user registration
      */
-    constructor(
-        address identityVerificationHubV2Address,
-        uint256 scopeValue
-    ) SelfVerificationRoot(identityVerificationHubV2Address, scopeValue) {}
+    constructor(address identityVerificationHubV2Address, uint256 scopeValue)
+        SelfVerificationRoot(identityVerificationHubV2Address, scopeValue)
+    {}
 
     /**
      * @notice Implementation of customVerificationHook for testing
@@ -37,10 +36,10 @@ contract TestSelfVerificationRoot is SelfVerificationRoot {
      * @param output The verification output from the hub
      * @param userData The user data passed through verification
      */
-    function customVerificationHook(
-        ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
-        bytes memory userData
-    ) internal override {
+    function customVerificationHook(ISelfVerificationRoot.GenericDiscloseOutputV2 memory output, bytes memory userData)
+        internal
+        override
+    {
         verificationSuccessful = true;
         lastOutput = output;
         lastUserData = userData;
@@ -81,22 +80,24 @@ contract TestSelfVerificationRoot is SelfVerificationRoot {
 
     function setVerificationConfig(SelfStructs.VerificationConfigV2 memory config) external {
         verificationConfig = config;
-        _identityVerificationHubV2.setVerificationConfigV2(verificationConfig);
+        verificationConfigId = _identityVerificationHubV2.setVerificationConfigV2(verificationConfig);
     }
 
     function setVerificationConfigNoHub(SelfStructs.VerificationConfigV2 memory config) external {
         verificationConfig = config;
+        verificationConfigId = bytes32(uint256(1));
     }
 
     function setConfigId(bytes32 configId) external {
         verificationConfigId = configId;
     }
 
-    function getConfigId(
-        bytes32 destinationChainId,
-        bytes32 userIdentifier,
-        bytes memory userDefinedData
-    ) public view override returns (bytes32) {
+    function getConfigId(bytes32 destinationChainId, bytes32 userIdentifier, bytes memory userDefinedData)
+        public
+        view
+        override
+        returns (bytes32)
+    {
         return verificationConfigId;
     }
 

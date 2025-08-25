@@ -15,7 +15,7 @@
     "composite": true,
   },
   "include": [
-    "src/**/*", "index.ts",
+    "src/**/*", "index.ts", "ofacdata/**/*.json"
   ],
   "exclude": [
     "dist",

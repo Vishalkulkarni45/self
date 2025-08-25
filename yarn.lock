@@ -22,6 +22,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@anon-aadhaar/core@https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/core?1b9efa501cff3cf25dc260b060bf611229e316a4":
+  version: 2.4.3
+  resolution: "@anon-aadhaar/core@https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/core?1b9efa501cff3cf25dc260b060bf611229e316a4"
+  dependencies:
+    "@pcd/pcd-types": "npm:^0.10.0"
+    "@pcd/tsconfig": "npm:^0.6.0"
+    "@types/node-forge": "npm:^1.3.8"
+    "@types/snarkjs": "npm:^0.7.6"
+    "@zk-email/helpers": "npm:^6.1.1"
+    buffer: "npm:^6.0.3"
+    json-bigint: "npm:^1.0.0"
+    localforage: "npm:^1.10.0"
+    pako: "npm:^2.1.0"
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    snarkjs: "npm:^0.7.3"
+    styled-components: "npm:^6.0.0-rc.1"
+    uuid: "npm:^9.0.0"
+    valid-url: "npm:^1.0.9"
+    web-worker: "npm:1.2.0"
+  checksum: 10c0/95dc463285dda54e126d5daf4820ef284e520ea7f3a3f287259378b1e13533a743f7463fedf5536a762344c9bcdb09f637086d9fa148ef5adba4540b6e069880
+  languageName: node
+  linkType: hard
+
 "@anon-aadhaar/core@npm:^2.4.3":
   version: 2.4.3
   resolution: "@anon-aadhaar/core@npm:2.4.3"
@@ -1068,7 +1092,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.23.4, @babel/runtime@npm:^7.25.0, @babel/runtime@npm:^7.27.4":
+"@babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.25.0, @babel/runtime@npm:^7.27.4":
   version: 7.28.3
   resolution: "@babel/runtime@npm:7.28.3"
   checksum: 10c0/b360f82c2c5114f2a062d4d143d7b4ec690094764853937110585a9497977aed66c102166d0e404766c274e02a50ffb8f6d77fef7251ecf3f607f0e03e6397bc
@@ -2958,43 +2982,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openpassport/common@workspace:sdk/common":
-  version: 0.0.0-use.local
-  resolution: "@openpassport/common@workspace:sdk/common"
-  dependencies:
-    "@babel/runtime": "npm:^7.23.4"
-    "@openpassport/zk-kit-imt": "npm:^0.0.5"
-    "@openpassport/zk-kit-lean-imt": "npm:^0.0.6"
-    "@openpassport/zk-kit-smt": "npm:^0.0.1"
-    "@types/node-forge": "npm:^1.3.10"
-    asn1.js: "npm:^5.4.1"
-    asn1js: "npm:^3.0.5"
-    axios: "npm:^1.7.2"
-    buffer: "npm:^6.0.3"
-    chai: "npm:^4.3.8"
-    country-emoji: "npm:^1.5.6"
-    country-iso-3-to-2: "npm:^1.1.1"
-    elliptic: "npm:^6.5.5"
-    fs: "npm:^0.0.1-security"
-    i18n-iso-countries: "npm:^7.13.0"
-    js-sha1: "npm:^0.7.0"
-    js-sha256: "npm:^0.11.0"
-    js-sha512: "npm:^0.9.0"
-    json-to-ts: "npm:^2.1.0"
-    jsrsasign: "npm:^11.1.0"
-    mocha: "npm:^10.7.3"
-    node-forge: "https://github.com/remicolin/forge"
-    path: "npm:^0.12.7"
-    pkijs: "npm:^3.2.4"
-    poseidon-lite: "npm:^0.2.0"
-    prettier: "npm:^3.3.3"
-    snarkjs: "npm:^0.7.5"
-    ts-mocha: "npm:^10.0.0"
-    typescript-parser: "npm:^2.6.1"
-    uuid: "npm:^11.0.5"
-  languageName: unknown
-  linkType: soft
-
 "@openpassport/zk-email-circuits@npm:^6.1.2":
   version: 6.1.2
   resolution: "@openpassport/zk-email-circuits@npm:6.1.2"
@@ -4416,6 +4403,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@selfxyz/common@workspace:common"
   dependencies:
+    "@anon-aadhaar/core": "https://gitpkg.vercel.app/selfxyz/anon-aadhaar/packages/core?1b9efa501cff3cf25dc260b060bf611229e316a4"
     "@openpassport/zk-kit-imt": "npm:^0.0.5"
     "@openpassport/zk-kit-lean-imt": "npm:^0.0.6"
     "@openpassport/zk-kit-smt": "npm:^0.0.1"

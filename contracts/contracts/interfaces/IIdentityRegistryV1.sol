@@ -87,11 +87,10 @@ interface IIdentityRegistryV1 {
      * @param nameAndYobRoot The name and year of birth OFAC root to verify.
      * @return True if all provided roots match the stored values, false otherwise.
      */
-    function checkOfacRoots(
-        uint256 passportNoRoot,
-        uint256 nameAndDobRoot,
-        uint256 nameAndYobRoot
-    ) external view returns (bool);
+    function checkOfacRoots(uint256 passportNoRoot, uint256 nameAndDobRoot, uint256 nameAndYobRoot)
+        external
+        view
+        returns (bool);
 
     /**
      * @notice Retrieves the current CSCA root.

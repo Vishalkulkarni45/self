@@ -1,15 +1,13 @@
 import { expect } from 'chai';
 import path from 'path';
 import { wasm as wasm_tester } from 'circom_tester';
-import jsonData from '../assets/dataInput.json' with { type: 'json' };
+import { testQRData } from '../../../common/src/utils/aadhaar/assets/dataInput.js';
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
 import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@anon-aadhaar/core';
 import { assert } from 'chai';
 import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
 import { fileURLToPath } from 'url';
-
-const { testQRData } = jsonData;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,7 +36,7 @@ describe('Aadhaar QR Data Extractor1', function () {
 
   it('should extract qr data', async function () {
     this.timeout(0);
-    const QRDataBytes = convertBigIntToByteArray(BigInt(testQRData));
+    const QRDataBytes = convertBigIntToByteArray(BigInt(testQRData.testQRData));
     const QRDataDecode = decompressByteArray(QRDataBytes);
 
     const signedData = QRDataDecode.slice(0, QRDataDecode.length - 256);

@@ -57,7 +57,7 @@ export const generateTestData = ({
   name,
 }: {
   privateKeyPath: string
-    data: string
+  data: string
   dob?: string
   gender?: string
   pincode?: string

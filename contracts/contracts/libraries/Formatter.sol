@@ -29,7 +29,7 @@ library Formatter {
         bytes memory lastNameBytes;
         string[] memory names = new string[](2);
 
-        uint i = 0;
+        uint256 i = 0;
         // Extract last name
         while (i < inputBytes.length && inputBytes[i] != "<") {
             lastNameBytes = abi.encodePacked(lastNameBytes, inputBytes[i]);
@@ -86,6 +86,34 @@ library Formatter {
     }
 
     /**
+     * @notice Formats a full year date string into a human-readable date.
+     * @dev Expects the input date string to have exactly 6 characters in YYMMDD format.
+     *      Returns the date in "DD-MM-YYYY" format.
+     * @param date A string representing the date in YYMMDD format.
+     * @return A formatted date string in the format "DD-MM-YYYY".
+     */
+    function formatDateFullYear(string memory date) internal pure returns (string memory) {
+        bytes memory dateBytes = bytes(date);
+        if (dateBytes.length != 8) {
+            revert InvalidDateLength();
+        }
+
+        if (dateBytes[4] > "1" || (dateBytes[4] == "1" && dateBytes[5] > "2")) {
+            revert InvalidMonthRange();
+        }
+
+        if (dateBytes[6] > "3" || (dateBytes[6] == "3" && dateBytes[7] > "1")) {
+            revert InvalidDayRange();
+        }
+
+        string memory year = substring(date, 0, 4);
+        string memory month = substring(date, 4, 6);
+        string memory day = substring(date, 6, 8);
+
+        return string(abi.encodePacked(day, "-", month, "-", year));
+    }
+
+    /**
      * @notice Converts an ASCII numeral code to its corresponding unsigned integer.
      * @dev The input must represent an ASCII code for digits (0-9), i.e. between 48 and 57.
      *      Reverts with InvalidAsciiCode if the input is out of range.
@@ -104,9 +132,8 @@ library Formatter {
      */
     function fieldElementsToBytes(uint256[3] memory publicSignals) internal pure returns (bytes memory) {
         if (
-            publicSignals[0] >= SNARK_SCALAR_FIELD ||
-            publicSignals[1] >= SNARK_SCALAR_FIELD ||
-            publicSignals[2] >= SNARK_SCALAR_FIELD
+            publicSignals[0] >= SNARK_SCALAR_FIELD || publicSignals[1] >= SNARK_SCALAR_FIELD
+                || publicSignals[2] >= SNARK_SCALAR_FIELD
         ) {
             revert InvalidFieldElement();
         }
@@ -126,10 +153,8 @@ library Formatter {
 
     function fieldElementsToBytesIdCard(uint256[4] memory publicSignals) internal pure returns (bytes memory) {
         if (
-            publicSignals[0] >= SNARK_SCALAR_FIELD ||
-            publicSignals[1] >= SNARK_SCALAR_FIELD ||
-            publicSignals[2] >= SNARK_SCALAR_FIELD ||
-            publicSignals[3] >= SNARK_SCALAR_FIELD
+            publicSignals[0] >= SNARK_SCALAR_FIELD || publicSignals[1] >= SNARK_SCALAR_FIELD
+                || publicSignals[2] >= SNARK_SCALAR_FIELD || publicSignals[3] >= SNARK_SCALAR_FIELD
         ) {
             revert InvalidFieldElement();
         }
@@ -147,6 +172,28 @@ library Formatter {
         return bytesArray;
     }
 
+    function fieldElementsToBytesAadhaar(uint256[4] memory publicSignals) internal pure returns (bytes memory) {
+        for (uint256 i = 0; i < 4; i++) {
+            if (publicSignals[i] >= SNARK_SCALAR_FIELD) {
+                revert InvalidFieldElement();
+            }
+        }
+
+        uint8[4] memory bytesCount = [31, 31, 31, 26];
+        bytes memory bytesArray = new bytes(119);
+
+        uint256 index = 0;
+        for (uint256 i = 0; i < 4; i++) {
+            uint256 element = publicSignals[i];
+            for (uint8 j = 0; j < bytesCount[i]; j++) {
+                bytesArray[index++] = bytes1(uint8(element & 0xff));
+                element = element >> 8;
+            }
+        }
+
+        return bytesArray;
+    }
+
     /**
      * @notice Extracts forbidden country codes from a packed uint256.
      * @dev Each forbidden country is represented by 3 bytes in the packed data.
@@ -154,10 +201,11 @@ library Formatter {
      * @param publicSignals A packed uint256 containing encoded forbidden country data.
      * @return forbiddenCountries An array of strings representing the forbidden country codes.
      */
-    // TODO: look at this function a bit
-    function extractForbiddenCountriesFromPacked(
-        uint256[4] memory publicSignals
-    ) internal pure returns (string[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH] memory forbiddenCountries) {
+    function extractForbiddenCountriesFromPacked(uint256[4] memory publicSignals)
+        internal
+        pure
+        returns (string[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH] memory forbiddenCountries)
+    {
         for (uint256 i = 0; i < 4; i++) {
             if (publicSignals[i] >= SNARK_SCALAR_FIELD) {
                 revert InvalidFieldElement();
@@ -172,9 +220,8 @@ library Formatter {
                 uint256 shift = byteIndex * 8;
                 uint256 mask = 0xFFFFFF;
                 uint256 packedData = (publicSignals[index * 3] >> shift) & mask;
-                uint256 reversedPackedData = ((packedData & 0xff) << 16) |
-                    ((packedData & 0xff00)) |
-                    ((packedData & 0xff0000) >> 16);
+                uint256 reversedPackedData =
+                    ((packedData & 0xff) << 16) | ((packedData & 0xff00)) | ((packedData & 0xff0000) >> 16);
                 forbiddenCountries[j] = string(abi.encodePacked(uint24(reversedPackedData)));
             } else if (byteIndex < 31) {
                 uint256 part0 = (publicSignals[0] >> (byteIndex * 8));
@@ -187,9 +234,8 @@ library Formatter {
                 uint256 shift = byteIndexIn1 * 8;
                 uint256 mask = 0xFFFFFF;
                 uint256 packedData = (publicSignals[1] >> shift) & mask;
-                uint256 reversedPackedData = ((packedData & 0xff) << 16) |
-                    ((packedData & 0xff00)) |
-                    ((packedData & 0xff0000) >> 16);
+                uint256 reversedPackedData =
+                    ((packedData & 0xff) << 16) | ((packedData & 0xff00)) | ((packedData & 0xff0000) >> 16);
                 forbiddenCountries[j] = string(abi.encodePacked(uint24(reversedPackedData)));
             } else if (byteIndex < 62) {
                 uint256 part0 = (publicSignals[1] >> ((byteIndex - 31) * 8)) & 0x00ffff;
@@ -202,9 +248,8 @@ library Formatter {
                 uint256 shift = byteIndexIn1 * 8;
                 uint256 mask = 0xFFFFFF;
                 uint256 packedData = (publicSignals[2] >> shift) & mask;
-                uint256 reversedPackedData = ((packedData & 0xff) << 16) |
-                    ((packedData & 0xff00)) |
-                    ((packedData & 0xff0000) >> 16);
+                uint256 reversedPackedData =
+                    ((packedData & 0xff) << 16) | ((packedData & 0xff00)) | ((packedData & 0xff0000) >> 16);
                 forbiddenCountries[j] = string(abi.encodePacked(uint24(reversedPackedData)));
             }
         }
@@ -232,6 +277,19 @@ library Formatter {
         }
         uint256 currentTimestamp = dateToUnixTimestamp(date);
         return currentTimestamp;
+    }
+
+    /**
+     * @notice Converts an array of 3 numerical values representing a date into a Unix timestamp.
+     * @dev The input is expected to be in the format [year, month, day] and is not padded with 0s.
+     * @param dateNum An array of 3 unsigned integers representing a date in YYMMDD format.
+     * @return timestamp The Unix timestamp corresponding to the provided date.
+     */
+    function proofDateToUnixTimestampNumeric(uint256[3] memory dateNum) internal pure returns (uint256) {
+        if (dateNum[1] > 12 || dateNum[2] > 31) {
+            revert InvalidDateDigit();
+        }
+        return toTimestamp(dateNum[0], dateNum[1], dateNum[2]);
     }
 
     /**
@@ -271,11 +329,11 @@ library Formatter {
      * @param endIndex The ending index of the substring (exclusive).
      * @return The resulting substring.
      */
-    function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
+    function substring(string memory str, uint256 startIndex, uint256 endIndex) internal pure returns (string memory) {
         bytes memory strBytes = bytes(str);
         bytes memory result = new bytes(endIndex - startIndex);
 
-        for (uint i = startIndex; i < endIndex; i++) {
+        for (uint256 i = startIndex; i < endIndex; i++) {
             result[i - startIndex] = strBytes[i];
         }
 
@@ -288,15 +346,15 @@ library Formatter {
      * @param value The string representing a number.
      * @return result The parsed unsigned integer.
      */
-    function parseDatePart(string memory value) internal pure returns (uint) {
+    function parseDatePart(string memory value) internal pure returns (uint256) {
         bytes memory tempEmptyStringTest = bytes(value);
         if (tempEmptyStringTest.length == 0) {
             return 0;
         }
 
-        uint digit;
-        uint result;
-        for (uint i = 0; i < tempEmptyStringTest.length; i++) {
+        uint256 digit;
+        uint256 result;
+        for (uint256 i = 0; i < tempEmptyStringTest.length; i++) {
             digit = uint8(tempEmptyStringTest[i]) - 48;
             result = result * 10 + digit;
         }
@@ -312,7 +370,7 @@ library Formatter {
      * @param day The day of the month.
      * @return timestamp The Unix timestamp corresponding to the given date.
      */
-    function toTimestamp(uint256 year, uint256 month, uint256 day) internal pure returns (uint timestamp) {
+    function toTimestamp(uint256 year, uint256 month, uint256 day) internal pure returns (uint256 timestamp) {
         uint16 i;
 
         if (year < 1970 || year > 2100) {

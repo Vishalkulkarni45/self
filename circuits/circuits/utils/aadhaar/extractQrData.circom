@@ -51,6 +51,37 @@ template DOBExtractor(maxDataLength) {
 
     nDelimitedDataShiftedToDob <== shiftedBytes;
 }
+
+
+template AgeExtractor() {
+    signal input DOB_year[4];
+    signal input DOB_month[2];
+    signal input DOB_day[2];
+
+    signal input currentYear;
+    signal input currentMonth;
+    signal input currentDay;
+
+     // Convert DOB bytes to unix timestamp.
+    signal year <== DigitBytesToInt(4)([DOB_year[0], DOB_year[1], DOB_year[2], DOB_year[3]]);
+    signal month <== DigitBytesToInt(2)([DOB_month[0], DOB_month[1]]);
+    signal day <== DigitBytesToInt(2)([DOB_day[0], DOB_day[1]]);
+
+    // Completed age based on year value
+    signal ageByYear <== currentYear - year - 1;
+
+    // +1 to age if month is above currentMonth, or if months are same and day is higher
+    signal monthGt <== GreaterThan(4)([currentMonth, month]);
+
+    signal monthEq <== IsEqual()([currentMonth, month]);
+
+    signal dayGt <== GreaterThan(5)([currentDay + 1, day]);
+
+    signal isHigherDayOnSameMonth <== monthEq * dayGt;
+
+    signal output age <== ageByYear + (monthGt + isHigherDayOnSameMonth);
+}
+
 /// @title TimestampExtractor
 /// @notice Extracts the timestamp when the QR was signed rounded to nearest hour
 /// @dev We ignore minutes and seconds to avoid identifying the user based on the precise timestamp
@@ -67,13 +98,14 @@ template TimestampExtractor(maxDataLength) {
     signal output month <== DigitBytesToInt(2)([nDelimitedData[13], nDelimitedData[14]]);
     signal output day <== DigitBytesToInt(2)([nDelimitedData[15], nDelimitedData[16]]);
     signal hour <== DigitBytesToInt(2)([nDelimitedData[17], nDelimitedData[18]]);
+    signal minute <== DigitBytesToInt(2)([nDelimitedData[19], nDelimitedData[20]]);
 
     component dateToUnixTime = DigitBytesToTimestamp(2032);
     dateToUnixTime.year <== year;
     dateToUnixTime.month <== month;
     dateToUnixTime.day <== day;
     dateToUnixTime.hour <== hour;
-    dateToUnixTime.minute <== 0;
+    dateToUnixTime.minute <== minute;
     dateToUnixTime.second <== 0;
 
     timestamp <== dateToUnixTime.out - 19800; // 19800 is the offset for IST
@@ -337,6 +369,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
 
+
     // Outputs are in ascii format
     signal output name[nameMaxLength()];
     signal output yob[4];
@@ -349,6 +382,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal output ph_no_last_4digits[4];
     signal output photoHash;
     signal output timestamp;
+    signal output age;
 
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255

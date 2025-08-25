@@ -67,12 +67,9 @@ contract Airdrop is SelfVerificationRoot, Ownable {
 
     /// @notice Reverts when a claim is attempted while claiming is not enabled.
     error ClaimNotOpen();
+
     /// @notice Reverts when an invalid user identifier is provided.
     error InvalidUserIdentifier();
-    /// @notice Reverts when a user identifier has already been registered
-    error UserIdentifierAlreadyRegistered();
-    /// @notice Reverts when a nullifier has already been registered
-    error RegisteredNullifier();
 
     /// @notice Reverts when a user identifier has already been registered
     error UserIdentifierAlreadyRegistered();

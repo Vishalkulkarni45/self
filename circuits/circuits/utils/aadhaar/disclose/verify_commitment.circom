@@ -87,5 +87,4 @@ template VERIFY_COMMITMENT(nLevels) {
     // Verify commitment inclusion
     signal computedRoot <== BinaryMerkleRoot(nLevels)(commitment, merkletree_size, path, siblings);
     merkle_root === computedRoot;
-
 }

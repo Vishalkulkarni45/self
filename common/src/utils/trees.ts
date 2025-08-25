@@ -4,7 +4,7 @@ import { ChildNodes, SMT } from '@openpassport/zk-kit-smt';
 import countries from 'i18n-iso-countries';
 // @ts-ignore
 import en from 'i18n-iso-countries/langs/en.json' with { type: 'json' };
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon6, poseidon10 } from 'poseidon-lite';
+import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon5, poseidon6, poseidon10 } from 'poseidon-lite';
 import { CertificateData } from './certificate_parsing/dataStructure.js';
 import { parseCertificateSimple } from './certificate_parsing/parseCertificateSimple.js';
 import {
@@ -21,6 +21,7 @@ import {
   DscCertificateMetaData,
   parseDscCertificateData,
 } from './passports/passport_parsing/parseDscCertificateData.js';
+import { packBytes } from './bytes.js';
 
 // SideEffect here
 countries.registerLocale(en);
@@ -577,12 +578,12 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     let leaf = BigInt(0);
     if (treetype == 'name_and_dob') {
       leaf = processNameAndDobAadhaar(entry, i);
-      if (i ==0) {
-        console.log("expt leaf ", leaf );
-
-      }
     } else if (treetype == 'name_and_yob') {
       leaf = processNameAndYobAadhaar(entry, i);
+    }else if (treetype == 'name_and_dob_reverse') {
+      leaf = processNameAndDobAadhaar(entry, i, true);
+    }else if (treetype == 'name_and_yob_reverse') {
+      leaf = processNameAndYobAadhaar(entry, i, true);
     }
 
     if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
@@ -597,9 +598,15 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
   return [count, performance.now() - startTime, tree];
 }
 
-const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
-  const firstName = entry.First_Name;
-  const lastName = entry.Last_Name;
+const processNameAndDobAadhaar = (entry: any, i: number,reverse: boolean = false): bigint => {
+
+  let firstName = entry.First_Name;
+  let lastName = entry.Last_Name;
+  if (reverse) {
+    firstName = entry.Last_Name;
+    lastName = entry.First_Name;
+  }
+
   const day = entry.day;
   const month = entry.month;
   const year = entry.year;
@@ -615,9 +622,15 @@ const processNameAndDobAadhaar = (entry: any, i: number): bigint => {
   return generateSmallKey(poseidon5([name[0], name[1], dob[0], dob[1], dob[2]]));
 };
 
-const processNameAndYobAadhaar = (entry: any, i: number): bigint => {
-  const firstName = entry.First_Name;
-  const lastName = entry.Last_Name;
+const processNameAndYobAadhaar = (entry: any, i: number,reverse: boolean = false): bigint => {
+
+  let firstName = entry.First_Name;
+  let lastName = entry.Last_Name;
+  if (reverse) {
+    firstName = entry.Last_Name;
+    lastName = entry.First_Name;
+  }
+
   const year = entry.year;
   if (year == null) {
     console.log('year is null', i, entry);

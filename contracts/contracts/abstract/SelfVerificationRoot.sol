@@ -6,6 +6,7 @@ import {ISelfVerificationRoot} from "../interfaces/ISelfVerificationRoot.sol";
 import {CircuitConstantsV2} from "../constants/CircuitConstantsV2.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
 
+import {console} from "hardhat/console.sol";
 /**
  * @title SelfVerificationRoot
  * @notice Abstract base contract to be integrated with self's verification infrastructure
@@ -34,30 +35,6 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
     IIdentityVerificationHubV2 internal immutable _identityVerificationHubV2;
 
     // ====================================================
-    // Circuit Constants
-    // ====================================================
-
-    // Make CircuitConstants available to inheriting contracts
-    uint256 internal constant REVEALED_DATA_PACKED_INDEX = CircuitConstants.VC_AND_DISCLOSE_REVEALED_DATA_PACKED_INDEX;
-    uint256 internal constant FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX =
-        CircuitConstants.VC_AND_DISCLOSE_FORBIDDEN_COUNTRIES_LIST_PACKED_INDEX;
-    uint256 internal constant NULLIFIER_INDEX = CircuitConstants.VC_AND_DISCLOSE_NULLIFIER_INDEX;
-    uint256 internal constant ATTESTATION_ID_INDEX = CircuitConstants.VC_AND_DISCLOSE_ATTESTATION_ID_INDEX;
-    uint256 internal constant MERKLE_ROOT_INDEX = CircuitConstants.VC_AND_DISCLOSE_MERKLE_ROOT_INDEX;
-    uint256 internal constant CURRENT_DATE_INDEX = CircuitConstants.VC_AND_DISCLOSE_CURRENT_DATE_INDEX;
-    uint256 internal constant PASSPORT_NO_SMT_ROOT_INDEX = CircuitConstants.VC_AND_DISCLOSE_PASSPORT_NO_SMT_ROOT_INDEX;
-    uint256 internal constant NAME_DOB_SMT_ROOT_INDEX = CircuitConstants.VC_AND_DISCLOSE_NAME_DOB_SMT_ROOT_INDEX;
-    uint256 internal constant NAME_YOB_SMT_ROOT_INDEX = CircuitConstants.VC_AND_DISCLOSE_NAME_YOB_SMT_ROOT_INDEX;
-    uint256 internal constant SCOPE_INDEX = CircuitConstants.VC_AND_DISCLOSE_SCOPE_INDEX;
-    uint256 internal constant USER_IDENTIFIER_INDEX = CircuitConstants.VC_AND_DISCLOSE_USER_IDENTIFIER_INDEX;
-
-    // ====================================================
-    // Attestation ID
-    // ====================================================
-
-    bytes32 constant E_PASSPORT_ID = AttestationId.E_PASSPORT;
-
-    // ====================================================
     // Errors
     // ====================================================
 
@@ -76,25 +53,6 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
     /// @notice Emitted when the scope is updated
     /// @param newScope The new scope value that was set
     event ScopeUpdated(uint256 indexed newScope);
-
-    // ====================================================
-    // Events
-    // ====================================================
-
-    /// @notice Emitted when the verification configuration is updated
-    event VerificationConfigUpdated(ISelfVerificationRoot.VerificationConfig indexed verificationConfig);
-
-    /// @notice Emitted when the verification is successful
-    event VerificationSuccess(uint256[3] revealedDataPacked, uint256 indexed userIdentifier, uint256 indexed nullifier);
-
-    /// @notice Emitted when the scope is updated
-    event ScopeUpdated(uint256 indexed newScope);
-
-    /// @notice Emitted when a new attestation ID is added
-    event AttestationIdAdded(uint256 indexed attestationId);
-
-    /// @notice Emitted when an attestation ID is removed
-    event AttestationIdRemoved(uint256 indexed attestationId);
 
     /**
      * @notice Initializes the SelfVerificationRoot contract
@@ -166,10 +124,7 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
             bytes31(0),
             // 32 bytes scope
             _scope,
-            // 32 bytes attestationId
-            attestationId,
-            // proof data (starts after 32 bytes attestationId)
-            proofPayload[32:]
+            proofPayload
         );
 
         // Call hub V2 verification
@@ -190,10 +145,8 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
             revert UnauthorizedCaller();
         }
 
-        ISelfVerificationRoot.GenericDiscloseOutputV2 memory genericDiscloseOutput = abi.decode(
-            output,
-            (ISelfVerificationRoot.GenericDiscloseOutputV2)
-        );
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory genericDiscloseOutput =
+            abi.decode(output, (ISelfVerificationRoot.GenericDiscloseOutputV2));
 
         // Call the customizable verification hook
         customVerificationHook(genericDiscloseOutput, userData);
@@ -207,11 +160,12 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
      * @param userDefinedData The user defined data
      * @return The configId
      */
-    function getConfigId(
-        bytes32 destinationChainId,
-        bytes32 userIdentifier,
-        bytes memory userDefinedData
-    ) public view virtual returns (bytes32) {
+    function getConfigId(bytes32 destinationChainId, bytes32 userIdentifier, bytes memory userDefinedData)
+        public
+        view
+        virtual
+        returns (bytes32)
+    {
         // Default implementation reverts; must be overridden in derived contract
         revert("SelfVerificationRoot: getConfigId must be overridden");
     }
@@ -224,10 +178,10 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
      * @custom:override Override this function in derived contracts to add custom verification logic
      * @custom:security This function is only called after proper authentication by the hub contract
      */
-    function customVerificationHook(
-        ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
-        bytes memory userData
-    ) internal virtual {
+    function customVerificationHook(ISelfVerificationRoot.GenericDiscloseOutputV2 memory output, bytes memory userData)
+        internal
+        virtual
+    {
         // Default implementation is empty - override in derived contracts to add custom logic
     }
 }

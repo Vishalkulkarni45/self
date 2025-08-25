@@ -5,18 +5,17 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {ISelfVerificationRoot} from "../interfaces/ISelfVerificationRoot.sol";
+import {AttestationId} from "../constants/AttestationId.sol";
+import {CircuitAttributeHandlerV2} from "../libraries/CircuitAttributeHandlerV2.sol";
 
-import {SelfCircuitLibrary} from "../libraries/SelfCircuitLibrary.sol";
 import {SelfVerificationRoot} from "../abstract/SelfVerificationRoot.sol";
 
 /**
- * @title SelfPassportERC721
- * @notice This contract issues ERC721 tokens based on verified passport credentials using self's verification infrastructure
- * @dev Inherits from SelfVerificationRoot for verification logic and ERC721 for NFT functionality
+ * @title SelfIdentityERC721 V2
+ * @notice This contract issues ERC721 tokens based on verified identity credentials supporting both E-Passport and EUID cards
+ * @dev Inherits from SelfVerificationRoot V2 for verification logic and ERC721 for NFT functionality
  */
-contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
-    using SelfCircuitLibrary for uint256[3];
-
+contract SelfIdentityERC721 is SelfVerificationRoot, ERC721, Ownable {
     // ====================================================
     // Storage Variables
     // ====================================================
@@ -24,8 +23,9 @@ contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
     /// @notice Counter for token IDs
     uint256 private _tokenIdCounter;
 
-    /// @notice Mapping from token ID to passport attributes
-    mapping(uint256 tokenId => SelfCircuitLibrary.PassportData passportAttributes) private _passportAttributes;
+    /// @notice Mapping from token ID to identity attributes
+    mapping(uint256 tokenId => ISelfVerificationRoot.GenericDiscloseOutputV2 identityAttributes)
+        private _identityAttributes;
 
     /// @notice Mapping to track minted user identifiers to prevent double minting
     mapping(uint256 userIdentifier => bool minted) private _mintedUserIdentifiers;
@@ -34,7 +34,12 @@ contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
     // Events
     // ====================================================
 
-    event PassportNFTMinted(uint256 indexed tokenId, address indexed owner, SelfCircuitLibrary.PassportData attributes);
+    event IdentityNFTMinted(
+        uint256 indexed tokenId,
+        address indexed owner,
+        bytes32 attestationId,
+        ISelfVerificationRoot.GenericDiscloseOutputV2 attributes
+    );
 
     // ====================================================
     // Errors
@@ -48,24 +53,18 @@ contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
     // ====================================================
 
     /**
-     * @notice Constructor for the SelfPassportERC721 contract
-     * @param identityVerificationHubAddress The address of the Identity Verification Hub
+     * @notice Constructor for the SelfIdentityERC721 V2 contract
+     * @param identityVerificationHubAddress The address of the Identity Verification Hub V2
      * @param scopeValue The expected proof scope for user registration
-     * @param attestationIdsList The expected attestation identifiers required in proofs
      * @param name The name of the NFT collection
      * @param symbol The symbol of the NFT collection
      */
     constructor(
         address identityVerificationHubAddress,
         uint256 scopeValue,
-        uint256[] memory attestationIdsList,
         string memory name,
         string memory symbol
-    )
-        SelfVerificationRoot(identityVerificationHubAddress, scopeValue, attestationIdsList)
-        ERC721(name, symbol)
-        Ownable(_msgSender())
-    {}
+    ) SelfVerificationRoot(identityVerificationHubAddress, scopeValue) ERC721(name, symbol) Ownable(_msgSender()) {}
 
     // ====================================================
     // External/Public Functions
@@ -81,42 +80,15 @@ contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
     }
 
     /**
-     * @notice Adds a new attestation ID to the allowed list
-     * @dev Only callable by the contract owner
-     * @param attestationId The attestation ID to add
-     */
-    function addAttestationId(uint256 attestationId) external onlyOwner {
-        _addAttestationId(attestationId);
-    }
-
-    /**
-     * @notice Removes an attestation ID from the allowed list
-     * @dev Only callable by the contract owner
-     * @param attestationId The attestation ID to remove
-     */
-    function removeAttestationId(uint256 attestationId) external onlyOwner {
-        _removeAttestationId(attestationId);
-    }
-
-    /**
-     * @notice Updates the verification configuration
-     * @dev Only callable by the contract owner
-     * @param newVerificationConfig The new verification configuration
-     */
-    function setVerificationConfig(
-        ISelfVerificationRoot.VerificationConfig memory newVerificationConfig
-    ) external onlyOwner {
-        _setVerificationConfig(newVerificationConfig);
-    }
-
-    /**
-     * @notice Get passport attributes for a specific token ID
+     * @notice Get identity attributes for a specific token ID
      * @param tokenId The token ID to query
-     * @return The passport attributes associated with the token
+     * @return The identity attributes associated with the token
      */
-    function getPassportAttributes(uint256 tokenId) external view returns (SelfCircuitLibrary.PassportData memory) {
+    function getIdentityAttributes(
+        uint256 tokenId
+    ) external view returns (ISelfVerificationRoot.GenericDiscloseOutputV2 memory) {
         require(_exists(tokenId), "Token does not exist");
-        return _passportAttributes[tokenId];
+        return _identityAttributes[tokenId];
     }
 
     /**
@@ -129,28 +101,11 @@ contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
     }
 
     /**
-     * @notice Check if the specified attestation ID is allowed
-     * @param attestationId The attestation ID to check
-     * @return True if the attestation ID is allowed, false otherwise
-     */
-    function isAttestationIdAllowed(uint256 attestationId) external view returns (bool) {
-        return _attestationIdToEnabled[attestationId];
-    }
-
-    /**
      * @notice Get the current scope value
      * @return The current scope value
      */
     function getScope() external view returns (uint256) {
         return _scope;
-    }
-
-    /**
-     * @notice Get the current verification configuration
-     * @return The current verification configuration
-     */
-    function getVerificationConfig() external view returns (ISelfVerificationRoot.VerificationConfig memory) {
-        return _getVerificationConfig();
     }
 
     // ====================================================
@@ -159,35 +114,30 @@ contract SelfPassportERC721 is SelfVerificationRoot, ERC721, Ownable {
 
     /**
      * @notice Hook called after successful verification - handles NFT minting
-     * @dev Validates user identifier and mints passport NFT with extracted attributes
-     * @param revealedDataPacked The packed revealed data from the proof
-     * @param userIdentifier The user identifier from the proof
+     * @dev Validates user identifier and mints identity NFT with extracted attributes for both E-Passport and EUID
+     * @param output The verification output containing user data
      */
-    function onBasicVerificationSuccess(
-        uint256[3] memory revealedDataPacked,
-        uint256 userIdentifier,
-        uint256 /* nullifier */
+    function customVerificationHook(
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+        bytes memory /* userData */
     ) internal override {
         // Check if user identifier is valid
-        if (userIdentifier == 0) {
+        if (output.userIdentifier == 0) {
             revert InvalidUserIdentifier();
         }
 
         // Check if user identifier has already minted an NFT
-        if (_mintedUserIdentifiers[userIdentifier]) {
+        if (_mintedUserIdentifiers[output.userIdentifier]) {
             revert UserIdentifierAlreadyMinted();
         }
-
-        // Extract passport data using SelfCircuitLibrary
-        SelfCircuitLibrary.PassportData memory attributes = SelfCircuitLibrary.extractPassportData(revealedDataPacked);
 
         // Mint NFT
         uint256 tokenId = _tokenIdCounter++;
         _mint(msg.sender, tokenId);
-        _passportAttributes[tokenId] = attributes;
-        _mintedUserIdentifiers[userIdentifier] = true;
+        _identityAttributes[tokenId] = output;
+        _mintedUserIdentifiers[output.userIdentifier] = true;
 
-        emit PassportNFTMinted(tokenId, msg.sender, attributes);
+        emit IdentityNFTMinted(tokenId, msg.sender, output.attestationId, output);
     }
 
     // ====================================================
