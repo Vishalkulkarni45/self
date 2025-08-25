@@ -6,6 +6,7 @@ import {ISelfVerificationRoot} from "../interfaces/ISelfVerificationRoot.sol";
 import {CircuitConstantsV2} from "../constants/CircuitConstantsV2.sol";
 import {AttestationId} from "../constants/AttestationId.sol";
 
+import {console} from "hardhat/console.sol";
 /**
  * @title SelfVerificationRoot
  * @notice Abstract base contract to be integrated with self's verification infrastructure
@@ -123,10 +124,7 @@ abstract contract SelfVerificationRoot is ISelfVerificationRoot {
             bytes31(0),
             // 32 bytes scope
             _scope,
-            // 32 bytes attestationId
-            attestationId,
-            // proof data (starts after 32 bytes attestationId)
-            proofPayload[32:]
+            proofPayload
         );
 
         // Call hub V2 verification

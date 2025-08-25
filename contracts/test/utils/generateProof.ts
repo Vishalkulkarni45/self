@@ -505,11 +505,15 @@ export function getSMTs() {
   const passportNo_smt = importSMTFromJsonFile("../common/ofacdata/outputs/passportNoAndNationalitySMT.json") as SMT;
   const nameAndDob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobSMT.json") as SMT;
   const nameAndYob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobSMT.json") as SMT;
+  const nameAndDobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobReverseAadhaarSMT.json") as SMT;
+  const nameAndYobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobReverseAadhaarSMT.json") as SMT;
 
   return {
     passportNo_smt,
     nameAndDob_smt,
     nameAndYob_smt,
+    nameAndDobReverse_smt,
+    nameAndYobReverse_smt,
   };
 }
 

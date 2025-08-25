@@ -19,8 +19,6 @@ import {IDscCircuitVerifier} from "./interfaces/IDscCircuitVerifier.sol";
 import {CircuitConstantsV2} from "./constants/CircuitConstantsV2.sol";
 import {Formatter} from "./libraries/Formatter.sol";
 
-import {console} from "hardhat/console.sol";
-
 contract IdentityVerificationHubImplV2 is ImplRoot {
     /// @custom:storage-location erc7201:self.storage.IdentityVerificationHub
     struct IdentityVerificationHubStorage {
@@ -932,8 +930,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
                 revert InvalidVcAndDiscloseProof();
             }
         } else if (attestationId == AttestationId.AADHAAR) {
-            uint256[15] memory pubSignals;
-            for (uint256 i = 0; i < 15; i++) {
+            uint256[21] memory pubSignals;
+            for (uint256 i = 0; i < 21; i++) {
                 pubSignals[i] = vcAndDiscloseProof.pubSignals[i];
             }
 

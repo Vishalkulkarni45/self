@@ -280,7 +280,7 @@ export async function deploySystemFixturesV2(): Promise<DeployedActorsV2> {
   await registryIdContract.updateCscaRoot(csca_root, { from: owner });
   await registryAadhaarContract.registerUidaiPubkeyCommitment(aadhaarPubkeyCommitment, aadhaarExpiryTimestamp, { from: owner });
 
-  const { passportNo_smt, nameAndDob_smt, nameAndYob_smt } = getSMTs();
+  const { passportNo_smt, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt } = getSMTs();
 
   // Update passport roots
   await registryContract.updatePassportNoOfacRoot(passportNo_smt.root, { from: owner });
@@ -294,6 +294,8 @@ export async function deploySystemFixturesV2(): Promise<DeployedActorsV2> {
   // Update Aadhaar roots
   await registryAadhaarContract.updateNameAndDobOfacRoot(nameAndDob_smt.root, { from: owner });
   await registryAadhaarContract.updateNameAndYobOfacRoot(nameAndYob_smt.root, { from: owner });
+  await registryAadhaarContract.updateNameAndDobReverseOfacRoot(nameAndDobReverse_smt.root, { from: owner });
+  await registryAadhaarContract.updateNameAndYobReverseOfacRoot(nameAndYobReverse_smt.root, { from: owner });
 
   // Register verifiers with the hub
   const E_PASSPORT = ethers.hexlify(ethers.zeroPadValue(ethers.toBeHex(1), 32));

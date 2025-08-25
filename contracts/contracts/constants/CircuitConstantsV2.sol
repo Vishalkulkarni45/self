@@ -70,9 +70,11 @@ library CircuitConstantsV2 {
         uint256 currentDateIndex;
         uint256 namedobSmtRootIndex;
         uint256 nameyobSmtRootIndex;
+        uint256 nameAndDobReverseSmtRootIndex;
+        uint256 nameAndYobReverseSmtRootIndex;
         uint256 scopeIndex;
         uint256 userIdentifierIndex;
-        uint256 passportNoSmtRootIndex; // Only for passport, 99 for ID card
+        uint256 passportNoSmtRootIndex;
     }
 
     /**
@@ -91,6 +93,8 @@ library CircuitConstantsV2 {
                 currentDateIndex: 10,
                 namedobSmtRootIndex: 17,
                 nameyobSmtRootIndex: 18,
+                nameAndDobReverseSmtRootIndex: 99,
+                nameAndYobReverseSmtRootIndex: 99,
                 scopeIndex: 19,
                 userIdentifierIndex: 20,
                 passportNoSmtRootIndex: 16
@@ -105,6 +109,8 @@ library CircuitConstantsV2 {
                 currentDateIndex: 11,
                 namedobSmtRootIndex: 17,
                 nameyobSmtRootIndex: 18,
+                nameAndDobReverseSmtRootIndex: 99,
+                nameAndYobReverseSmtRootIndex: 99,
                 scopeIndex: 19,
                 userIdentifierIndex: 20,
                 passportNoSmtRootIndex: 99
@@ -112,15 +118,17 @@ library CircuitConstantsV2 {
         } else if (attestationId == AttestationId.AADHAAR) {
             return DiscloseIndices({
                 revealedDataPackedIndex: 2,
-                forbiddenCountriesListPackedIndex: 99,
+                forbiddenCountriesListPackedIndex: 6,
                 nullifierIndex: 0,
-                attestationIdIndex: 6,
-                merkleRootIndex: 12,
-                currentDateIndex: 7,
-                namedobSmtRootIndex: 10,
-                nameyobSmtRootIndex: 11,
-                scopeIndex: 13,
-                userIdentifierIndex: 14,
+                attestationIdIndex: 10,
+                merkleRootIndex: 18,
+                currentDateIndex: 11,
+                namedobSmtRootIndex: 14,
+                nameyobSmtRootIndex: 15,
+                nameAndDobReverseSmtRootIndex: 16,
+                nameAndYobReverseSmtRootIndex: 17,
+                scopeIndex: 19,
+                userIdentifierIndex: 20,
                 passportNoSmtRootIndex: 99
             });
         } else {

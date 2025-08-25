@@ -7,6 +7,8 @@ import {SelfStructs} from "./SelfStructs.sol";
 import {Formatter} from "./Formatter.sol";
 import {GenericFormatter} from "./GenericFormatter.sol";
 
+import {console} from "hardhat/console.sol";
+
 library CustomVerifier {
     error InvalidAttestationId();
     error InvalidOfacCheck();
@@ -140,7 +142,6 @@ library CustomVerifier {
                 revert InvalidOfacCheck();
             }
         }
-
         if (verificationConfig.forbiddenCountriesEnabled) {
             for (uint256 i = 0; i < 4; i++) {
                 if (idCardOutput.forbiddenCountriesListPacked[i] != verificationConfig.forbiddenCountriesListPacked[i])
@@ -210,12 +211,12 @@ library CustomVerifier {
         }
 
         if (verificationConfig.forbiddenCountriesEnabled) {
-            //check if IND is in forbidden countries list
-            // for (uint256 i = 0; i < forbiddenCountriesList.length; i++) {
-            //     if (keccak256(abi.encodePacked(forbiddenCountriesList[i])) == keccak256(abi.encodePacked('IND'))) {
-            //         revert InvalidForbiddenCountries();
-            //     }
-            // }
+            for (uint256 i = 0; i < 4; i++) {
+                if (aadhaarOutput.forbiddenCountriesListPacked[i] != verificationConfig.forbiddenCountriesListPacked[i])
+                {
+                    revert InvalidForbiddenCountries();
+                }
+            }
         }
 
         if (verificationConfig.olderThanEnabled) {

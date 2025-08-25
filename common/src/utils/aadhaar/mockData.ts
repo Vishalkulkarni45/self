@@ -194,7 +194,7 @@ export function prepareAadhaarDiscloseTestData(
   pincode?: string,
   state?: string,
   timestamp?: string,
-  // updateTree?: boolean,
+  updateTree?: boolean,
 ) {
   const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
 
@@ -212,9 +212,9 @@ export function prepareAadhaarDiscloseTestData(
     BigInt(sharedData.photoHash)
   );
 
-  // if (updateTree) {
+  if (updateTree) {
     merkletree.insert(BigInt(commitment));
-  // }
+  }
 
   const index = findIndexInTree(merkletree, BigInt(commitment));
   const {

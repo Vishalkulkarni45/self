@@ -54,6 +54,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
   let state: string;
   let nameAndDob_smt: any;
   let nameAndYob_smt: any;
+  let nameAndDobReverse_smt: any;
+  let nameAndYobReverse_smt: any;
   let tree: any;
   let scopeAsBigInt: bigint;
 
@@ -79,6 +81,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
     tree = new LeanIMT<bigint>((a, b) => poseidon2([a, b]), []);
     nameAndDob_smt = getSMTs().nameAndDob_smt;
     nameAndYob_smt = getSMTs().nameAndYob_smt;
+    nameAndDobReverse_smt = getSMTs().nameAndDobReverse_smt;
+    nameAndYobReverse_smt = getSMTs().nameAndYobReverse_smt;
 
     const expectedScopeFromHash = hashEndpointWithScope("example.com", "test-scope");
     scopeAsBigInt = BigInt(expectedScopeFromHash);
@@ -94,6 +98,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
+      nameAndDobReverse_smt,
+      nameAndYobReverse_smt,
       scopeAsBigInt.toString(),
       registerSecret,
       userIdentifierHash.toString(),
@@ -107,6 +113,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       true,
     );
     const aadhaarInputs = testData.inputs;
+    (stringify(aadhaarInputs));
 
     nullifier = testData.nullifier;
     commitment = testData.commitment;
@@ -116,7 +123,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       .connect(deployedActors.owner)
       .devAddIdentityCommitment(attestationIdBytes32, nullifier, commitment);
 
-    forbiddenCountriesList = [countries.AFGHANISTAN, "ABC", "CBA", "AAA"] as Country3LetterCode[];
+    forbiddenCountriesList = [] as Country3LetterCode[];
     forbiddenCountriesListPacked = getPackedForbiddenCountries(forbiddenCountriesList);
 
     verificationConfigV2 = {
@@ -124,6 +131,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       olderThan: "20",
       forbiddenCountriesEnabled: true,
       forbiddenCountriesListPacked: forbiddenCountriesListPacked as [
+        BigNumberish,
         BigNumberish,
         BigNumberish,
         BigNumberish,
@@ -317,6 +325,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         tree,
         nameAndDob_smt,
         nameAndYob_smt,
+        nameAndDobReverse_smt,
+        nameAndYobReverse_smt,
         differentScopeAsBigIntString,
         registerSecret,
         "123",
@@ -458,6 +468,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
+        nameAndDobReverse_smt,
+        nameAndYobReverse_smt,
         scopeAsBigInt.toString(),
         registerSecret,
         userIdentifierHash.toString(),
@@ -470,6 +482,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         undefined,
         true,
       );
+
 
       aadhaarInputs.inputs.currentDay = formatInput((+aadhaarInputs.inputs.currentDay[0] + 1).toString());
 
@@ -529,6 +542,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
+        nameAndDobReverse_smt,
+        nameAndYobReverse_smt,
         scopeAsBigInt.toString(),
         registerSecret,
         userIdentifierHash.toString(),
@@ -690,7 +705,172 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
     });
 
     it("should fail verification with invalid forbidden countries check", async () => {
-      //TODO: Implement this after merging vishal's PR
+      const destChainId = ethers.zeroPadValue(ethers.toBeHex(31337), 32);
+      const user1Address = await deployedActors.user1.getAddress();
+      const userData = ethers.toUtf8Bytes("test-user-data-for-verification");
+
+      const userContextData = ethers.solidityPacked(
+        ["bytes32", "bytes32", "bytes"],
+        [destChainId, ethers.zeroPadValue(user1Address, 32), userData],
+      );
+
+      const verificationConfigV2 = {
+        olderThanEnabled: true,
+        olderThan: "00",
+        forbiddenCountriesEnabled: true,
+        forbiddenCountriesListPacked: [1n, 1n, 1n, 1n] as [
+          BigNumberish,
+          BigNumberish,
+          BigNumberish,
+          BigNumberish,
+        ],
+        ofacEnabled: [false, false, false] as [boolean, boolean, boolean],
+      };
+
+      await deployedActors.testSelfVerificationRoot.setVerificationConfig(verificationConfigV2);
+
+      const attestationId = ethers.zeroPadValue(ethers.toBeHex(BigInt(AADHAAR_ATTESTATION_ID)), 32);
+
+      await deployedActors.registryAadhaar
+        .connect(deployedActors.owner)
+        .devAddIdentityCommitment(attestationId, nullifier, commitment);
+
+      const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
+        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+      );
+
+      const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
+
+      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidForbiddenCountries");
+    });
+
+    it("should fail verification with invalid older than check", async () => {
+      const destChainId = ethers.zeroPadValue(ethers.toBeHex(31337), 32);
+      const user1Address = await deployedActors.user1.getAddress();
+      const userData = ethers.toUtf8Bytes("test-user-data-for-verification");
+
+      const userContextData = ethers.solidityPacked(
+        ["bytes32", "bytes32", "bytes"],
+        [destChainId, ethers.zeroPadValue(user1Address, 32), userData],
+      );
+
+      const verificationConfigV2 = {
+        olderThanEnabled: true,
+        olderThan: "50",
+        forbiddenCountriesEnabled: true,
+        forbiddenCountriesListPacked: forbiddenCountriesListPacked as [
+          BigNumberish,
+          BigNumberish,
+          BigNumberish,
+          BigNumberish,
+        ],
+        ofacEnabled: [false, false, false] as [boolean, boolean, boolean],
+      };
+
+      await deployedActors.testSelfVerificationRoot.setVerificationConfig(verificationConfigV2);
+
+      const attestationId = ethers.zeroPadValue(ethers.toBeHex(BigInt(AADHAAR_ATTESTATION_ID)), 32);
+
+      await deployedActors.registryAadhaar
+        .connect(deployedActors.owner)
+        .devAddIdentityCommitment(attestationId, nullifier, commitment);
+
+      const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
+        [[baseVcAndDiscloseProof.a, baseVcAndDiscloseProof.b, baseVcAndDiscloseProof.c, baseVcAndDiscloseProof.pubSignals]],
+      );
+
+      const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
+
+      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.customVerifier, "InvalidOlderThan");
+    });
+
+    it("should fail verification with invalid dest chain id", async () => {
+      const destChainId = 31338;
+      const user1Address = await deployedActors.user1.getAddress();
+      const userData = "test-user-data-for-verification";
+
+      const userContextData = ethers.solidityPacked(
+        ["bytes32", "bytes32", "bytes"],
+        [ethers.zeroPadValue(ethers.toBeHex(destChainId), 32), ethers.zeroPadValue(user1Address, 32), ethers.toUtf8Bytes(userData)],
+      );
+
+      const newUserIdentifierHash = BigInt(calculateUserIdentifierHash(destChainId, user1Address.slice(2), userData).toString());
+
+      const verificationConfigV2 = {
+        olderThanEnabled: true,
+        olderThan: "00",
+        forbiddenCountriesEnabled: true,
+        forbiddenCountriesListPacked: forbiddenCountriesListPacked as [
+          BigNumberish,
+          BigNumberish,
+          BigNumberish,
+          BigNumberish,
+        ],
+        ofacEnabled: [false, false, false] as [boolean, boolean, boolean],
+      };
+
+      const aadhaarInputs = prepareAadhaarDiscloseTestData(
+        privateKeyPath,
+        imt,
+        nameAndDob_smt,
+        nameAndYob_smt,
+        nameAndDobReverse_smt,
+        nameAndYobReverse_smt,
+        scopeAsBigInt.toString(),
+        registerSecret,
+        newUserIdentifierHash.toString(),
+        createSelector(['GENDER']).toString(),
+        name,
+        dateOfBirth,
+        gender,
+        pincode,
+        state,
+        undefined,
+        true,
+      );
+
+      const commitment = aadhaarInputs.commitment;
+      const nullifier = aadhaarInputs.nullifier;
+
+      const newProof = await generateVcAndDiscloseAadhaarProof(aadhaarInputs.inputs);
+
+      const attestationId = ethers.zeroPadValue(ethers.toBeHex(BigInt(AADHAAR_ATTESTATION_ID)), 32);
+
+      await deployedActors.registryAadhaar
+        .connect(deployedActors.owner)
+        .devAddIdentityCommitment(attestationId, nullifier, commitment);
+
+      await deployedActors.testSelfVerificationRoot.setVerificationConfig(verificationConfigV2);
+
+      const encodedProof = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["tuple(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[] pubSignals)"],
+        [[newProof.a, newProof.b, newProof.c, newProof.pubSignals]],
+      );
+
+      const proofData = ethers.solidityPacked(["bytes32", "bytes"], [attestationId, encodedProof]);
+
+      await expect(deployedActors.testSelfVerificationRoot.verifySelfProof(proofData, userContextData)).to.be.revertedWithCustomError(deployedActors.hubImplV2, "CrossChainIsNotSupportedYet");
+    });
+
+    it("should fail verification with invalid msg sender to call onVerificationSuccess", async () => {
+      const mockOutput = ethers.toUtf8Bytes("mock-verification-output");
+      const mockUserData = ethers.toUtf8Bytes("mock-user-data");
+
+      // Try to call onVerificationSuccess directly from a non-hub address
+      await expect(
+        deployedActors.testSelfVerificationRoot
+          .connect(deployedActors.user1)
+          .onVerificationSuccess(mockOutput, mockUserData),
+      ).to.be.revertedWithCustomError(deployedActors.testSelfVerificationRoot, "UnauthorizedCaller");
+
+      // Also test with owner account (should still fail)
+      await expect(
+        deployedActors.testSelfVerificationRoot
+          .connect(deployedActors.owner)
+          .onVerificationSuccess(mockOutput, mockUserData),
+      ).to.be.revertedWithCustomError(deployedActors.testSelfVerificationRoot, "UnauthorizedCaller");
     });
   });
 });
