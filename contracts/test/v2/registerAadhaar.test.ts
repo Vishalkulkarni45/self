@@ -2,14 +2,15 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deploySystemFixturesV2 } from "../utils/deploymentV2";
 import { DeployedActorsV2 } from "../utils/types";
-import { AADHAAR_ATTESTATION_ID, CIRCUIT_CONSTANTS, RegisterVerifierId } from "@selfxyz/common";
+import { AADHAAR_ATTESTATION_ID } from "@selfxyz/common/constants/constants";
 import { prepareAadhaarRegisterTestData } from "@selfxyz/common";
 import path from "path";
 import { generateRandomFieldElement } from "../utils/utils";
 import { generateRegisterAadhaarProof } from "../utils/generateProof";
+import fs from "fs";
 
-const privateKeyPath = path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem");
-const publicKeyPath = path.join(__dirname, "../../../common/src/utils/aadhaar/assets/testPublicKey.pem");
+const privateKeyPem = fs.readFileSync(path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem"), "utf8");
+const pubkeyPem = fs.readFileSync(path.join(__dirname, "../../../common/src/utils/aadhaar/assets/testPublicKey.pem"), "utf8");
 
 describe("Aadhaar Registration test", function () {
   this.timeout(0);
@@ -64,8 +65,9 @@ describe("Aadhaar Registration test", function () {
 
     before(async () => {
       aadhaarData = prepareAadhaarRegisterTestData(
-        privateKeyPath,
-        publicKeyPath,
+        privateKeyPem,
+        pubkeyPem,
+        '1234',
         'Sumit Kumar',
         '01-01-1984',
         'M',
@@ -141,8 +143,9 @@ describe("Aadhaar Registration test", function () {
 
     it("should not fail if timestamp is within 20 minutes", async () => {
       const newAadhaarData = prepareAadhaarRegisterTestData(
-        privateKeyPath,
-        publicKeyPath,
+        privateKeyPem,
+        pubkeyPem,
+        '1234',
         'Sumit Kumar',
         '01-01-1984',
         'M',
@@ -160,8 +163,9 @@ describe("Aadhaar Registration test", function () {
 
     it("should fail with InvalidUidaiTimestamp when UIDAI timestamp is not within 20 minutes of current time", async () => {
       const newAadhaarData = prepareAadhaarRegisterTestData(
-        privateKeyPath,
-        publicKeyPath,
+        privateKeyPem,
+        pubkeyPem,
+        '1234',
         'Sumit Kumar',
         '01-01-1984',
         'M',

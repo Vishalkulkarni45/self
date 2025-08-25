@@ -47,7 +47,7 @@ const signNewTestData = (newSignedData: Uint8Array, privateKeyPath: string) => {
 }
 
 export const generateTestData = ({
-  privateKeyPath,
+  privKeyPem,
   data,
   dob,
   gender,
@@ -56,7 +56,7 @@ export const generateTestData = ({
   photo,
   name,
 }: {
-  privateKeyPath: string
+  privKeyPem: string
   data: string
   dob?: string
   gender?: string
@@ -82,7 +82,7 @@ export const generateTestData = ({
   })
 
   // Signing the newly generated testData
-  const signature = signNewTestData(dataToSign, privateKeyPath)
+  const signature = signNewTestData(dataToSign, privKeyPem)
 
   // Reconstructing the whole QR data
   const tempData = Buffer.concat([dataToSign, signature])

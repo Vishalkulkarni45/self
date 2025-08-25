@@ -8,12 +8,10 @@ import {
 import { bufferToHex, Uint8ArrayToCharArray } from "@zk-email/helpers/dist/binary-format.js";
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import { testQRData } from "./assets/dataInput.js";
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
 import { stringToAsciiArray } from "./utils.js";
 import { packBytesAndPoseidon } from "../hash.js";
-import { poseidon2, poseidon5 } from "poseidon-lite";
+import { poseidon5 } from "poseidon-lite";
+import forge from 'node-forge';
 import { LeanIMT } from "@openpassport/zk-kit-lean-imt";
 import { SMT } from "@openpassport/zk-kit-smt";
 import { findIndexInTree, formatInput } from "../circuits/generateInputs.js";
@@ -87,7 +85,7 @@ interface SharedQRData {
   photoHash: bigint;
 }
 
-function processQRData(privateKeyPath: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string): SharedQRData {
+function processQRData(privKeyPem: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string): SharedQRData {
   const finalName = name ?? 'Sumit Kumar';
   const finalDateOfBirth = dateOfBirth ?? '01-01-1984';
   const finalGender = gender ?? 'M';
@@ -96,7 +94,7 @@ function processQRData(privateKeyPath: string, name?: string, dateOfBirth?: stri
 
   let qrDataBytes: any;
   if(name || dateOfBirth || gender || pincode || state) {
-    const newTestData = generateTestData({ privateKeyPath, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState, timestamp: timestamp});
+    const newTestData = generateTestData({ privKeyPem, data: testCustomData, name: finalName, dob: finalDateOfBirth, gender: finalGender, pincode: finalPincode, state: finalState, timestamp: timestamp});
     qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
   } else {
     qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
@@ -127,8 +125,8 @@ function processQRData(privateKeyPath: string, name?: string, dateOfBirth?: stri
   };
 }
 
-export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKeyPath: string,secret: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
-  const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
+export function prepareAadhaarRegisterTestData(privKeyPem: string, pubkeyPem: string,secret: string, name?: string, dateOfBirth?: string, gender?: string, pincode?: string, state?: string, timestamp?: string) {
+  const sharedData = processQRData(privKeyPem, name, dateOfBirth, gender, pincode, state, timestamp);
 
   const delimiterIndices: number[] = [];
   for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
@@ -143,11 +141,11 @@ export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKey
   const signatureBytes = sharedData.decodedData.slice(sharedData.decodedData.length - 256, sharedData.decodedData.length);
   const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
 
-  const pkPem = fs.readFileSync(path.join(publicKeyPath));
-  const pk = crypto.createPublicKey(pkPem);
-  const pubKey = BigInt(
-    '0x' + bufferToHex(Buffer.from(pk.export({ format: 'jwk' }).n as string, 'base64url'))
-  );
+  const publicKey = forge.pki.publicKeyFromPem(pubkeyPem);
+
+  const modulusHex = publicKey.n.toString(16);
+  const pubKey = BigInt('0x' + modulusHex);
+
 
   const paddedName = computePaddedName(sharedData.extractedFields.name);
   const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
@@ -178,7 +176,7 @@ export function prepareAadhaarRegisterTestData(privateKeyPath: string, publicKey
 }
 
 export function prepareAadhaarDiscloseTestData(
-  privateKeyPath: string,
+  privateKeyPem: string,
   merkletree: LeanIMT,
   nameAndDob_smt: SMT,
   nameAndYob_smt: SMT,
@@ -196,7 +194,7 @@ export function prepareAadhaarDiscloseTestData(
   timestamp?: string,
   updateTree?: boolean,
 ) {
-  const sharedData = processQRData(privateKeyPath, name, dateOfBirth, gender, pincode, state, timestamp);
+  const sharedData = processQRData(privateKeyPem, name, dateOfBirth, gender, pincode, state, timestamp);
 
   const {age, currentYear, currentMonth, currentDay } = calculateAge(sharedData.extractedFields.dob, sharedData.extractedFields.mob, sharedData.extractedFields.yob);
 

@@ -2,23 +2,21 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { generateVcAndDiscloseAadhaarProof, getSMTs } from "../utils/generateProof";
 import { poseidon2 } from "poseidon-lite";
-import { generateCommitment } from "@selfxyz/common/utils/passports/passport";
 import { BigNumberish } from "ethers";
-import { generateRandomFieldElement, getStartOfDayTimestamp } from "../utils/utils";
 import { getPackedForbiddenCountries } from "@selfxyz/common/utils/contracts/forbiddenCountries";
-import { countries, Country3LetterCode } from "@selfxyz/common/constants/countries";
+import { Country3LetterCode } from "@selfxyz/common/constants/countries";
 import { deploySystemFixturesV2 } from "../utils/deploymentV2";
 import { DeployedActorsV2 } from "../utils/types";
 import { AADHAAR_ATTESTATION_ID } from "@selfxyz/common/constants/constants";
 import { hashEndpointWithScope } from "@selfxyz/common/utils/scope";
-import { calculateUserIdentifierHash, prepareAadhaarRegisterTestData } from "@selfxyz/common";
+import { calculateUserIdentifierHash } from "@selfxyz/common";
 import { prepareAadhaarDiscloseTestData } from "@selfxyz/common";
 import path from "path";
 import { createSelector } from "@selfxyz/common/utils/aadhaar/constants";
 import { formatInput } from "@selfxyz/common/utils/circuits/generateInputs";
+import fs from "fs";
 
-const privateKeyPath = path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem");
-const publicKeyPath = path.join(__dirname, "../../../common/src/utils/aadhaar/assets/testPublicKey.pem");
+const privateKeyPem = fs.readFileSync(path.join(__dirname, "../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem"), "utf8");
 
 export function stringify(
   value: any,
@@ -94,7 +92,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
     userIdentifierHash = BigInt(calculateUserIdentifierHash(destChainId, user1Address.slice(2), userData).toString());
 
     const testData = prepareAadhaarDiscloseTestData(
-      privateKeyPath,
+      privateKeyPem,
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
@@ -321,7 +319,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       const differentScopeAsBigIntString = differentScopeAsBigInt.toString();
 
       const aadhaarInputs = prepareAadhaarDiscloseTestData(
-        privateKeyPath,
+        privateKeyPem,
         tree,
         nameAndDob_smt,
         nameAndYob_smt,
@@ -464,7 +462,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       const imt = new LeanIMT<bigint>(hashFunction, []);
 
       const aadhaarInputs = prepareAadhaarDiscloseTestData(
-        privateKeyPath,
+        privateKeyPem,
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
@@ -538,7 +536,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       const imt = new LeanIMT<bigint>(hashFunction, []);
 
       const aadhaarInputs = prepareAadhaarDiscloseTestData(
-        privateKeyPath,
+        privateKeyPem,
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
@@ -812,7 +810,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       };
 
       const aadhaarInputs = prepareAadhaarDiscloseTestData(
-        privateKeyPath,
+        privateKeyPem,
         imt,
         nameAndDob_smt,
         nameAndYob_smt,

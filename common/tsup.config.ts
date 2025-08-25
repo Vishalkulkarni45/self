@@ -19,6 +19,7 @@ const entry = {
   'src/constants/mockCertificates': 'src/constants/mockCertificates.ts',
   'src/constants/sampleDataHashes': 'src/constants/sampleDataHashes.ts',
   // Granular utils exports
+  'src/utils/aadhaar/constants': 'src/utils/aadhaar/constants.ts',
   'src/utils/hash': 'src/utils/hash.ts',
   'src/utils/bytes': 'src/utils/bytes.ts',
   'src/utils/trees': 'src/utils/trees.ts',
@@ -98,6 +99,8 @@ export default defineConfig([
     platform: 'neutral',
     external: [
       /^@openpassport/,
+      /^@zk-email/,
+      /^@anon-aadhaar/,
       /^asn1/,
       /^axios/,
       /^buffer/,
@@ -135,6 +138,8 @@ export default defineConfig([
     platform: 'neutral',
     external: [
       /^@openpassport/,
+      /^@zk-email/,
+      /^@anon-aadhaar/,
       /^asn1/,
       /^axios/,
       /^buffer/,

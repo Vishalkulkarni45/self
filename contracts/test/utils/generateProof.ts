@@ -502,13 +502,13 @@ export function parseSolidityCalldata<T>(rawCallData: string, _type: T): T {
 }
 
 export function getSMTs() {
-  const passportNo_smt = importSMTFromJsonFile("../common/ofacdata/outputs/passportNoAndNationalitySMT.json") as typeof SMT;
-  const nameAndDob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobSMT.json") as typeof SMT;
-  const nameAndYob_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobSMT.json") as typeof SMT;
-  const nameAndDobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobReverseAadhaarSMT.json") as typeof SMT;
-  const nameAndYobReverse_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobReverseAadhaarSMT.json") as typeof SMT;
-  const nameAndDob_id_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndDobSMT_ID.json") as typeof SMT;
-  const nameAndYob_id_smt = importSMTFromJsonFile("../common/ofacdata/outputs/nameAndYobSMT_ID.json") as typeof SMT;
+  const passportNo_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/passportNoAndNationalitySMT.json") as typeof SMT;
+  const nameAndDob_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndDobSMT.json") as typeof SMT;
+  const nameAndYob_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndYobSMT.json") as typeof SMT;
+  const nameAndDobReverse_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndDobReverseAadhaarSMT.json") as typeof SMT;
+  const nameAndYobReverse_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndYobReverseAadhaarSMT.json") as typeof SMT;
+  const nameAndDob_id_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndDobSMT_ID.json") as typeof SMT;
+  const nameAndYob_id_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndYobSMT_ID.json") as typeof SMT;
 
   return {
     passportNo_smt,

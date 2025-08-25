@@ -11,17 +11,20 @@ import {
   createSelector,
   extractField
 } from '../../../common/src/utils/aadhaar/constants.js';
-import { prepareAadhaarDiscloseTestData } from '@selfxyz/common/utils/aadhaar/mockData';
+import { prepareAadhaarDiscloseTestData } from '@selfxyz/common';
 import { SMT } from '@openpassport/zk-kit-smt';
 import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { poseidon2 } from 'poseidon-lite';
-import nameAndDobAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobAadhaarSMT.json' with { type: 'json' };
-import nameAndYobAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobAadhaarSMT.json' with { type: 'json' };
-import nameAndDobReverseAadhaarjson from '../../../common/ofacdata/outputs/nameAndDobReverseAadhaarSMT.json' with { type: 'json' };
-import nameAndYobReverseAadhaarjson from '../../../common/ofacdata/outputs/nameAndYobReverseAadhaarSMT.json' with { type: 'json' };
+import nameAndDobAadhaarjson from '../consts/ofac/nameAndDobAadhaarSMT.json' with { type: 'json' };
+import nameAndYobAadhaarjson from '../consts/ofac/nameAndYobAadhaarSMT.json' with { type: 'json' };
+import nameAndDobReverseAadhaarjson from '../consts/ofac/nameAndDobReverseAadhaarSMT.json' with { type: 'json' };
+import nameAndYobReverseAadhaarjson from '../consts/ofac/nameAndYobReverseAadhaarSMT.json' with { type: 'json' };
+
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
+// const privateKeyPath = path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem');
+const privateKeyPem = fs.readFileSync(path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'), 'utf8');
 
 // Create SMTs at module level
 const nameAndDob_smt = new SMT(poseidon2, true);
@@ -70,14 +73,14 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('should calculate witness and pass constrain check', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
   });
 
   it('should reveal gender only', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
 
     // Use createSelector to generate selector for revealing only gender
     const selector = createSelector(['GENDER']);
@@ -103,7 +106,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('should reveal yob, mob, dob, reveal_ofac_name_yob only', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', undefined, undefined, undefined, undefined, undefined, undefined, true);
 
     // Use createSelector to generate selector for revealing birth date and OFAC check
     const selector = createSelector(['YEAR_OF_BIRTH', 'MONTH_OF_BIRTH', 'DAY_OF_BIRTH', 'OFAC_NAME_YOB_CHECK', 'OFAC_NAME_DOB_REVERSE_CHECK']);
@@ -147,7 +150,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
 
   it('ofac_check_result should be 0 if exists in ofac_name_dob_smt and ofac_name_yob_smt', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', 'ABU ABBAS','10-12-1948', undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', 'ABU ABBAS','10-12-1948', undefined, undefined, undefined, undefined, true);
 
     // Use createSelector to generate selector for revealing OFAC checks
     const selector = createSelector(['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK', 'OFAC_NAME_DOB_REVERSE_CHECK', 'OFAC_NAME_YOB_REVERSE_CHECK']);
@@ -185,7 +188,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
   });
   it('ofac_check_result should be 0 if exists in ofac_name_dob_reverse_smt and ofac_name_yob_reverse_smt', async function () {
     this.timeout(0);
-    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPath, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', 'ABBAS ABU','10-12-1948', undefined, undefined, undefined, undefined, true);
+    const { inputs } = prepareAadhaarDiscloseTestData(privateKeyPem, tree, nameAndDob_smt, nameAndYob_smt, nameAndDobReverse_smt, nameAndYobReverse_smt, '333','1234','585225', '0', 'ABBAS ABU','10-12-1948', undefined, undefined, undefined, undefined, true);
 
     // Use createSelector to generate selector for revealing OFAC checks
     const selector = createSelector(['OFAC_NAME_DOB_REVERSE_CHECK', 'OFAC_NAME_YOB_REVERSE_CHECK']);

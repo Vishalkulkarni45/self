@@ -1,6 +1,5 @@
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { Signer } from "ethers";
 import { DscVerifierId, RegisterVerifierId } from "@selfxyz/common/constants";
 import { genAndInitMockPassportData } from "@selfxyz/common/utils/passports/genMockPassportData";
 import { getCscaTreeRoot } from "@selfxyz/common/utils/trees";
