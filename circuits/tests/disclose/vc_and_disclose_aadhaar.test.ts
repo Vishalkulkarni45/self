@@ -25,10 +25,10 @@ const privateKeyPem = fs.readFileSync(
 
 // Create SMTs at module level
 const nameAndDob_smt = new SMT(poseidon2, true);
-nameAndDob_smt.import(nameAndDobAadhaarjson);
+nameAndDob_smt.import(nameAndDobAadhaarjson as any);
 
 const nameAndYob_smt = new SMT(poseidon2, true);
-nameAndYob_smt.import(nameAndYobAadhaarjson);
+nameAndYob_smt.import(nameAndYobAadhaarjson as any);
 
 // Create Merkle tree at module level
 const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
@@ -232,8 +232,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
 
     // Verify OFAC checks show person is in OFAC list
-    assert(ofacNameYobCheck === 1, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(ofacNameDobCheck === 1, 'OFAC Name DOB should be 0 (in OFAC list)');
+    assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
     assert(minimumAge.toString() === '0', 'Minimum Age should be 0');
   });
   it('ofac_check_result should be 0 if exists in ofac_name_dob_reverse_smt and ofac_name_yob_reverse_smt', async function () {
@@ -286,8 +286,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
 
     // Verify OFAC checks show person is in OFAC list
-    assert(ofacNameYobCheck === 1, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(ofacNameDobCheck === 1, 'OFAC Name DOB should be 0 (in OFAC list)');
+    assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
     assert(minimumAge.toString() === '0', 'Minimum Age should be 0');
   });
 });

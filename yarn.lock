@@ -4959,6 +4959,7 @@ __metadata:
     eslint-plugin-sort-exports: "npm:^0.9.1"
     ethers: "npm:^6.14.4"
     fs: "npm:^0.0.1-security"
+    hash.js: "npm:^1.1.7"
     i18n-iso-countries: "npm:^7.13.0"
     js-sha1: "npm:^0.7.0"
     js-sha256: "npm:^0.11.0"
