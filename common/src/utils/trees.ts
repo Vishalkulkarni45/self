@@ -587,14 +587,13 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
     }
 
     let leaf = BigInt(0);
+    let reverse_leaf = BigInt(0);
     if (treetype == 'name_and_dob') {
       leaf = processNameAndDobAadhaar(entry, i);
+      reverse_leaf = processNameAndDobAadhaar(entry, i, true);
     } else if (treetype == 'name_and_yob') {
       leaf = processNameAndYobAadhaar(entry, i);
-    } else if (treetype == 'name_and_dob_reverse') {
-      leaf = processNameAndDobAadhaar(entry, i, true);
-    } else if (treetype == 'name_and_yob_reverse') {
-      leaf = processNameAndYobAadhaar(entry, i, true);
+      reverse_leaf = processNameAndYobAadhaar(entry, i, true);
     }
 
     if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
@@ -604,6 +603,12 @@ export function buildAadhaarSMT(field: any[], treetype: string): [number, number
 
     count += 1;
     tree.add(leaf, BigInt(1));
+    if (reverse_leaf == BigInt(0) || tree.createProof(reverse_leaf).membership) {
+      console.log('This entry already exists in the tree, skipping...');
+      continue;
+    }
+    tree.add(reverse_leaf, BigInt(1));
+    count += 1;
   }
 
   return [count, performance.now() - startTime, tree];

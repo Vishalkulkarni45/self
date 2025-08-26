@@ -62,17 +62,10 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     signal input ofac_name_dob_smt_root;
     signal input ofac_name_dob_smt_siblings[namedobTreeLevels];
 
-    signal input ofac_name_dob_reverse_smt_leaf_key;
-    signal input ofac_name_dob_reverse_smt_root;
-    signal input ofac_name_dob_reverse_smt_siblings[namedobTreeLevels];
 
     signal input ofac_name_yob_smt_leaf_key;
     signal input ofac_name_yob_smt_root;
     signal input ofac_name_yob_smt_siblings[nameyobTreeLevels];
-
-    signal input ofac_name_yob_reverse_smt_leaf_key;
-    signal input ofac_name_yob_reverse_smt_root;
-    signal input ofac_name_yob_reverse_smt_siblings[nameyobTreeLevels];
 
     signal input merkle_root;
     signal input leaf_depth;
@@ -84,8 +77,8 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     signal input user_identifier;
 
     signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3];
-    // convert selector to 121 bits which acts as a bitmap for the fields to reveal
-    signal sel_bits[121] <== Num2Bits(121)(selector);
+    // convert selector to 119 bits which acts as a bitmap for the fields to reveal
+    signal sel_bits[119] <== Num2Bits(119)(selector);
 
     signal output nullifier <== Poseidon(2)([secret, scope]);
 
@@ -126,15 +119,6 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     ofac_name_dob.smt_root <== ofac_name_dob_smt_root;
     ofac_name_dob.smt_siblings <== ofac_name_dob_smt_siblings;
 
-    component ofac_name_dob_reverse = OFAC_NAME_DOB_AADHAAR(namedobTreeLevels);
-    ofac_name_dob_reverse.name <== name_packed;
-    ofac_name_dob_reverse.YOB <== yob_integer;
-    ofac_name_dob_reverse.MOB <== mob_integer;
-    ofac_name_dob_reverse.DOB <== dob_integer;
-    ofac_name_dob_reverse.smt_leaf_key <== ofac_name_dob_reverse_smt_leaf_key;
-    ofac_name_dob_reverse.smt_root <== ofac_name_dob_reverse_smt_root;
-    ofac_name_dob_reverse.smt_siblings <== ofac_name_dob_reverse_smt_siblings;
-
     // verify name-YOB in OFAC list
     component ofac_name_yob = OFAC_NAME_YOB_AADHAAR(nameyobTreeLevels);
     ofac_name_yob.name <== name_packed;
@@ -142,13 +126,6 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     ofac_name_yob.smt_leaf_key <== ofac_name_yob_smt_leaf_key;
     ofac_name_yob.smt_root <== ofac_name_yob_smt_root;
     ofac_name_yob.smt_siblings <== ofac_name_yob_smt_siblings;
-
-    component ofac_name_yob_reverse = OFAC_NAME_YOB_AADHAAR(nameyobTreeLevels);
-    ofac_name_yob_reverse.name <== name_packed;
-    ofac_name_yob_reverse.YOB <== yob_integer;
-    ofac_name_yob_reverse.smt_leaf_key <== ofac_name_yob_reverse_smt_leaf_key;
-    ofac_name_yob_reverse.smt_root <== ofac_name_yob_reverse_smt_root;
-    ofac_name_yob_reverse.smt_siblings <== ofac_name_yob_reverse_smt_siblings;
 
     // verify age is greater than minimum age
     signal age <== AgeExtractor()(yob, mob, dob, currentYear, currentMonth, currentDay);
@@ -159,7 +136,7 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
 
     // reveal fields based on selector
 
-    signal revealData[121];
+    signal revealData[119];
     revealData[0] <== gender * sel_bits[0];
 
 
@@ -203,11 +180,8 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     revealData[117] <== ofac_name_yob.ofacCheckResult * sel_bits[118];
     revealData[118] <== isMinimumAgeValid;
 
-    revealData[119] <== ofac_name_dob_reverse.ofacCheckResult * sel_bits[119];
-    revealData[120] <== ofac_name_yob_reverse.ofacCheckResult * sel_bits[120];
-
-    var revealed_data_packed_chunk_length = computeIntChunkLength(121);
-    signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(121)(revealData);
+    var revealed_data_packed_chunk_length = computeIntChunkLength(119);
+    signal output revealData_packed[revealed_data_packed_chunk_length] <== PackBytes(119)(revealData);
 
     component country_not_in_list_circuit = CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH);
 
@@ -231,8 +205,6 @@ component main { public
         currentDay,
         ofac_name_dob_smt_root,
         ofac_name_yob_smt_root,
-        ofac_name_dob_reverse_smt_root,
-        ofac_name_yob_reverse_smt_root,
         merkle_root,
         scope,
         user_identifier

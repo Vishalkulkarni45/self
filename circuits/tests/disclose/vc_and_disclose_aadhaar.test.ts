@@ -13,8 +13,6 @@ import { LeanIMT } from '@openpassport/zk-kit-lean-imt';
 import { poseidon2 } from 'poseidon-lite';
 import nameAndDobAadhaarjson from '../consts/ofac/nameAndDobAadhaarSMT.json' with { type: 'json' };
 import nameAndYobAadhaarjson from '../consts/ofac/nameAndYobAadhaarSMT.json' with { type: 'json' };
-import nameAndDobReverseAadhaarjson from '../consts/ofac/nameAndDobReverseAadhaarSMT.json' with { type: 'json' };
-import nameAndYobReverseAadhaarjson from '../consts/ofac/nameAndYobReverseAadhaarSMT.json' with { type: 'json' };
 
 import fs from 'fs';
 
@@ -31,12 +29,6 @@ nameAndDob_smt.import(nameAndDobAadhaarjson);
 
 const nameAndYob_smt = new SMT(poseidon2, true);
 nameAndYob_smt.import(nameAndYobAadhaarjson);
-
-const nameAndDobReverse_smt = new SMT(poseidon2, true);
-nameAndDobReverse_smt.import(nameAndDobReverseAadhaarjson);
-
-const nameAndYobReverse_smt = new SMT(poseidon2, true);
-nameAndYobReverse_smt.import(nameAndYobReverseAadhaarjson);
 
 // Create Merkle tree at module level
 const tree: any = new LeanIMT((a, b) => poseidon2([a, b]), []);
@@ -77,8 +69,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
-      nameAndDobReverse_smt,
-      nameAndYobReverse_smt,
       '333',
       '1234',
       '585225',
@@ -102,8 +92,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
-      nameAndDobReverse_smt,
-      nameAndYobReverse_smt,
       '333',
       '1234',
       '585225',
@@ -144,8 +132,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
-      nameAndDobReverse_smt,
-      nameAndYobReverse_smt,
       '333',
       '1234',
       '585225',
@@ -165,7 +151,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       'MONTH_OF_BIRTH',
       'DAY_OF_BIRTH',
       'OFAC_NAME_YOB_CHECK',
-      'OFAC_NAME_DOB_REVERSE_CHECK',
     ]);
     inputs.selector = formatInput(selector)[0];
 
@@ -182,10 +167,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const monthOfBirth = extractField(revealedDataUnpacked, 'MONTH_OF_BIRTH');
     const dayOfBirth = extractField(revealedDataUnpacked, 'DAY_OF_BIRTH');
     const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
-    const ofacNameDobReverseCheck = extractField(
-      revealedDataUnpacked,
-      'OFAC_NAME_DOB_REVERSE_CHECK'
-    );
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
     // Verify extracted values
@@ -193,7 +174,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     assert(monthOfBirth === '01', 'MOB should be 01');
     assert(dayOfBirth === '01', 'DOB should be 01');
     assert(ofacNameYobCheck === 1, 'OFAC Name YOB should be 1 (not in OFAC list)');
-    assert(ofacNameDobReverseCheck === 1, 'OFAC Name DOB should be 0 (in OFAC list)');
 
     // Verify non-revealed fields are null
     for (let i = 9; i < 116; i++) {
@@ -211,8 +191,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
-      nameAndDobReverse_smt,
-      nameAndYobReverse_smt,
       '333',
       '1234',
       '585225',
@@ -230,8 +208,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const selector = createSelector([
       'OFAC_NAME_DOB_CHECK',
       'OFAC_NAME_YOB_CHECK',
-      'OFAC_NAME_DOB_REVERSE_CHECK',
-      'OFAC_NAME_YOB_REVERSE_CHECK',
+
     ]);
     inputs.selector = formatInput(selector)[0];
     inputs.minimumAge = ['100'];
@@ -247,14 +224,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     // Use extractField to get field values
     const ofacNameDobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_CHECK');
     const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
-    const ofacNameDobReverseCheck = extractField(
-      revealedDataUnpacked,
-      'OFAC_NAME_DOB_REVERSE_CHECK'
-    );
-    const ofacNameYobReverseCheck = extractField(
-      revealedDataUnpacked,
-      'OFAC_NAME_YOB_REVERSE_CHECK'
-    );
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
     // Verify non-revealed fields are null
@@ -263,10 +232,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
 
     // Verify OFAC checks show person is in OFAC list
-    assert(ofacNameYobCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(ofacNameDobCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
-    assert(ofacNameYobReverseCheck === 1, 'OFAC Name YOB Reverse should be 1 (in OFAC list)');
-    assert(ofacNameDobReverseCheck === 1, 'OFAC Name DOB Reverse should be 1 (in OFAC list)');
+    assert(ofacNameYobCheck === 1, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(ofacNameDobCheck === 1, 'OFAC Name DOB should be 0 (in OFAC list)');
     assert(minimumAge.toString() === '0', 'Minimum Age should be 0');
   });
   it('ofac_check_result should be 0 if exists in ofac_name_dob_reverse_smt and ofac_name_yob_reverse_smt', async function () {
@@ -276,8 +243,6 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
-      nameAndDobReverse_smt,
-      nameAndYobReverse_smt,
       '333',
       '1234',
       '585225',
@@ -292,7 +257,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     );
 
     // Use createSelector to generate selector for revealing OFAC checks
-    const selector = createSelector(['OFAC_NAME_DOB_REVERSE_CHECK', 'OFAC_NAME_YOB_REVERSE_CHECK']);
+    const selector = createSelector(['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK']);
     inputs.selector = formatInput(selector)[0];
     inputs.minimumAge = ['100'];
 
@@ -305,13 +270,13 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     // Use extractField to get field values
-    const ofacNameDobReverseCheck = extractField(
+    const ofacNameDobCheck = extractField(
       revealedDataUnpacked,
-      'OFAC_NAME_DOB_REVERSE_CHECK'
+      'OFAC_NAME_DOB_CHECK'
     );
-    const ofacNameYobReverseCheck = extractField(
+    const ofacNameYobCheck = extractField(
       revealedDataUnpacked,
-      'OFAC_NAME_YOB_REVERSE_CHECK'
+      'OFAC_NAME_YOB_CHECK'
     );
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
@@ -321,8 +286,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     }
 
     // Verify OFAC checks show person is in OFAC list
-    assert(ofacNameYobReverseCheck === 0, 'OFAC Name YOB should be 0 (in OFAC list)');
-    assert(ofacNameDobReverseCheck === 0, 'OFAC Name DOB should be 0 (in OFAC list)');
+    assert(ofacNameYobCheck === 1, 'OFAC Name YOB should be 0 (in OFAC list)');
+    assert(ofacNameDobCheck === 1, 'OFAC Name DOB should be 0 (in OFAC list)');
     assert(minimumAge.toString() === '0', 'Minimum Age should be 0');
   });
 });

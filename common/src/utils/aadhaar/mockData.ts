@@ -218,8 +218,6 @@ export function prepareAadhaarDiscloseTestData(
   merkletree: LeanIMT,
   nameAndDob_smt: SMT,
   nameAndYob_smt: SMT,
-  nameAndDobReverse_smt: SMT,
-  nameAndYobReverse_smt: SMT,
   scope: string,
   secret: string,
   user_identifier: string,
@@ -294,17 +292,6 @@ export function prepareAadhaarDiscloseTestData(
     siblings: ofac_name_yob_smt_siblings,
   } = generateSMTProof(nameAndYob_smt, nameyob_leaf);
 
-  const {
-    root: ofac_name_dob_reverse_smt_root,
-    closestleaf: ofac_name_dob_reverse_smt_leaf_key,
-    siblings: ofac_name_dob_reverse_smt_siblings,
-  } = generateSMTProof(nameAndDobReverse_smt, namedob_leaf);
-
-  const {
-    root: ofac_name_yob_reverse_smt_root,
-    closestleaf: ofac_name_yob_reverse_smt_leaf_key,
-    siblings: ofac_name_yob_reverse_smt_siblings,
-  } = generateSMTProof(nameAndYobReverse_smt, nameyob_leaf);
 
   const inputs = {
     attestation_id: '3',
@@ -327,15 +314,9 @@ export function prepareAadhaarDiscloseTestData(
     ofac_name_dob_smt_leaf_key: formatInput(BigInt(ofac_name_dob_smt_leaf_key)),
     ofac_name_dob_smt_root: formatInput(BigInt(ofac_name_dob_smt_root)),
     ofac_name_dob_smt_siblings: formatInput(ofac_name_dob_smt_siblings),
-    ofac_name_dob_reverse_smt_leaf_key: formatInput(BigInt(ofac_name_dob_reverse_smt_leaf_key)),
-    ofac_name_dob_reverse_smt_root: formatInput(BigInt(ofac_name_dob_reverse_smt_root)),
-    ofac_name_dob_reverse_smt_siblings: formatInput(ofac_name_dob_reverse_smt_siblings),
     ofac_name_yob_smt_leaf_key: formatInput(BigInt(ofac_name_yob_smt_leaf_key)),
     ofac_name_yob_smt_root: formatInput(BigInt(ofac_name_yob_smt_root)),
     ofac_name_yob_smt_siblings: formatInput(ofac_name_yob_smt_siblings),
-    ofac_name_yob_reverse_smt_leaf_key: formatInput(BigInt(ofac_name_yob_reverse_smt_leaf_key)),
-    ofac_name_yob_reverse_smt_root: formatInput(BigInt(ofac_name_yob_reverse_smt_root)),
-    ofac_name_yob_reverse_smt_siblings: formatInput(ofac_name_yob_reverse_smt_siblings),
     selector,
     minimumAge: formatInput(age - 2),
     currentYear: formatInput(currentYear),
