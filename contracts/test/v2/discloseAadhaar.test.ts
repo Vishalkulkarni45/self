@@ -39,8 +39,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
   let state: string;
   let nameAndDob_smt: any;
   let nameAndYob_smt: any;
-  let nameAndDobReverse_smt: any;
-  let nameAndYobReverse_smt: any;
   let tree: any;
   let scopeAsBigInt: bigint;
 
@@ -64,10 +62,8 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
     registerSecret = "1234";
 
     tree = new LeanIMT<bigint>((a, b) => poseidon2([a, b]), []);
-    nameAndDob_smt = getSMTs().nameAndDob_smt;
-    nameAndYob_smt = getSMTs().nameAndYob_smt;
-    nameAndDobReverse_smt = getSMTs().nameAndDobReverse_smt;
-    nameAndYobReverse_smt = getSMTs().nameAndYobReverse_smt;
+    nameAndDob_smt = getSMTs().nameDobAadhar_smt;
+    nameAndYob_smt = getSMTs().nameYobAadhar_smt;
 
     const expectedScopeFromHash = hashEndpointWithScope("example.com", "test-scope");
     scopeAsBigInt = BigInt(expectedScopeFromHash);
@@ -83,8 +79,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       tree,
       nameAndDob_smt,
       nameAndYob_smt,
-      nameAndDobReverse_smt,
-      nameAndYobReverse_smt,
       scopeAsBigInt.toString(),
       registerSecret,
       userIdentifierHash.toString(),
@@ -265,8 +259,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         [destChainId, ethers.zeroPadValue(user1Address, 32), userData],
       );
 
-      const attestationId = ethers.zeroPadValue(ethers.toBeHex(BigInt(AADHAAR_ATTESTATION_ID)), 32);
-
       const invalidProofData = ethers.toUtf8Bytes("short");
 
       await expect(
@@ -334,8 +326,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         tree,
         nameAndDob_smt,
         nameAndYob_smt,
-        nameAndDobReverse_smt,
-        nameAndYobReverse_smt,
         differentScopeAsBigIntString,
         registerSecret,
         "123",
@@ -501,8 +491,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
-        nameAndDobReverse_smt,
-        nameAndYobReverse_smt,
         scopeAsBigInt.toString(),
         registerSecret,
         userIdentifierHash.toString(),
@@ -578,8 +566,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
-        nameAndDobReverse_smt,
-        nameAndYobReverse_smt,
         scopeAsBigInt.toString(),
         registerSecret,
         userIdentifierHash.toString(),
@@ -899,8 +885,6 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
         imt,
         nameAndDob_smt,
         nameAndYob_smt,
-        nameAndDobReverse_smt,
-        nameAndYobReverse_smt,
         scopeAsBigInt.toString(),
         registerSecret,
         newUserIdentifierHash.toString(),

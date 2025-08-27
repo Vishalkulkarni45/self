@@ -507,11 +507,11 @@ export function getSMTs() {
   ) as typeof SMT;
   const nameAndDob_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndDobSMT.json") as typeof SMT;
   const nameAndYob_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndYobSMT.json") as typeof SMT;
-  const nameAndDobReverse_smt = importSMTFromJsonFile(
-    "../circuits/tests/consts/ofac/nameAndDobReverseAadhaarSMT.json",
+  const nameDobAadhar_smt = importSMTFromJsonFile(
+    "../circuits/tests/consts/ofac/nameAndDobAadhaarSMT.json",
   ) as typeof SMT;
-  const nameAndYobReverse_smt = importSMTFromJsonFile(
-    "../circuits/tests/consts/ofac/nameAndYobReverseAadhaarSMT.json",
+  const nameYobAadhar_smt = importSMTFromJsonFile(
+    "../circuits/tests/consts/ofac/nameAndYobAadhaarSMT.json",
   ) as typeof SMT;
   const nameAndDob_id_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndDobSMT_ID.json") as typeof SMT;
   const nameAndYob_id_smt = importSMTFromJsonFile("../circuits/tests/consts/ofac/nameAndYobSMT_ID.json") as typeof SMT;
@@ -520,10 +520,10 @@ export function getSMTs() {
     passportNo_smt,
     nameAndDob_smt,
     nameAndYob_smt,
-    nameAndDobReverse_smt,
-    nameAndYobReverse_smt,
     nameAndDob_id_smt,
     nameAndYob_id_smt,
+    nameDobAadhar_smt,
+    nameYobAadhar_smt,
   };
 }
 

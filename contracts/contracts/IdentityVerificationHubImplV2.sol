@@ -947,8 +947,8 @@ contract IdentityVerificationHubImplV2 is ImplRoot {
                 revert InvalidVcAndDiscloseProof();
             }
         } else if (attestationId == AttestationId.AADHAAR) {
-            uint256[21] memory pubSignals;
-            for (uint256 i = 0; i < 21; i++) {
+            uint256[19] memory pubSignals;
+            for (uint256 i = 0; i < 19; i++) {
                 pubSignals[i] = vcAndDiscloseProof.pubSignals[i];
             }
 
