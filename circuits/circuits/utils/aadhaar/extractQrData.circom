@@ -382,7 +382,6 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal output ph_no_last_4digits[4];
     signal output photoHash;
     signal output timestamp;
-    signal output age;
 
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255
