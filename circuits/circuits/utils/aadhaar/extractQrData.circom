@@ -84,7 +84,7 @@ template AgeExtractor() {
 
 /// @title TimestampExtractor
 /// @notice Extracts the timestamp when the QR was signed rounded to nearest hour
-/// @dev We ignore minutes and seconds to avoid identifying the user based on the precise timestamp
+/// @dev We ignore seconds to avoid identifying the user based on the precise timestamp
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @output timestamp - Unix timestamp on signature
 /// @output year - Year of the signature
