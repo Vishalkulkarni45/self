@@ -398,6 +398,14 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal output photoHash;
     signal output timestamp;
 
+    component photoEOI_range_check = Num2Bits(12);
+    photoEOI_range_check.in <== photoEOI;
+
+    component photoEOI_valid = LessThan(12);
+    photoEOI_valid.in[0] <== photoEOI;
+    photoEOI_valid.in[1] <== maxDataLength;
+    photoEOI_valid.out === 1;
+
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255
     // This is to verify `delimiterIndices` is correctly set for each extraction
