@@ -307,6 +307,18 @@ template PhotoExtractor(maxDataLength) {
     // Assert that the first byte is the delimiter (255 * position of name field)
     shiftedBytes[0] === photoPosition() * 255;
 
+    // Assert that last byte is the EOI (217)
+    component EOIDelimiterSelector = ItemAtIndex(maxDataLength);
+    EOIDelimiterSelector.in <== nDelimitedData;
+    EOIDelimiterSelector.index <== endIndex;
+    EOIDelimiterSelector.out === 217;
+
+    // Assert that last second byte is the (255)
+    component DelimiterSelector = ItemAtIndex(maxDataLength);
+    DelimiterSelector.in <== nDelimitedData;
+    DelimiterSelector.index <== endIndex - 1;
+    DelimiterSelector.out === 255;
+
     // Pack byte[] to int[] where int is field element which take up to 31 bytes
     // When packing like this the trailing 0s in each chunk would be removed as they are LSB
     // This is ok for being used in nullifiers as the behaviour would be consistent
@@ -368,6 +380,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal input data[maxDataLength];
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
+    signal input photoEOI;
 
 
     // Outputs are in ascii format
@@ -464,7 +477,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     component photoExtractor = PhotoExtractor(maxDataLength);
     photoExtractor.nDelimitedData <== nDelimitedData;
     photoExtractor.startDelimiterIndex <== delimiterIndices[photoPosition() - 1];
-    photoExtractor.endIndex <== qrDataPaddedLength - 1;
+    photoExtractor.endIndex <== photoEOI;
     photoHash <== photoExtractor.out;
 
     // Extract timestamp

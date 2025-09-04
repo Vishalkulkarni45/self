@@ -123,11 +123,22 @@ function processQRData(
 
   const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
 
+  let photoEOI = 0;
+  for (let i = 0; i < qrDataPadded.length - 1; i++) {
+    if (qrDataPadded[i + 1] === 217 && qrDataPadded[i] === 255) {
+      photoEOI = i + 1;
+    }
+  }
+  if (photoEOI === 0) {
+    throw new Error("Photo EOI not found");
+  }
+
   // Extract actual fields from QR data instead of using hardcoded values
   const extractedFields = extractQRDataFields(qrDataBytes);
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
-  const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
+  const photo = extractPhoto(Array.from(qrDataPadded), photoEOI + 1);
+
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
   return {
@@ -173,6 +184,15 @@ export function prepareAadhaarRegisterTestData(
       break;
     }
   }
+  let photoEOI = 0;
+  for (let i = delimiterIndices[17]; i < sharedData.qrDataPadded.length - 1; i++) {
+    if (sharedData.qrDataPadded[i + 1] === 217 && sharedData.qrDataPadded[i] === 255) {
+      photoEOI = i + 1;
+    }
+  }
+  if (photoEOI === 0) {
+    throw new Error("Photo EOI not found");
+  }
 
   const signatureBytes = sharedData.decodedData.slice(
     sharedData.decodedData.length - 256,
@@ -204,6 +224,7 @@ export function prepareAadhaarRegisterTestData(
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
     secret: secret,
     attestation_id: '3',
+    photoEOI: photoEOI,
   };
 
   return {

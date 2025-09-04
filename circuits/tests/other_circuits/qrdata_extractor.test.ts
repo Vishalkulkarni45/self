@@ -4,7 +4,7 @@ import { wasm as wasm_tester } from 'circom_tester';
 import { testQRData } from '../../../common/src/utils/aadhaar/assets/dataInput.js';
 import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
-import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@anon-aadhaar/core';
+import { convertBigIntToByteArray, decompressByteArray } from '@anon-aadhaar/core';
 import { assert } from 'chai';
 import { testCustomData } from '../utils/aadhaar/generateTestData.js';
 import { generateTestData} from "@selfxyz/common";
@@ -60,11 +60,21 @@ describe('Aadhaar QR Data Extractor1', function () {
         break;
       }
     }
+    let photoEOI = 0;
+    for (let i = delimiterIndices[17]; i < qrDataPadded.length - 1; i++) {
+      if (qrDataPadded[i + 1] === 217 && qrDataPadded[i] === 255) {
+        photoEOI = i + 1;
+      }
+    }
+    if (photoEOI === 0) {
+      throw new Error("Photo EOI not found");
+    }
 
     const witness: any[] = await circuit.calculateWitness({
       data: Uint8ArrayToCharArray(qrDataPadded),
       qrDataPaddedLength: qrDataPaddedLen,
       delimiterIndices: delimiterIndices,
+      photoEOI: photoEOI,
     });
 
     const out = await circuit.getOutput(witness, [
@@ -168,10 +178,21 @@ describe('Aadhaar QR Data Extractor1', function () {
       }
     }
 
+    let photoEOI = 0;
+    for (let i = delimiterIndices[17]; i < qrDataPadded.length - 1; i++) {
+      if (qrDataPadded[i + 1] === 217 && qrDataPadded[i] === 255) {
+        photoEOI = i + 1;
+      }
+    }
+    if (photoEOI === 0) {
+      throw new Error("Photo EOI not found");
+    }
+
     const witness: any[] = await circuit.calculateWitness({
       data: Uint8ArrayToCharArray(qrDataPadded),
       qrDataPaddedLength: qrDataPaddedLen,
       delimiterIndices: delimiterIndices,
+      photoEOI: photoEOI,
     });
 
     const out = await circuit.getOutput(witness, [

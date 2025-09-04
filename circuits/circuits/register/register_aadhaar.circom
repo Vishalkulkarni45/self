@@ -32,8 +32,8 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input signature[k];
 
     signal input secret;
-
     signal input attestation_id;
+    signal input photoEOI;
 
 
     // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
@@ -59,6 +59,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     qrDataExtractor.data <== qrDataPadded;
     qrDataExtractor.qrDataPaddedLength <== qrDataPaddedLength;
     qrDataExtractor.delimiterIndices <== delimiterIndices;
+    qrDataExtractor.photoEOI <== photoEOI;
 
     signal output pubKeyHash <== CustomHasher(k)(pubKey);
 
