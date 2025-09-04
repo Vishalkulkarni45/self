@@ -6,10 +6,18 @@ import { sha256Pad } from '@zk-email/helpers/dist/sha-utils.js';
 import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
 import { convertBigIntToByteArray, decompressByteArray, extractPhoto } from '@anon-aadhaar/core';
 import { assert } from 'chai';
-import { generateTestData, testCustomData } from '../utils/aadhaar/generateTestData.js';
+import { testCustomData } from '../utils/aadhaar/generateTestData.js';
+import { generateTestData} from "@selfxyz/common";
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const privateKeyPem = fs.readFileSync(
+  path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'),
+  'utf8'
+);
+
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;
@@ -136,6 +144,7 @@ describe('Aadhaar QR Data Extractor1', function () {
   it('should extract qr data from the new test data', async function () {
     this.timeout(0);
     const newTestData = generateTestData({
+      privKeyPem: privateKeyPem,
       data: testCustomData,
       gender: 'F',
       dob: '15-12-2012',
