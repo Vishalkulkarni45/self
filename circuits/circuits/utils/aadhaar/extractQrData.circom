@@ -347,6 +347,7 @@ template ValidateDelimiterIndices(maxDataLength) {
         delimiter_idx_less_than_nxt_idx[i] = LessThan(12);
         delimiter_idx_less_than_nxt_idx[i].in[0] <== delimiterIndices[i];
         delimiter_idx_less_than_nxt_idx[i].in[1] <== delimiterIndices[i + 1];
+        delimiter_idx_less_than_nxt_idx[i].out === 1;
     }
 
     range_check[17] = Num2Bits(12);
@@ -355,6 +356,7 @@ template ValidateDelimiterIndices(maxDataLength) {
     component is_last_delimiter_idx_valid = LessThan(12);
     is_last_delimiter_idx_valid.in[0] <== delimiterIndices[17];
     is_last_delimiter_idx_valid.in[1] <== maxDataLength;
+    is_last_delimiter_idx_valid.out === 1;
 
 
 }
