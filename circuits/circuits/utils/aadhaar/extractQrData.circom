@@ -332,10 +332,10 @@ template PhotoExtractor(maxDataLength) {
 
 /// @title ValidateDelimiterIndices
 /// @notice Validates the delimiter indices
-/// @param maxDataLength - Maximum length of the data
 /// @input delimiterIndices[18] - Delimiter indices
-template ValidateDelimiterIndices(maxDataLength) {
+template ValidateDelimiterIndices() {
     signal input delimiterIndices[18];
+    signal input qrDataPaddedLength;
 
     component range_check[18];
     component delimiter_idx_less_than_nxt_idx[17];
@@ -355,7 +355,7 @@ template ValidateDelimiterIndices(maxDataLength) {
 
     component is_last_delimiter_idx_valid = LessThan(12);
     is_last_delimiter_idx_valid.in[0] <== delimiterIndices[17];
-    is_last_delimiter_idx_valid.in[1] <== maxDataLength;
+    is_last_delimiter_idx_valid.in[1] <== qrDataPaddedLength;
     is_last_delimiter_idx_valid.out === 1;
 
 
@@ -403,7 +403,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
 
     component photoEOI_valid = LessThan(12);
     photoEOI_valid.in[0] <== photoEOI;
-    photoEOI_valid.in[1] <== maxDataLength;
+    photoEOI_valid.in[1] <== qrDataPaddedLength;
     photoEOI_valid.out === 1;
 
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
@@ -416,8 +416,9 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal n255Filter[maxDataLength + 1];
     n255Filter[0] <== 0;
 
-    component validateDelimiterIndices = ValidateDelimiterIndices(maxDataLength);
+    component validateDelimiterIndices = ValidateDelimiterIndices();
     validateDelimiterIndices.delimiterIndices <== delimiterIndices;
+    validateDelimiterIndices.qrDataPaddedLength <== qrDataPaddedLength;
 
 
     for (var i = 0; i < maxDataLength; i++) {
