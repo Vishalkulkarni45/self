@@ -103,8 +103,28 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
         siblings
     );
 
+    //convert lowercase to uppercase
+    //value >= 97 AND value <= 122
+    component is_gt_97[nameMaxLength()];
+    component is_lt_122[nameMaxLength()];
+    signal uppercase_name[nameMaxLength()];
+    signal is_lowercase[nameMaxLength()];
 
-    signal name_packed[2] <== PackBytes(nameMaxLength())(name);
+    for (var i = 0; i < nameMaxLength(); i++){
+        is_gt_97[i] = GreaterEqThan(8);
+        is_gt_97[i].in[0] <== name[i];
+        is_gt_97[i].in[1] <== 97;
+
+        is_lt_122[i] = LessEqThan(8);
+        is_lt_122[i].in[0] <== name[i];
+        is_lt_122[i].in[1] <== 122;
+
+        is_lowercase[i] <== is_gt_97[i].out * is_lt_122[i].out;
+
+        uppercase_name[i] <== name[i] - 32 * is_lowercase[i];
+    }
+
+    signal name_packed[2] <== PackBytes(nameMaxLength())(uppercase_name);
     signal yob_integer <== DigitBytesToInt(4)(yob);
     signal mob_integer <== DigitBytesToInt(2)(mob);
     signal dob_integer <== DigitBytesToInt(2)(dob);
@@ -197,6 +217,8 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
 
     var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3);
     signal output forbidden_countries_list_packed[chunkLength] <== country_not_in_list_circuit.forbidden_countries_list_packed;
+
+    attestation_id === 3;
 }
 
 component main { public
