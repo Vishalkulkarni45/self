@@ -72,16 +72,16 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
     for (var i = 0; i < nameMaxLength(); i++){
         is_gt_97[i] = GreaterEqThan(8);
-        is_gt_97[i].in[0] <== name[i];
+        is_gt_97[i].in[0] <== qrDataExtractor.name[i];
         is_gt_97[i].in[1] <== 97;
 
         is_lt_122[i] = LessEqThan(8);
-        is_lt_122[i].in[0] <== name[i];
+        is_lt_122[i].in[0] <== qrDataExtractor.name[i];
         is_lt_122[i].in[1] <== 122;
 
         is_lowercase[i] <== is_gt_97[i].out * is_lt_122[i].out;
 
-        uppercase_name[i] <== name[i] - 32 * is_lowercase[i];
+        uppercase_name[i] <== qrDataExtractor.name[i] - 32 * is_lowercase[i];
     }
 
     signal output pubKeyHash <== CustomHasher(k)(pubKey);
