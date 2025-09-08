@@ -8,6 +8,7 @@ include "../utils/passport/customHashers.circom";
 include "@openpassport/zk-email-circuits/utils/array.circom";
 include "@openpassport/zk-email-circuits/lib/sha.circom";
 
+
 /// @title: AadhaarRegister
 /// @notice Main circuit — verifies the integrity of the aadhaar data, the signature, and generates commitment and nullifier
 /// @param n RSA pubic key size per chunk
@@ -62,9 +63,54 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     qrDataExtractor.delimiterIndices <== delimiterIndices;
     qrDataExtractor.photoEOI <== photoEOI;
 
+    //convert name lowercase to uppercase
+    //value >= 97 AND value <= 122
+    component is_gt_97[nameMaxLength()];
+    component is_lt_122[nameMaxLength()];
+    signal uppercase_name[nameMaxLength()];
+    signal is_lowercase[nameMaxLength()];
+
+    for (var i = 0; i < nameMaxLength(); i++){
+        is_gt_97[i] = GreaterEqThan(8);
+        is_gt_97[i].in[0] <== name[i];
+        is_gt_97[i].in[1] <== 97;
+
+        is_lt_122[i] = LessEqThan(8);
+        is_lt_122[i].in[0] <== name[i];
+        is_lt_122[i].in[1] <== 122;
+
+        is_lowercase[i] <== is_gt_97[i].out * is_lt_122[i].out;
+
+        uppercase_name[i] <== name[i] - 32 * is_lowercase[i];
+    }
+
     signal output pubKeyHash <== CustomHasher(k)(pubKey);
 
-    // Generate nullifier
+    // Hash personal info
+    component personalInfoHasher = PackBytesAndPoseidon(75);
+    personalInfoHasher.in[0] <== qrDataExtractor.gender;
+
+    for (var i = 0; i < 4 ; i++){
+        personalInfoHasher.in[i + 1] <== qrDataExtractor.yob[i];
+    }
+
+    for (var i = 0; i < 2 ; i++){
+        personalInfoHasher.in[i + 5] <== qrDataExtractor.mob[i];
+    }
+
+    for (var i = 0; i < 2 ; i++){
+        personalInfoHasher.in[i + 7] <== qrDataExtractor.dob[i];
+    }
+
+    for (var i = 0; i < 62 ; i++){
+        personalInfoHasher.in[i + 9] <== qrDataExtractor.name[i];
+    }
+
+    for (var i = 0; i < 4 ; i++){
+        personalInfoHasher.in[i + 71] <== qrDataExtractor.aadhaar_last_4digits[i];
+    }
+
+    //Calculate nullifier
     component nullifierHasher = PackBytesAndPoseidon(75);
     nullifierHasher.in[0] <== qrDataExtractor.gender;
 
@@ -81,7 +127,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     }
 
     for (var i = 0; i < 62 ; i++){
-        nullifierHasher.in[i + 9] <== qrDataExtractor.name[i];
+        nullifierHasher.in[i + 9] <== uppercase_name[i];
     }
 
     for (var i = 0; i < 4 ; i++){
@@ -114,7 +160,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
     commitmentHasher.inputs[0] <== secret;
     commitmentHasher.inputs[1] <== qrDataHash;
-    commitmentHasher.inputs[2] <== nullifier;
+    commitmentHasher.inputs[2] <== personalInfoHasher.out;
     commitmentHasher.inputs[3] <== packedCommitment.out;
     commitmentHasher.inputs[4] <== qrDataExtractor.photoHash;
 

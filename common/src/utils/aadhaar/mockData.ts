@@ -35,13 +35,21 @@ function computePaddedName(name: string): number[] {
     .map((char) => char.charCodeAt(0));
 }
 
+function computeUppercasePaddedName(name: string): number[] {
+  return name
+    .toUpperCase()
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+}
+
 // Helper function to compute nullifier
-function computeNullifier(
+function calPersonalInforNullifierHash(
   extractedFields: ReturnType<typeof extractQRDataFields>,
   paddedName: number[]
 ): bigint {
   const genderAscii = stringToAsciiArray(extractedFields.gender)[0];
-  const nullifierArgs = [
+  const personalInfoHashArgs = [
     genderAscii,
     ...stringToAsciiArray(extractedFields.yob),
     ...stringToAsciiArray(extractedFields.mob),
@@ -49,7 +57,7 @@ function computeNullifier(
     ...paddedName,
     ...stringToAsciiArray(extractedFields.aadhaarLast4Digits),
   ];
-  return BigInt(packBytesAndPoseidon(nullifierArgs));
+  return BigInt(packBytesAndPoseidon(personalInfoHashArgs));
 }
 
 // Helper function to compute packed commitment
@@ -205,16 +213,19 @@ export function prepareAadhaarRegisterTestData(
   const modulusHex = publicKey.n.toString(16);
   const pubKey = BigInt('0x' + modulusHex);
 
-  const paddedName = computePaddedName(sharedData.extractedFields.name);
-  const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
+  const uppercaseName = computeUppercasePaddedName(sharedData.extractedFields.name);
+  const personalInfoHash = calPersonalInforNullifierHash(sharedData.extractedFields, uppercaseName);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
     BigInt(secret),
     BigInt(sharedData.qrHash),
-    nullifier,
+    personalInfoHash,
     packedCommitment,
     BigInt(sharedData.photoHash)
   );
+
+  const paddedName = computePaddedName(sharedData.extractedFields.name);
+  const nullifier = calPersonalInforNullifierHash(sharedData.extractedFields, paddedName);
 
   const inputs = {
     qrDataPadded: Uint8ArrayToCharArray(sharedData.qrDataPadded),
@@ -266,17 +277,20 @@ export function prepareAadhaarDiscloseTestData(
     sharedData.extractedFields.yob
   );
 
-  const paddedName = computePaddedName(sharedData.extractedFields.name);
+  const uppercaseName = computeUppercasePaddedName(sharedData.extractedFields.name);
   const genderAscii = stringToAsciiArray(sharedData.extractedFields.gender)[0];
-  const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
+  const personalInfoHash = calPersonalInforNullifierHash(sharedData.extractedFields, uppercaseName);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
     BigInt(secret),
     BigInt(sharedData.qrHash),
-    nullifier,
+    personalInfoHash,
     packedCommitment,
     BigInt(sharedData.photoHash)
   );
+
+  const paddedName = computePaddedName(sharedData.extractedFields.name);
+  const nullifier = calPersonalInforNullifierHash(sharedData.extractedFields, paddedName);
 
   if (updateTree) {
     merkletree.insert(BigInt(commitment));
