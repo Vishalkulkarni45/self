@@ -287,16 +287,21 @@ export function prepareAadhaarRegisterData(
   const modulusHex = publicKey.n.toString(16);
   const pubKey = BigInt('0x' + modulusHex);
 
-  const paddedName = computePaddedName(sharedData.extractedFields.name);
-  const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
+  const uppercaseName = computeUppercasePaddedName(sharedData.extractedFields.name);
+  const personalInfoHash = calPersonalInforNullifierHash(sharedData.extractedFields, uppercaseName);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
     BigInt(secret),
     BigInt(sharedData.qrHash),
-    nullifier,
+    personalInfoHash,
     packedCommitment,
     BigInt(sharedData.photoHash)
   );
+
+
+  const paddedName = computePaddedName(sharedData.extractedFields.name);
+  const nullifier = calPersonalInforNullifierHash(sharedData.extractedFields, paddedName);
+  
 
   const inputs = {
     qrDataPadded: Uint8ArrayToCharArray(sharedData.qrDataPadded),
