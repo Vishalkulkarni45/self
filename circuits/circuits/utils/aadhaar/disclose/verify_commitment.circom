@@ -35,6 +35,25 @@ template VERIFY_COMMITMENT(nLevels) {
     signal input siblings[nLevels];
 
 
+    component is_gt_97[nameMaxLength()];
+    component is_lt_122[nameMaxLength()];
+    signal uppercase_name[nameMaxLength()];
+    signal is_lowercase[nameMaxLength()];
+
+    for (var i = 0; i < nameMaxLength(); i++){
+        is_gt_97[i] = GreaterEqThan(8);
+        is_gt_97[i].in[0] <== name[i];
+        is_gt_97[i].in[1] <== 97;
+
+        is_lt_122[i] = LessEqThan(8);
+        is_lt_122[i].in[0] <== name[i];
+        is_lt_122[i].in[1] <== 122;
+
+        is_lowercase[i] <== is_gt_97[i].out * is_lt_122[i].out;
+
+        uppercase_name[i] <== name[i] - 32 * is_lowercase[i];
+    }
+
     component nullifierHasher = PackBytesAndPoseidon(75);
     nullifierHasher.in[0] <== gender;
 
@@ -51,7 +70,7 @@ template VERIFY_COMMITMENT(nLevels) {
     }
 
     for (var i = 0; i < 62 ; i++){
-        nullifierHasher.in[i + 9] <== name[i];
+        nullifierHasher.in[i + 9] <== uppercase_name[i];
     }
 
     for (var i = 0; i < 4 ; i++){
@@ -60,7 +79,7 @@ template VERIFY_COMMITMENT(nLevels) {
 
     signal nullifier <== nullifierHasher.out;
 
-    component packedCommitment = PackBytesAndPoseidon(42);
+    component packedCommitment = PackBytesAndPoseidon(42 + 62);
     packedCommitment.in[0] <== attestation_id;
 
     for (var i = 0; i < 6 ; i++){
@@ -73,6 +92,10 @@ template VERIFY_COMMITMENT(nLevels) {
 
     for (var i = 0; i < 4 ; i++){
         packedCommitment.in[i + 38] <== ph_no_last_4digits[i];
+    }
+
+    for (var i = 0; i < 62 ; i++){
+        packedCommitment.in[i + 42] <== name[i];
     }
 
     component commitmentHasher = Poseidon(5);

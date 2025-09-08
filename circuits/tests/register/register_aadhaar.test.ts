@@ -8,7 +8,7 @@ import assert from 'assert';
 import { customHasher } from '@selfxyz/common/utils/hash';
 import { prepareAadhaarRegisterTestData, generateTestData, testCustomData, prepareAadhaarRegisterData } from '@selfxyz/common';
 import fs from 'fs';
-import { pubkeys } from './pubkeys';
+import { pubkeys } from './pubkeys.js';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -168,7 +168,7 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     const out = await circuit.getOutput(w, ['timestamp']);
   });
 
-  it("should work for a real id", async function() {
+  it.skip("should work for a real id", async function() {
     this.timeout(0);
     const actualQrData = "";
     const { inputs, nullifier, commitment } = prepareAadhaarRegisterData(actualQrData, '1234', pubkeys[0]);

@@ -86,30 +86,6 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
 
     signal output pubKeyHash <== CustomHasher(k)(pubKey);
 
-    // Hash personal info
-    component personalInfoHasher = PackBytesAndPoseidon(75);
-    personalInfoHasher.in[0] <== qrDataExtractor.gender;
-
-    for (var i = 0; i < 4 ; i++){
-        personalInfoHasher.in[i + 1] <== qrDataExtractor.yob[i];
-    }
-
-    for (var i = 0; i < 2 ; i++){
-        personalInfoHasher.in[i + 5] <== qrDataExtractor.mob[i];
-    }
-
-    for (var i = 0; i < 2 ; i++){
-        personalInfoHasher.in[i + 7] <== qrDataExtractor.dob[i];
-    }
-
-    for (var i = 0; i < 62 ; i++){
-        personalInfoHasher.in[i + 9] <== qrDataExtractor.name[i];
-    }
-
-    for (var i = 0; i < 4 ; i++){
-        personalInfoHasher.in[i + 71] <== qrDataExtractor.aadhaar_last_4digits[i];
-    }
-
     //Calculate nullifier
     component nullifierHasher = PackBytesAndPoseidon(75);
     nullifierHasher.in[0] <== qrDataExtractor.gender;
@@ -140,9 +116,8 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
     // Generate commitment
-    component packedCommitment = PackBytesAndPoseidon(42);
+    component packedCommitment = PackBytesAndPoseidon(42 + 62);
      packedCommitment.in[0] <== attestation_id;
-
 
     for (var i = 0; i < 6 ; i++){
         packedCommitment.in[i + 1] <== qrDataExtractor.pincode[i];
@@ -156,11 +131,15 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
         packedCommitment.in[i + 38] <== qrDataExtractor.ph_no_last_4digits[i];
     }
 
+    for (var i = 0; i < 62 ; i++){
+        packedCommitment.in[i + 42] <== qrDataExtractor.name[i];
+    }
+
     component commitmentHasher = Poseidon(5);
 
     commitmentHasher.inputs[0] <== secret;
     commitmentHasher.inputs[1] <== qrDataHash;
-    commitmentHasher.inputs[2] <== personalInfoHasher.out;
+    commitmentHasher.inputs[2] <== nullifierHasher.out;
     commitmentHasher.inputs[3] <== packedCommitment.out;
     commitmentHasher.inputs[4] <== qrDataExtractor.photoHash;
 
