@@ -335,9 +335,9 @@ template PhotoExtractor(maxDataLength) {
 /// @input delimiterIndices[18] - Delimiter indices
 template ValidateDelimiterIndices() {
     signal input delimiterIndices[18];
-    signal input qrDataPaddedLength;
+    signal input photoEOI;
 
-    component range_check[18];
+    component range_check[19];
     component delimiter_idx_less_than_nxt_idx[17];
 
     for(var i = 0; i < 17; i++) {
@@ -353,9 +353,12 @@ template ValidateDelimiterIndices() {
     range_check[17] = Num2Bits(12);
     range_check[17].in <== delimiterIndices[17];
 
+    range_check[18] = Num2Bits(12);
+    range_check[18].in <== photoEOI;
+
     component is_last_delimiter_idx_valid = LessThan(12);
     is_last_delimiter_idx_valid.in[0] <== delimiterIndices[17];
-    is_last_delimiter_idx_valid.in[1] <== qrDataPaddedLength;
+    is_last_delimiter_idx_valid.in[1] <== photoEOI;
     is_last_delimiter_idx_valid.out === 1;
 
 
@@ -398,14 +401,6 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal output photoHash;
     signal output timestamp;
 
-    component photoEOI_range_check = Num2Bits(12);
-    photoEOI_range_check.in <== photoEOI;
-
-    component photoEOI_valid = LessThan(12);
-    photoEOI_valid.in[0] <== photoEOI;
-    photoEOI_valid.in[1] <== qrDataPaddedLength;
-    photoEOI_valid.out === 1;
-
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255
     // This is to verify `delimiterIndices` is correctly set for each extraction
@@ -418,7 +413,13 @@ template EXTRACT_QR_DATA(maxDataLength) {
 
     component validateDelimiterIndices = ValidateDelimiterIndices();
     validateDelimiterIndices.delimiterIndices <== delimiterIndices;
-    validateDelimiterIndices.qrDataPaddedLength <== qrDataPaddedLength;
+    validateDelimiterIndices.photoEOI <== photoEOI;
+
+    component photoEOI_valid = LessThan(12);
+    photoEOI_valid.in[0] <== photoEOI;
+    photoEOI_valid.in[1] <== qrDataPaddedLength;
+    photoEOI_valid.out === 1;
+
 
 
     for (var i = 0; i < maxDataLength; i++) {
