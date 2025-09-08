@@ -219,21 +219,38 @@ template PhnoLast4DigitCodeExtractor(maxDataLength) {
 
     signal output out[4];
 
-    var pinCodeMaxLength = 4;
-    var byteLength = pinCodeMaxLength + 2; // 2 delimiters
+    var phnoMaxLength = 10;
+    var byteLength = phnoMaxLength + 2; // 2 delimiters
+
+    signal length <== endDelimiterIndex - startDelimiterIndex + 1;
 
     component subArraySelector = SelectSubArray(maxDataLength, byteLength);
     subArraySelector.in <== nDelimitedData;
     subArraySelector.startIndex <== startDelimiterIndex;
-    subArraySelector.length <== endDelimiterIndex - startDelimiterIndex + 1;
+    subArraySelector.length <== length;
 
     signal shiftedBytes[byteLength] <== subArraySelector.out;
 
-    // Assert delimiters around the data is correct
-    shiftedBytes[0] === phnoPosition() * 255;
-    shiftedBytes[5] === (phnoPosition() + 1) * 255;
+    component isLessThan7 = LessThan(4);
+    isLessThan7.in[0] <== length;
+    isLessThan7.in[1] <== 7;
 
-    out <== [shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]];
+     shiftedBytes[0] ===  phnoPosition() * 255;
+     // Assert delimiters around the data is correct for phno length 4
+    isLessThan7.out * shiftedBytes[5] === isLessThan7.out * (phnoPosition() + 1) * 255;
+
+    signal isNotLessThan7 <== 1 - isLessThan7.out;
+
+    // Assert delimiters around the data is correct for phno length 10
+    isNotLessThan7 * shiftedBytes[11] === isNotLessThan7 * (phnoPosition() + 1) * 255;
+
+    signal out4[4] <== [shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]];
+    signal out10[4] <== [shiftedBytes[7], shiftedBytes[8], shiftedBytes[9], shiftedBytes[10]];
+
+    for (var i = 0; i < 4; i ++) {
+        out[i] <== isLessThan7.out * out4[i] + out10[i];
+    }
+
 }
 
 /// @title ExtractData
