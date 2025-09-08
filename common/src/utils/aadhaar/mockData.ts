@@ -223,7 +223,6 @@ export function prepareAadhaarRegisterTestData(
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
     secret: secret,
-    attestation_id: '3',
     photoEOI: photoEOI,
   };
 

@@ -32,8 +32,9 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input signature[k];
 
     signal input secret;
-    signal input attestation_id;
     signal input photoEOI;
+
+    signal attestation_id <== 3;
 
 
     // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
