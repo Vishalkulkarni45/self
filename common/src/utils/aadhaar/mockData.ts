@@ -25,7 +25,6 @@ import {
 import { COMMITMENT_TREE_DEPTH } from '../../constants/constants.js';
 import { extractQRDataFields } from './utils.js';
 
-let QRData: string = testQRData.testQRData;
 
 // Helper function to compute padded name
 function computePaddedName(name: string): number[] {
@@ -109,7 +108,7 @@ function processQRData(
   const finalPincode = pincode ?? '110051';
   const finalState = state ?? 'Delhi';
 
-  let qrDataBytes: any;
+  let QRData: string;
   if (name || dateOfBirth || gender || pincode || state) {
     const newTestData = generateTestData({
       privKeyPem,
@@ -121,11 +120,18 @@ function processQRData(
       state: finalState,
       timestamp: timestamp,
     });
-    qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+    QRData = newTestData.testQRData;
   } else {
-    qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
+    QRData = testQRData.testQRData;
   }
 
+  return processQRDataSimple(QRData);
+}
+
+function processQRDataSimple(
+  qrData: string,
+) {
+  const qrDataBytes = convertBigIntToByteArray(BigInt(qrData));
   const decodedData = decompressByteArray(qrDataBytes);
   const signedData = decodedData.slice(0, decodedData.length - 256);
 
@@ -234,6 +240,72 @@ export function prepareAadhaarRegisterTestData(
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
     secret: secret,
+    photoEOI: photoEOI,
+  };
+
+  return {
+    inputs,
+    nullifier,
+    commitment,
+  };
+}
+
+export function prepareAadhaarRegisterData(
+  qrData: string,
+  secret: string,
+  certPem: string,
+) {
+  const sharedData = processQRDataSimple(qrData);
+  const delimiterIndices: number[] = [];
+  for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
+    if (sharedData.qrDataPadded[i] === 255) {
+      delimiterIndices.push(i);
+    }
+    if (delimiterIndices.length === 18) {
+      break;
+    }
+  }
+  let photoEOI = 0;
+  for (let i = delimiterIndices[17]; i < sharedData.qrDataPadded.length - 1; i++) {
+    if (sharedData.qrDataPadded[i + 1] === 217 && sharedData.qrDataPadded[i] === 255) {
+      photoEOI = i + 1;
+    }
+  }
+  if (photoEOI === 0) {
+    throw new Error("Photo EOI not found");
+  }
+
+  const signatureBytes = sharedData.decodedData.slice(
+    sharedData.decodedData.length - 256,
+    sharedData.decodedData.length
+  );
+  const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
+
+  const certificate = forge.pki.certificateFromPem(certPem);
+  const publicKey = certificate.publicKey as forge.pki.rsa.PublicKey;
+
+  const modulusHex = publicKey.n.toString(16);
+  const pubKey = BigInt('0x' + modulusHex);
+
+  const paddedName = computePaddedName(sharedData.extractedFields.name);
+  const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
+  const packedCommitment = computePackedCommitment(sharedData.extractedFields);
+  const commitment = computeCommitment(
+    BigInt(secret),
+    BigInt(sharedData.qrHash),
+    nullifier,
+    packedCommitment,
+    BigInt(sharedData.photoHash)
+  );
+
+  const inputs = {
+    qrDataPadded: Uint8ArrayToCharArray(sharedData.qrDataPadded),
+    qrDataPaddedLength: sharedData.qrDataPaddedLen,
+    delimiterIndices: delimiterIndices,
+    signature: splitToWords(signature, BigInt(121), BigInt(17)),
+    pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
+    secret: secret,
+    attestation_id: '3',
     photoEOI: photoEOI,
   };
 

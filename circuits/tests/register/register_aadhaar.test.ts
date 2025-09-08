@@ -6,8 +6,9 @@ import { bufferToHex, Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binar
 import { convertBigIntToByteArray, decompressByteArray, splitToWords } from '@anon-aadhaar/core';
 import assert from 'assert';
 import { customHasher } from '@selfxyz/common/utils/hash';
-import { prepareAadhaarRegisterTestData, generateTestData, testCustomData } from '@selfxyz/common';
+import { prepareAadhaarRegisterTestData, generateTestData, testCustomData, prepareAadhaarRegisterData } from '@selfxyz/common';
 import fs from 'fs';
+import { pubkeys } from './pubkeys';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -165,5 +166,17 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     await circuit.checkConstraints(w);
 
     const out = await circuit.getOutput(w, ['timestamp']);
+  });
+
+  it("should work for a real id", async function() {
+    this.timeout(0);
+    const actualQrData = "";
+    const { inputs, nullifier, commitment } = prepareAadhaarRegisterData(actualQrData, '1234', pubkeys[0]);
+    const w = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(w);
+
+    const out = await circuit.getOutput(w, ['nullifier', 'commitment']);
+    assert(BigInt(out.nullifier) === BigInt(nullifier));
+    assert(BigInt(out.commitment) === BigInt(commitment));
   });
 });
