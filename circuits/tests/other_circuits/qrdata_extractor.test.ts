@@ -7,7 +7,7 @@ import { Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binary-format.js';
 import { convertBigIntToByteArray, decompressByteArray } from '@anon-aadhaar/core';
 import { assert } from 'chai';
 import { testCustomData } from '../utils/aadhaar/generateTestData.js';
-import { generateTestData} from "@selfxyz/common";
+import { generateTestData } from '@selfxyz/common';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
@@ -17,7 +17,6 @@ const privateKeyPem = fs.readFileSync(
   path.join(__dirname, '../../../node_modules/anon-aadhaar-circuits/assets/testPrivateKey.pem'),
   'utf8'
 );
-
 
 describe('Aadhaar QR Data Extractor1', function () {
   let circuit: any;
@@ -67,7 +66,7 @@ describe('Aadhaar QR Data Extractor1', function () {
       }
     }
     if (photoEOI === 0) {
-      throw new Error("Photo EOI not found");
+      throw new Error('Photo EOI not found');
     }
 
     const witness: any[] = await circuit.calculateWitness({
@@ -185,7 +184,7 @@ describe('Aadhaar QR Data Extractor1', function () {
       }
     }
     if (photoEOI === 0) {
-      throw new Error("Photo EOI not found");
+      throw new Error('Photo EOI not found');
     }
 
     const witness: any[] = await circuit.calculateWitness({

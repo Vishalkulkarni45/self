@@ -92,7 +92,9 @@ export async function generateRegisterProof(secret: string, passportData: Passpo
   );
 
   // Verify the proof
-  const vKey = JSON.parse(readFileSync(registerCircuits["register_sha256_sha256_sha256_rsa_65537_4096"].vkey, "utf8"));
+  const vKey = JSON.parse(
+    fs.readFileSync(registerCircuits["register_sha256_sha256_sha256_rsa_65537_4096"].vkey, "utf8"),
+  );
   const isValid = await groth16.verify(vKey, registerProof.publicSignals, registerProof.proof);
   if (!isValid) {
     throw new Error("Generated register proof verification failed");
@@ -143,7 +145,7 @@ export async function generateRegisterIdProof(
   );
 
   // Verify the proof
-  const vKey = JSON.parse(readFileSync(circuitArtifacts[artifactKey].vkey, "utf8"));
+  const vKey = JSON.parse(fs.readFileSync(circuitArtifacts[artifactKey].vkey, "utf8"));
   const isValid = await groth16.verify(vKey, registerProof.publicSignals, registerProof.proof);
   if (!isValid) {
     throw new Error("Generated register ID proof verification failed");
@@ -193,7 +195,7 @@ export async function generateDscProof(passportData: PassportData): Promise<DscC
   );
 
   // Verify the proof
-  const vKey = JSON.parse(readFileSync(dscCircuits["dsc_sha256_rsa_65537_4096"].vkey, "utf8"));
+  const vKey = JSON.parse(fs.readFileSync(dscCircuits["dsc_sha256_rsa_65537_4096"].vkey, "utf8"));
   const isValid = await groth16.verify(vKey, dscProof.publicSignals, dscProof.proof);
   if (!isValid) {
     throw new Error("Generated DSC proof verification failed");
@@ -256,7 +258,7 @@ export async function generateVcAndDiscloseRawProof(
   );
 
   // Verify the proof
-  const vKey = JSON.parse(readFileSync(vcAndDiscloseCircuits["vc_and_disclose"].vkey, "utf8"));
+  const vKey = JSON.parse(fs.readFileSync(vcAndDiscloseCircuits["vc_and_disclose"].vkey, "utf8"));
   const isValid = await groth16.verify(vKey, vcAndDiscloseProof.publicSignals, vcAndDiscloseProof.proof);
   if (!isValid) {
     throw new Error("Generated VC and Disclose proof verification failed");
@@ -440,7 +442,7 @@ export async function generateVcAndDiscloseIdProof(
   );
 
   // Verify the proof
-  const vKey = JSON.parse(readFileSync(vcAndDiscloseIdCircuits["vc_and_disclose_id"].vkey, "utf8"));
+  const vKey = JSON.parse(fs.readFileSync(vcAndDiscloseIdCircuits["vc_and_disclose_id"].vkey, "utf8"));
   const isValid = await groth16.verify(vKey, vcAndDiscloseProof.publicSignals, vcAndDiscloseProof.proof);
   if (!isValid) {
     throw new Error("Generated VC and Disclose ID proof verification failed");
@@ -527,7 +529,7 @@ export function getSMTs() {
 
 function importSMTFromJsonFile(filePath?: string): typeof SMT | null {
   try {
-    const jsonString = readFileSync(path.resolve(process.cwd(), filePath as string), "utf8");
+    const jsonString = fs.readFileSync(path.resolve(process.cwd(), filePath as string), "utf8");
 
     const data = JSON.parse(jsonString);
 

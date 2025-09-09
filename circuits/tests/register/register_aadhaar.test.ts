@@ -6,7 +6,12 @@ import { bufferToHex, Uint8ArrayToCharArray } from '@zk-email/helpers/dist/binar
 import { convertBigIntToByteArray, decompressByteArray, splitToWords } from '@anon-aadhaar/core';
 import assert from 'assert';
 import { customHasher } from '@selfxyz/common/utils/hash';
-import { prepareAadhaarRegisterTestData, generateTestData, testCustomData, prepareAadhaarRegisterData } from '@selfxyz/common';
+import {
+  prepareAadhaarRegisterTestData,
+  generateTestData,
+  testCustomData,
+  prepareAadhaarRegisterData,
+} from '@selfxyz/common';
 import fs from 'fs';
 import { pubkeys } from './pubkeys.js';
 
@@ -168,10 +173,14 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     const out = await circuit.getOutput(w, ['timestamp']);
   });
 
-  it.skip("should work for a real id", async function() {
+  it.skip('should work for a real id', async function () {
     this.timeout(0);
-    const actualQrData = "";
-    const { inputs, nullifier, commitment } = await prepareAadhaarRegisterData(actualQrData, '1234', pubkeys);
+    const actualQrData = '';
+    const { inputs, nullifier, commitment } = await prepareAadhaarRegisterData(
+      actualQrData,
+      '1234',
+      pubkeys
+    );
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 

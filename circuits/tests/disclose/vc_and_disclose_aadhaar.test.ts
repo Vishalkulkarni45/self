@@ -205,11 +205,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     );
 
     // Use createSelector to generate selector for revealing OFAC checks
-    const selector = createSelector([
-      'OFAC_NAME_DOB_CHECK',
-      'OFAC_NAME_YOB_CHECK',
-
-    ]);
+    const selector = createSelector(['OFAC_NAME_DOB_CHECK', 'OFAC_NAME_YOB_CHECK']);
     inputs.selector = formatInput(selector)[0];
     inputs.minimumAge = ['100'];
 
@@ -270,14 +266,8 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
     const revealedDataUnpacked = unpackReveal(revealedData_packed, 'id');
 
     // Use extractField to get field values
-    const ofacNameDobCheck = extractField(
-      revealedDataUnpacked,
-      'OFAC_NAME_DOB_CHECK'
-    );
-    const ofacNameYobCheck = extractField(
-      revealedDataUnpacked,
-      'OFAC_NAME_YOB_CHECK'
-    );
+    const ofacNameDobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_DOB_CHECK');
+    const ofacNameYobCheck = extractField(revealedDataUnpacked, 'OFAC_NAME_YOB_CHECK');
     const minimumAge = extractField(revealedDataUnpacked, 'MINIMUM_AGE_VALID');
 
     // Verify non-revealed fields are null

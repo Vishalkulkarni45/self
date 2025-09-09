@@ -25,7 +25,6 @@ import {
 import { COMMITMENT_TREE_DEPTH } from '../../constants/constants.js';
 import { extractQRDataFields } from './utils.js';
 
-
 // Helper function to compute padded name
 function computePaddedName(name: string): number[] {
   return name
@@ -43,9 +42,7 @@ function computeUppercasePaddedName(name: string): number[] {
 }
 
 // Helper function to compute nullifier
-function nullifierHash(
-  extractedFields: ReturnType<typeof extractQRDataFields>,
-): bigint {
+function nullifierHash(extractedFields: ReturnType<typeof extractQRDataFields>): bigint {
   const genderAscii = stringToAsciiArray(extractedFields.gender)[0];
   const personalInfoHashArgs = [
     genderAscii,
@@ -128,9 +125,7 @@ function processQRData(
   return processQRDataSimple(QRData);
 }
 
-function processQRDataSimple(
-  qrData: string,
-) {
+function processQRDataSimple(qrData: string) {
   const qrDataBytes = convertBigIntToByteArray(BigInt(qrData));
   const decodedData = decompressByteArray(qrDataBytes);
   const signedData = decodedData.slice(0, decodedData.length - 256);
@@ -144,7 +139,7 @@ function processQRDataSimple(
     }
   }
   if (photoEOI === 0) {
-    throw new Error("Photo EOI not found");
+    throw new Error('Photo EOI not found');
   }
 
   // Extract actual fields from QR data instead of using hardcoded values
@@ -205,7 +200,7 @@ export function prepareAadhaarRegisterTestData(
     }
   }
   if (photoEOI === 0) {
-    throw new Error("Photo EOI not found");
+    throw new Error('Photo EOI not found');
   }
 
   const signatureBytes = sharedData.decodedData.slice(
@@ -246,11 +241,7 @@ export function prepareAadhaarRegisterTestData(
   };
 }
 
-export async function prepareAadhaarRegisterData(
-  qrData: string,
-  secret: string,
-  certs: string[],
-) {
+export async function prepareAadhaarRegisterData(qrData: string, secret: string, certs: string[]) {
   const sharedData = processQRDataSimple(qrData);
   const delimiterIndices: number[] = [];
   for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
@@ -268,7 +259,7 @@ export async function prepareAadhaarRegisterData(
     }
   }
   if (photoEOI === 0) {
-    throw new Error("Photo EOI not found");
+    throw new Error('Photo EOI not found');
   }
 
   const signatureBytes = sharedData.decodedData.slice(
@@ -278,25 +269,27 @@ export async function prepareAadhaarRegisterData(
   const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
 
   //do promise.all for all certs and pick the one that is valid
-  const certificates = await Promise.all(certs.map(async (cert) => {
-    const certificate = forge.pki.certificateFromPem(cert);
-    const publicKey = certificate.publicKey as forge.pki.rsa.PublicKey;
+  const certificates = await Promise.all(
+    certs.map(async (cert) => {
+      const certificate = forge.pki.certificateFromPem(cert);
+      const publicKey = certificate.publicKey as forge.pki.rsa.PublicKey;
 
-    try {
-      const md = forge.md.sha256.create();
-      md.update(forge.util.binary.raw.encode(sharedData.signedData));
+      try {
+        const md = forge.md.sha256.create();
+        md.update(forge.util.binary.raw.encode(sharedData.signedData));
 
-      const isValid = publicKey.verify(md.digest().getBytes(), signatureBytes);
-      return isValid;
-    } catch (error) {
-      return false;
-    }
-  }));
+        const isValid = publicKey.verify(md.digest().getBytes(), signatureBytes);
+        return isValid;
+      } catch (error) {
+        return false;
+      }
+    })
+  );
 
   //find the valid cert
   const validCert = certificates.indexOf(true);
   if (validCert === -1) {
-    throw new Error("No valid certificate found");
+    throw new Error('No valid certificate found');
   }
   const certPem = certs[validCert];
   const cert = forge.pki.certificateFromPem(certPem);
@@ -410,7 +403,6 @@ export function prepareAadhaarDiscloseTestData(
     closestleaf: ofac_name_yob_smt_leaf_key,
     siblings: ofac_name_yob_smt_siblings,
   } = generateSMTProof(nameAndYob_smt, nameyob_leaf);
-
 
   const inputs = {
     attestation_id: '3',

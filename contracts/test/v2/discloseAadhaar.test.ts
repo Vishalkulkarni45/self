@@ -21,7 +21,6 @@ const privateKeyPem = fs.readFileSync(
   "utf8",
 );
 
-
 describe("Self Verification Flow V2 - Aadhaar", () => {
   let deployedActors: DeployedActorsV2;
   let snapshotId: string;

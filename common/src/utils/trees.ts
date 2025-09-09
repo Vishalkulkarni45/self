@@ -685,7 +685,8 @@ const processDobAadhaar = (year: string, month: string, day: string): bigint[] =
 };
 
 export const getNameDobLeafAadhaar = (name: string, year: string, month: string, day: string) => {
-  const paddedName = name.toUpperCase()
+  const paddedName = name
+    .toUpperCase()
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
@@ -696,7 +697,8 @@ export const getNameDobLeafAadhaar = (name: string, year: string, month: string,
 };
 
 export const getNameYobLeafAahaar = (name: string, year: string) => {
-  const paddedName = name.toUpperCase()
+  const paddedName = name
+    .toUpperCase()
     .padEnd(62, '\0')
     .split('')
     .map((char) => char.charCodeAt(0));
