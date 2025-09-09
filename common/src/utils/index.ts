@@ -6,6 +6,7 @@ export type {
 export type { DocumentCategory, PassportData } from './types.js';
 export type { IdDocInput } from './passports/genMockIdDoc.js';
 export type { PassportMetadata } from './passports/passport_parsing/parsePassportData.js';
+export type { TEEPayload, TEEPayloadBase, TEEPayloadDisclose } from './proving.js';
 export type { UserIdType } from './circuits/uuid.js';
 export {
   EndpointType,
@@ -27,6 +28,14 @@ export {
   hash,
   packBytesAndPoseidon,
 } from './hash.js';
+export {
+  clientKey,
+  clientPublicKeyHex,
+  ec,
+  encryptAES256GCM,
+  getPayload,
+  getWSDbRelayerUrl,
+} from './proving.js';
 export {
   findStartPubKeyIndex,
   generateCommitment,

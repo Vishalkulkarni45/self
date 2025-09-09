@@ -14,24 +14,24 @@ import { render, screen } from '@testing-library/react';
 function Consumer() {
   const client = useSelfClient();
   const info = client.extractMRZInfo(sampleMRZ);
-  return <span>{info.passportNumber}</span>;
+  return <span>{info.documentNumber}</span>;
 }
 
 describe('SelfMobileSdk Entry Component', () => {
   it('provides client to children and enables MRZ parsing', () => {
     render(
-      <SelfMobileSdk config={{}} adapters={mockAdapters}>
+      <SelfMobileSdk config={{}} adapters={mockAdapters} listeners={new Map()}>
         <Consumer />
       </SelfMobileSdk>,
     );
 
-    expect(screen.getByText(expectedMRZResult.passportNumber)).toBeTruthy();
+    expect(screen.getByText(expectedMRZResult.documentNumber)).toBeTruthy();
   });
 
   it('renders children correctly', () => {
     const testMessage = 'Test Child Component';
     render(
-      <SelfMobileSdk config={{}} adapters={mockAdapters}>
+      <SelfMobileSdk config={{}} adapters={mockAdapters} listeners={new Map()}>
         <div>{testMessage}</div>
       </SelfMobileSdk>,
     );

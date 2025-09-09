@@ -16,10 +16,15 @@ env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dorg.gradle.parallel=true -Dorg.gradle.configureondemand=true -Dorg.gradle.caching=true
   CI: true
 on:
-  push:
+  pull_request:
+    branches:
+      - dev
+      - staging
+      - main
     paths:
       - "common/**"
       - "app/**"
+      - "packages/mobile-sdk-alpha/**"
       - ".github/workflows/mobile-ci.yml"
       - ".github/actions/**"
   workflow_dispatch: {}
@@ -29,8 +34,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    runs-on: macos-latest
+  build-deps:
+    runs-on: macos-latest-large
     steps:
       - uses: actions/checkout@v4
       - name: Read and sanitize Node.js version
@@ -50,6 +55,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Activate Yarn 4.6.0
+        run: corepack prepare yarn@4.6.0 --activate
       - name: Cache Yarn
         uses: ./.github/actions/cache-yarn
         with:
@@ -60,9 +69,16 @@ jobs:
           cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}
       - name: Install Dependencies
         uses: ./.github/actions/yarn-install
-      - name: Build Dependencies
-        run: yarn build:deps
-        working-directory: ./app
+      - name: Cache Built Dependencies
+        id: built-deps
+        uses: ./.github/actions/cache-built-deps
+        with:
+          cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}
+      - name: Build dependencies (cache miss)
+        if: steps.built-deps.outputs.cache-hit != 'true'
+        run: |
+          echo "Cache miss for built dependencies. Building now..."
+          yarn workspace @selfxyz/mobile-app run build:deps
       - name: Run linter
         run: yarn lint
         working-directory: ./app
@@ -74,7 +90,8 @@ jobs:
         working-directory: ./
 
   test:
-    runs-on: macos-latest
+    runs-on: macos-latest-large
+    needs: build-deps
     steps:
       - uses: actions/checkout@v4
       - name: Read and sanitize Node.js version
@@ -94,6 +111,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Activate Yarn 4.6.0
+        run: corepack prepare yarn@4.6.0 --activate
       - name: Cache Yarn
         uses: ./.github/actions/cache-yarn
         with:
@@ -104,15 +125,74 @@ jobs:
           cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}
       - name: Install Dependencies
         uses: ./.github/actions/yarn-install
-
-      - name: Build
-        run: yarn build:deps
-        working-directory: ./app
+      - name: Cache Built Dependencies
+        id: built-deps
+        uses: ./.github/actions/cache-built-deps
+        with:
+          cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}
+      - name: Debug Cache Restoration
+        run: |
+          echo "Cache hit: ${{ steps.built-deps.outputs.cache-hit }}"
+          echo "Cache key: built-deps-${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}-${{ hashFiles('common/**/*', 'packages/mobile-sdk-alpha/**/*', '!common/dist/**', '!packages/mobile-sdk-alpha/dist/**') }}"
+          echo "Checking if cached files exist:"
+          ls -la packages/mobile-sdk-alpha/dist/ || echo "❌ mobile-sdk-alpha dist not found"
+          ls -la packages/mobile-sdk-alpha/dist/cjs/ || echo "❌ mobile-sdk-alpha dist/cjs not found"
+          ls -la packages/mobile-sdk-alpha/dist/cjs/index.cjs || echo "❌ mobile-sdk-alpha dist/cjs/index.cjs not found"
+          ls -la common/dist/ || echo "❌ common dist not found"
+          ls -la common/dist/cjs/ || echo "❌ common dist/cjs not found"
+          ls -la common/dist/cjs/index.cjs || echo "❌ common dist/cjs/index.cjs not found"
+      - name: Build dependencies (cache miss)
+        if: steps.built-deps.outputs.cache-hit != 'true'
+        run: |
+          echo "Cache miss for built dependencies. Building now..."
+          yarn workspace @selfxyz/mobile-app run build:deps
+          # Verify build completed successfully
+          if [ ! -f "packages/mobile-sdk-alpha/dist/cjs/index.cjs" ] || [ ! -f "common/dist/cjs/index.cjs" ]; then
+            echo "❌ Build failed - required files missing after build"
+            ls -la packages/mobile-sdk-alpha/dist/ || echo "mobile-sdk-alpha dist not found"
+            ls -la common/dist/ || echo "common dist not found"
+            exit 1
+          fi
+          echo "✅ Build completed successfully"
+      - name: Force Build Dependencies If Missing
+        run: |
+          # Force build if required files don't exist, regardless of cache status
+          if [ ! -f "packages/mobile-sdk-alpha/dist/cjs/index.cjs" ] || [ ! -f "common/dist/cjs/index.cjs" ]; then
+            echo "❌ Required dependency files missing, forcing rebuild..."
+            echo "Missing files:"
+            [ ! -f "packages/mobile-sdk-alpha/dist/cjs/index.cjs" ] && echo "  - packages/mobile-sdk-alpha/dist/cjs/index.cjs"
+            [ ! -f "common/dist/cjs/index.cjs" ] && echo "  - common/dist/cjs/index.cjs"
+            yarn workspace @selfxyz/mobile-app run build:deps
+            # Verify build completed successfully
+            if [ ! -f "packages/mobile-sdk-alpha/dist/cjs/index.cjs" ] || [ ! -f "common/dist/cjs/index.cjs" ]; then
+              echo "❌ Forced build failed - required files still missing"
+              ls -la packages/mobile-sdk-alpha/ || echo "packages/mobile-sdk-alpha not found"
+              ls -la packages/mobile-sdk-alpha/dist/ || echo "mobile-sdk-alpha dist not found"
+              ls -la common/ || echo "common not found"
+              ls -la common/dist/ || echo "common dist not found"
+              exit 1
+            fi
+            echo "✅ Forced build completed successfully"
+          else
+            echo "✅ All required dependency files exist"
+          fi
       - name: Test
-        run: yarn test
+        run: |
+          # Final verification from app directory perspective
+          echo "Final verification before running tests (from app directory)..."
+          if [ ! -f "../packages/mobile-sdk-alpha/dist/cjs/index.cjs" ] || [ ! -f "../common/dist/cjs/index.cjs" ]; then
+            echo "❌ Dependencies still not found from app directory"
+            ls -la ../packages/mobile-sdk-alpha/dist/ || echo "mobile-sdk-alpha dist not found"
+            ls -la ../common/dist/ || echo "common dist not found"
+            exit 1
+          fi
+          echo "✅ All dependencies verified, running tests..."
+          # Run jest through yarn to avoid the build:deps step since CI already built dependencies
+          yarn jest --passWithNoTests && node --test scripts/tests/*.cjs
         working-directory: ./app
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-latest-large
+    needs: build-deps
     env:
       # iOS project configuration - hardcoded for CI stability
       IOS_PROJECT_NAME: "Self"
@@ -136,6 +216,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Activate Yarn 4.6.0
+        run: corepack prepare yarn@4.6.0 --activate
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -159,7 +243,6 @@ jobs:
         with:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: false
-          working-directory: ./app
       - name: Cache Yarn
         uses: ./.github/actions/cache-yarn
         with:
@@ -171,7 +254,7 @@ jobs:
       - name: Cache Ruby gems
         uses: ./.github/actions/cache-bundler
         with:
-          path: app/vendor/bundle
+          path: app/ios/vendor/bundle
           lock-file: app/Gemfile.lock
           cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.GH_GEMS_CACHE_VERSION }}-ruby${{ env.RUBY_VERSION }}
       - name: Cache Pods
@@ -189,25 +272,29 @@ jobs:
             app/ios/build
             ~/Library/Developer/Xcode/DerivedData
             ~/Library/Caches/com.apple.dt.Xcode
-          key: ${{ runner.os }}-xcode-${{ hashFiles('app/ios/Podfile.lock') }}-${{ hashFiles('app/ios/${{ env.IOS_PROJECT_NAME }}.xcworkspace/contents.xcworkspacedata') }}
+          key: ${{ runner.os }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('app/ios/Podfile.lock', 'app/ios/OpenPassport.xcworkspace/contents.xcworkspacedata', 'app/ios/Self.xcworkspace/contents.xcworkspacedata') }}
           restore-keys: |
-            ${{ runner.os }}-xcode-${{ hashFiles('app/ios/Podfile.lock') }}-
-            ${{ runner.os }}-xcode-
+            ${{ runner.os }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('app/ios/Podfile.lock') }}-
+            ${{ runner.os }}-xcode-${{ env.XCODE_VERSION }}-
       - name: Cache Xcode Index
         uses: actions/cache@v4
         with:
           path: app/ios/build/Index.noindex
-          key: ${{ runner.os }}-xcode-index-${{ hashFiles('app/ios/Podfile.lock') }}
+          key: ${{ runner.os }}-xcode-index-${{ env.XCODE_VERSION }}-${{ hashFiles('app/ios/Podfile.lock') }}
           restore-keys: |
-            ${{ runner.os }}-xcode-index-
+            ${{ runner.os }}-xcode-index-${{ env.XCODE_VERSION }}-
       - name: Install Mobile Dependencies
         uses: ./.github/actions/yarn-install
-      - name: Build Dependencies
+      - name: Cache Built Dependencies
+        id: built-deps
+        uses: ./.github/actions/cache-built-deps
+        with:
+          cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}
+      - name: Build dependencies (cache miss)
+        if: steps.built-deps.outputs.cache-hit != 'true'
         run: |
-          echo "Building dependencies..."
-          yarn workspace @selfxyz/mobile-app run build:deps --silent || { echo "❌ Dependency build failed"; exit 1; }
-          echo "✅ Dependencies built successfully"
-        working-directory: ./app
+          echo "Cache miss for built dependencies. Building now..."
+          yarn workspace @selfxyz/mobile-app run build:deps
       - name: Install Ruby Dependencies
         run: |
           echo "Installing Ruby dependencies..."
@@ -221,11 +308,29 @@ jobs:
           # Reuse the same guarded flow as local to ensure reproducibility
           bundle exec bash scripts/pod-install-with-cache-fix.sh
         working-directory: ./app
+      - name: Resolve iOS workspace
+        run: |
+          WORKSPACE_OPEN="ios/OpenPassport.xcworkspace"
+          WORKSPACE_SELF="ios/Self.xcworkspace"
+
+          if xcodebuild -list -workspace "$WORKSPACE_OPEN" 2>/dev/null | grep -q "OpenPassport"; then
+            WORKSPACE_PATH="$WORKSPACE_OPEN"
+          else
+            WORKSPACE_PATH="$WORKSPACE_SELF"
+          fi
+
+          echo "WORKSPACE_PATH=$WORKSPACE_PATH" >> "$GITHUB_ENV"
+          echo "Resolved workspace: $WORKSPACE_PATH"
+        working-directory: ./app
       - name: Verify iOS Workspace
         run: |
           echo "Verifying iOS workspace setup..."
 
-          WORKSPACE_PATH="ios/${{ env.IOS_PROJECT_NAME }}.xcworkspace"
+          if [ -z "$WORKSPACE_PATH" ]; then
+            echo "❌ WORKSPACE_PATH is not set"
+            exit 1
+          fi
+
           if [ ! -d "$WORKSPACE_PATH" ]; then
             echo "❌ Workspace not found at: $WORKSPACE_PATH"
             echo "Available workspaces:"
@@ -258,9 +363,6 @@ jobs:
         run: |
           echo "Building iOS app for simulator (no signing required)..."
           echo "Project: ${{ env.IOS_PROJECT_NAME }}, Scheme: ${{ env.IOS_PROJECT_SCHEME }}"
-
-          WORKSPACE_PATH="ios/${{ env.IOS_PROJECT_NAME }}.xcworkspace"
-
           # Build for iOS Simulator to avoid code signing issues in CI
           xcodebuild -workspace "$WORKSPACE_PATH" \
             -scheme ${{ env.IOS_PROJECT_SCHEME }} \
@@ -276,6 +378,7 @@ jobs:
 
   build-android:
     runs-on: ubuntu-latest
+    needs: build-deps
     steps:
       - uses: actions/checkout@v4
       - name: Read and sanitize Node.js version
@@ -295,6 +398,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Activate Yarn 4.6.0
+        run: corepack prepare yarn@4.6.0 --activate
       - name: Cache Yarn
         uses: ./.github/actions/cache-yarn
         with:
@@ -325,14 +432,16 @@ jobs:
         run: sdkmanager "ndk;${{ env.ANDROID_NDK_VERSION }}"
       - name: Install Mobile Dependencies
         uses: ./.github/actions/yarn-install
-      - name: Build Dependencies
+      - name: Cache Built Dependencies
+        id: built-deps
+        uses: ./.github/actions/cache-built-deps
+        with:
+          cache-version: ${{ env.GH_CACHE_VERSION }}-${{ env.NODE_VERSION_SANITIZED }}
+      - name: Build dependencies (cache miss)
+        if: steps.built-deps.outputs.cache-hit != 'true'
         run: |
-          echo "Building dependencies..."
-          yarn workspace @selfxyz/mobile-app run build:deps --silent || { echo "❌ Dependency build failed"; exit 1; }
-          echo "✅ Dependencies built successfully"
-        working-directory: ./app
-      - name: Build Android
-        run: |
-          cd android
-          ./gradlew assembleDebug
+          echo "Cache miss for built dependencies. Building now..."
+          yarn workspace @selfxyz/mobile-app run build:deps
+      - name: Build Android (with AAPT2 symlink fix)
+        run: yarn android:ci
         working-directory: ./app

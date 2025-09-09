@@ -18,9 +18,20 @@ const extraNodeModules = {
   util: require.resolve('util'),
   assert: require.resolve('assert'),
   '@babel/runtime': path.join(trueMonorepoNodeModules, '@babel/runtime'),
+  // Pin React and React Native to monorepo root
+  react: path.join(trueMonorepoNodeModules, 'react'),
+  'react-native': path.join(trueMonorepoNodeModules, 'react-native'),
   '@': path.join(__dirname, 'src'),
   '@selfxyz/common': path.resolve(commonPath, 'dist'),
   '@selfxyz/mobile-sdk-alpha': path.resolve(sdkAlphaPath, 'dist'),
+  '@selfxyz/mobile-sdk-alpha/constants/analytics': path.resolve(
+    sdkAlphaPath,
+    'dist/esm/constants/analytics.js',
+  ),
+  '@selfxyz/mobile-sdk-alpha/stores': path.resolve(
+    sdkAlphaPath,
+    'dist/esm/stores.js',
+  ),
   // Main exports
   '@selfxyz/common/utils': path.resolve(
     commonPath,
@@ -100,6 +111,10 @@ const extraNodeModules = {
     commonPath,
     'dist/esm/src/utils/passports/format.js',
   ),
+  '@selfxyz/common/utils/passports/validate': path.resolve(
+    commonPath,
+    'dist/esm/src/utils/passports/validate.js',
+  ),
   '@selfxyz/common/utils/passportMock': path.resolve(
     commonPath,
     'dist/esm/src/utils/passports/mock.js',
@@ -151,6 +166,10 @@ const extraNodeModules = {
   '@selfxyz/common/utils/csca': path.resolve(
     commonPath,
     'dist/esm/src/utils/csca.js',
+  ),
+  '@selfxyz/common/utils/ofac': path.resolve(
+    commonPath,
+    'dist/esm/src/utils/ofac.js',
   ),
   // Types subpaths
   '@selfxyz/common/types/passport': path.resolve(

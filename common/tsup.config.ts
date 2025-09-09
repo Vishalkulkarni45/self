@@ -33,6 +33,7 @@ const entry = {
   'src/utils/passports/index': 'src/utils/passports/index.ts',
   'src/utils/passports/format': 'src/utils/passports/format.ts',
   'src/utils/passports/mock': 'src/utils/passports/mock.ts',
+  'src/utils/passports/validate': 'src/utils/passports/validate.ts',
   'src/utils/passports/dg1': 'src/utils/passports/dg1.ts',
   'src/utils/passports/genMockPassportData': 'src/utils/passports/genMockPassportData.ts',
   'src/utils/passports/genMockIdDoc': 'src/utils/passports/genMockIdDoc.ts',
@@ -52,6 +53,7 @@ const entry = {
   'src/utils/contracts/index': 'src/utils/contracts/index.ts',
   'src/utils/contracts/forbiddenCountries': 'src/utils/contracts/forbiddenCountries.ts',
   'src/utils/csca': 'src/utils/csca.ts',
+  'src/utils/ofac': 'src/utils/ofac.ts',
   // Level 3 Hash Function Exports
   'src/utils/hash/poseidon': 'src/utils/hash/poseidon.ts',
   'src/utils/hash/sha': 'src/utils/hash/sha.ts',

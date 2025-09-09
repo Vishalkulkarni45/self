@@ -38,6 +38,18 @@ module.exports = {
       typescript: {
         alwaysTryTypes: true,
         project: './tsconfig.json',
+        extensions: [
+          '.ts',
+          '.tsx',
+          '.native.ts',
+          '.native.tsx',
+          '.web.ts',
+          '.web.tsx',
+          '.ios.ts',
+          '.ios.tsx',
+          '.android.ts',
+          '.android.tsx',
+        ],
       },
     },
     'import/ignore': ['react-native'],
@@ -144,7 +156,7 @@ module.exports = {
     // General JavaScript Rules
     // Warn on common issues but don't block development
 
-    'no-console': 'warn',
+    'no-console': 'off',
     'no-empty-pattern': 'off',
     'prefer-const': 'warn',
     '@typescript-eslint/no-explicit-any': 'warn',

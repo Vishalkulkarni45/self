@@ -2,32 +2,32 @@
 // SPDX-License-Identifier: BUSL-1.1
 // NOTE: Converts to Apache-2.0 on 2029-06-11 per LICENSE.
 
-import { lazy } from 'react';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 
-// DevPrivateKeyScreen is loaded lazily to avoid bundling in production
+import CreateMockScreen from '@/screens/dev/CreateMockScreen';
+import CreateMockScreenDeepLink from '@/screens/dev/CreateMockScreenDeepLink';
+import DevFeatureFlagsScreen from '@/screens/dev/DevFeatureFlagsScreen';
+import DevHapticFeedbackScreen from '@/screens/dev/DevHapticFeedbackScreen';
+import DevPrivateKeyScreen from '@/screens/dev/DevPrivateKeyScreen';
+import DevSettingsScreen from '@/screens/dev/DevSettingsScreen';
 import { black, white } from '@/utils/colors';
 
-const DevFeatureFlagsScreen = lazy(
-  () => import('@/screens/dev/DevFeatureFlagsScreen'),
-);
-const DevHapticFeedbackScreen = lazy(
-  () => import('@/screens/dev/DevHapticFeedback'),
-);
-const DevSettingsScreen = lazy(() => import('@/screens/dev/DevSettingsScreen'));
-const MockDataScreen = lazy(() => import('@/screens/dev/MockDataScreen'));
-const MockDataScreenDeepLink = lazy(
-  () => import('@/screens/dev/MockDataScreenDeepLink'),
-);
-const DevPrivateKeyScreen = lazy(
-  () => import('@/screens/dev/DevPrivateKeyScreen'),
-);
+const devHeaderOptions: NativeStackNavigationOptions = {
+  headerStyle: {
+    backgroundColor: black,
+  },
+  headerTitleStyle: {
+    color: white,
+  },
+  headerBackTitle: 'close',
+};
 
 const devScreens = {
   CreateMock: {
-    screen: MockDataScreen,
+    screen: CreateMockScreen,
     options: {
-      title: 'Mock Passport',
+      ...devHeaderOptions,
+      title: 'Mock Document',
       headerStyle: {
         backgroundColor: black,
       },
@@ -37,7 +37,7 @@ const devScreens = {
     } as NativeStackNavigationOptions,
   },
   MockDataDeepLink: {
-    screen: MockDataScreenDeepLink,
+    screen: CreateMockScreenDeepLink,
     options: {
       headerShown: false,
     } as NativeStackNavigationOptions,
@@ -51,14 +51,8 @@ const devScreens = {
   DevSettings: {
     screen: DevSettingsScreen,
     options: {
+      ...devHeaderOptions,
       title: 'Dev Mode',
-      headerStyle: {
-        backgroundColor: black,
-      },
-      headerTitleStyle: {
-        color: white,
-      },
-      headerBackTitle: 'close',
     } as NativeStackNavigationOptions,
   },
   DevFeatureFlags: {
@@ -73,13 +67,8 @@ const devScreens = {
   DevPrivateKey: {
     screen: DevPrivateKeyScreen,
     options: {
+      ...devHeaderOptions,
       title: 'Private Key',
-      headerStyle: {
-        backgroundColor: black,
-      },
-      headerTitleStyle: {
-        color: white,
-      },
     } as NativeStackNavigationOptions,
   },
 };

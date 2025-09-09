@@ -21,8 +21,6 @@ export type {
   ProofRequest,
   RegistrationInput,
   RegistrationStatus,
-  SDKEvent,
-  SDKEventMap,
   ScanMode,
   ScanOpts,
   ScanResult,
@@ -43,16 +41,20 @@ export type { QRProofOptions } from './qr';
 export type { SdkErrorCategory } from './errors';
 
 export { SCANNER_ERROR_CODES, notImplemented, sdkError } from './errors';
-export { SelfClientContext, SelfClientProvider, useSelfClient } from './context';
-// Browser-only high-level component (DOM-based)
-export { SelfMobileSdk as SelfMobileSdkHighLevel } from './components/SelfMobileSdk';
+export { SdkEvents } from './types/events';
 
-export { createSelfClient } from './client';
+export { SelfClientContext, SelfClientProvider, useSelfClient } from './context';
+
+export { createListenersMap, createSelfClient } from './client';
 
 export { defaultConfig } from './config/defaults';
 
 /** @deprecated Use createSelfClient().extractMRZInfo or import from './mrz' */
 export { extractMRZInfo, formatDateToYYMMDD, scanMRZ } from './mrz';
+
+export { generateMockDocument, signatureAlgorithmToStrictSignatureAlgorithm } from './mock/generator';
+
+export { getAllDocuments, hasAnyValidRegisteredDocument, loadSelectedDocument } from './documents/utils';
 
 // Core functions
 export { isPassportDataValid } from './validation/document';
@@ -60,6 +62,8 @@ export { isPassportDataValid } from './validation/document';
 export { mergeConfig } from './config/merge';
 
 export { parseNFCResponse, scanNFC } from './nfc';
+
+export { reactNativeScannerAdapter } from './adapters/react-native/scanner';
 
 export { scanQRProof } from './qr';
 

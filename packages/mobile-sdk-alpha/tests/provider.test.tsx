@@ -15,7 +15,7 @@ import { renderHook } from '@testing-library/react';
 describe('SelfClientProvider Context', () => {
   it('provides client through context with MRZ parsing capability', () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <SelfClientProvider config={{}} adapters={mockAdapters}>
+      <SelfClientProvider config={{}} adapters={mockAdapters} listeners={new Map()}>
         {children}
       </SelfClientProvider>
     );
@@ -23,8 +23,9 @@ describe('SelfClientProvider Context', () => {
     const { result } = renderHook(() => useSelfClient(), { wrapper });
     const info = result.current.extractMRZInfo(sampleMRZ);
 
-    expect(info.passportNumber).toBe(expectedMRZResult.passportNumber);
-    expect(info.validation.overall).toBe(expectedMRZResult.validation.overall);
+    expect(info.documentNumber).toBe(expectedMRZResult.documentNumber);
+    expect(info.validation).toBeDefined();
+    expect(info.validation?.overall).toBe(expectedMRZResult.validation.overall);
   });
 
   it('throws error when used outside provider', () => {
@@ -37,8 +38,10 @@ describe('SelfClientProvider Context', () => {
     const spy = vi.spyOn(clientModule, 'createSelfClient');
     const config = {};
     const adapters = mockAdapters;
+    const listeners = new Map();
+
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <SelfClientProvider config={config} adapters={adapters}>
+      <SelfClientProvider config={config} adapters={adapters} listeners={listeners}>
         {children}
       </SelfClientProvider>
     );
