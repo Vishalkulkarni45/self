@@ -58,8 +58,7 @@
     "test-register": "yarn test-base --max-old-space-size=40960 'tests/register/register.test.ts' --exit",
     "test-register-id": "yarn test-base --max-old-space-size=40960 'tests/register_id/register_id.test.ts' --exit",
     "test-rsa": "yarn test-base 'tests/utils/rsaPkcs1v1_5.test.ts' --exit",
-    "test-rsa-pss": "yarn test-base 'tests/utils/rsapss.test.ts' --exit",
-    "types": "yarn build --noEmit"
+    "test-rsa-pss": "yarn test-base 'tests/utils/rsapss.test.ts' --exit"
   },
   "dependencies": {
     "@anon-aadhaar/core": "^2.4.3",
