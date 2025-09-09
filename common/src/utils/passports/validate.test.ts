@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { API_URL, API_URL_STAGING } from '@selfxyz/common/constants/';
+import { API_URL, API_URL_STAGING } from '@selfxyz/common/constants';
 
 import { PassportData } from '../types.js';
 import {
