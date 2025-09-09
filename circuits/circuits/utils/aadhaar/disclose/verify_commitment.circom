@@ -37,7 +37,7 @@ template VERIFY_COMMITMENT(nLevels) {
 
     component is_gt_97[nameMaxLength()];
     component is_lt_122[nameMaxLength()];
-    signal uppercase_name[nameMaxLength()];
+    signal output uppercase_name[nameMaxLength()];
     signal is_lowercase[nameMaxLength()];
 
     for (var i = 0; i < nameMaxLength(); i++){
