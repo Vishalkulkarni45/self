@@ -92,8 +92,8 @@ library CircuitAttributeHandlerV2 {
         } else if (attestationId == AttestationId.AADHAAR) {
             return
                 FieldPositions({
-                    issuingStateStart: 999,
-                    issuingStateEnd: 999,
+                    issuingStateStart: 81,
+                    issuingStateEnd: 111,
                     nameStart: 9,
                     nameEnd: 70,
                     documentNumberStart: 71,
@@ -135,6 +135,12 @@ library CircuitAttributeHandlerV2 {
      */
     function getName(bytes32 attestationId, bytes memory charcodes) internal pure returns (string[] memory) {
         FieldPositions memory positions = getFieldPositions(attestationId);
+        if (attestationId == AttestationId.AADHAAR) {
+            string memory fullName = extractStringAttribute(charcodes, positions.nameStart, positions.nameEnd);
+            string[] memory nameParts = new string[](2);
+            nameParts[0] = fullName;
+            return nameParts;
+        }
         return Formatter.formatName(extractStringAttribute(charcodes, positions.nameStart, positions.nameEnd));
     }
 

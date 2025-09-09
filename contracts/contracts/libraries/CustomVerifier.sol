@@ -268,7 +268,7 @@ library CustomVerifier {
             userIdentifier: aadhaarOutput.userIdentifier,
             nullifier: aadhaarOutput.nullifier,
             forbiddenCountriesListPacked: verificationConfig.forbiddenCountriesListPacked,
-            issuingState: "UNAVAILABLE",
+            issuingState: CircuitAttributeHandlerV2.getIssuingState(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
             name: CircuitAttributeHandlerV2.getName(AttestationId.AADHAAR, aadhaarOutput.revealedDataPacked),
             idNumber: CircuitAttributeHandlerV2.getDocumentNumber(
                 AttestationId.AADHAAR,

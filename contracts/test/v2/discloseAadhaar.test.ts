@@ -81,7 +81,7 @@ describe("Self Verification Flow V2 - Aadhaar", () => {
       scopeAsBigInt.toString(),
       registerSecret,
       userIdentifierHash.toString(),
-      createSelector(["GENDER"]).toString(),
+      createSelector(["GENDER", "NAME", "YEAR_OF_BIRTH", "MONTH_OF_BIRTH", "DAY_OF_BIRTH", "AADHAAR_LAST_4_DIGITS", "STATE"]).toString(),
       name,
       dateOfBirth,
       gender,
