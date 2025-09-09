@@ -86,6 +86,7 @@ export {
 export {
   prepareAadhaarRegisterTestData,
   prepareAadhaarDiscloseTestData,
+  prepareAadhaarRegisterData,
 } from './src/utils/aadhaar/mockData.js';
 export { generateTestData, testCustomData } from './src/utils/aadhaar/utils.js';
 export { createSelector } from './src/utils/aadhaar/constants.js';

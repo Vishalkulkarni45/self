@@ -13,6 +13,9 @@ template CountryNotInList(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH) {
     signal input country[3];
     signal input forbidden_countries_list[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3];
 
+    //Range-check for forbidden_countries_list
+    AssertBytes(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3)(forbidden_countries_list);
+
     signal equality_result[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH][4];
     signal is_equal[MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH][3];
     for (var i = 0; i < MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH; i++) {

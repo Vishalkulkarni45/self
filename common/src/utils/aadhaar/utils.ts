@@ -385,7 +385,7 @@ export function extractQRDataFields(qrData: string | Uint8Array): ExtractedQRDat
 
   // Extract phone number last 4 digits
   const phoneData = extractFieldData(signedData, delimiterIndices, FIELD_POSITIONS.PHONE_NO);
-  const phoneNoLast4Digits = asciiArrayToString(phoneData);
+  const phoneNoLast4Digits = asciiArrayToString(phoneData.slice(phoneData.length - 4));
 
   // Extract timestamp (from position after first delimiter)
   // Timestamp format: YYYYMMDDHHMM (similar to circom implementation)

@@ -195,7 +195,7 @@ describe(' VC and Disclose Aadhaar Circuit Tests', function () {
       '1234',
       '585225',
       '0',
-      'ABU ABBAS',
+      'Abu ABBAS',
       '10-12-1948',
       undefined,
       undefined,

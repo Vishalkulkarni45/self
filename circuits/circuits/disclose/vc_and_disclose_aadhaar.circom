@@ -83,7 +83,7 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     signal output nullifier <== Poseidon(2)([secret, scope]);
 
     // verify commitment is part of the merkle tree
-    VERIFY_COMMITMENT(nLevels)(
+    signal uppercase_name[nameMaxLength()] <== VERIFY_COMMITMENT(nLevels)(
         attestation_id,
         secret,
         qrDataHash,
@@ -103,8 +103,7 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
         siblings
     );
 
-
-    signal name_packed[2] <== PackBytes(nameMaxLength())(name);
+    signal name_packed[2] <== PackBytes(nameMaxLength())(uppercase_name);
     signal yob_integer <== DigitBytesToInt(4)(yob);
     signal mob_integer <== DigitBytesToInt(2)(mob);
     signal dob_integer <== DigitBytesToInt(2)(dob);
@@ -126,6 +125,10 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     ofac_name_yob.smt_leaf_key <== ofac_name_yob_smt_leaf_key;
     ofac_name_yob.smt_root <== ofac_name_yob_smt_root;
     ofac_name_yob.smt_siblings <== ofac_name_yob_smt_siblings;
+
+    //Range-check for minimumAge
+    component range_check_minimumAge = Num2Bits(7);
+    range_check_minimumAge.in <== minimumAge;
 
     // verify age is greater than minimum age
     signal age <== AgeExtractor()(yob, mob, dob, currentYear, currentMonth, currentDay);
@@ -194,7 +197,7 @@ template VC_AND_DISCLOSE_Aadhaar(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,nLevels, na
     var chunkLength = computeIntChunkLength(MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH * 3);
     signal output forbidden_countries_list_packed[chunkLength] <== country_not_in_list_circuit.forbidden_countries_list_packed;
 
-    signal dummy <== user_identifier + user_identifier;
+    attestation_id === 3;
 }
 
 component main { public

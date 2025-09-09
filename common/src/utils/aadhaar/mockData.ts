@@ -25,7 +25,6 @@ import {
 import { COMMITMENT_TREE_DEPTH } from '../../constants/constants.js';
 import { extractQRDataFields } from './utils.js';
 
-let QRData: string = testQRData.testQRData;
 
 // Helper function to compute padded name
 function computePaddedName(name: string): number[] {
@@ -35,21 +34,28 @@ function computePaddedName(name: string): number[] {
     .map((char) => char.charCodeAt(0));
 }
 
+function computeUppercasePaddedName(name: string): number[] {
+  return name
+    .toUpperCase()
+    .padEnd(62, '\0')
+    .split('')
+    .map((char) => char.charCodeAt(0));
+}
+
 // Helper function to compute nullifier
-function computeNullifier(
+function nullifierHash(
   extractedFields: ReturnType<typeof extractQRDataFields>,
-  paddedName: number[]
 ): bigint {
   const genderAscii = stringToAsciiArray(extractedFields.gender)[0];
-  const nullifierArgs = [
+  const personalInfoHashArgs = [
     genderAscii,
     ...stringToAsciiArray(extractedFields.yob),
     ...stringToAsciiArray(extractedFields.mob),
     ...stringToAsciiArray(extractedFields.dob),
-    ...paddedName,
+    ...stringToAsciiArray(extractedFields.name.toUpperCase().padEnd(62, '\0')),
     ...stringToAsciiArray(extractedFields.aadhaarLast4Digits),
   ];
-  return BigInt(packBytesAndPoseidon(nullifierArgs));
+  return BigInt(packBytesAndPoseidon(personalInfoHashArgs));
 }
 
 // Helper function to compute packed commitment
@@ -59,6 +65,7 @@ function computePackedCommitment(extractedFields: ReturnType<typeof extractQRDat
     ...stringToAsciiArray(extractedFields.pincode),
     ...stringToAsciiArray(extractedFields.state.padEnd(31, '\0')),
     ...stringToAsciiArray(extractedFields.phoneNoLast4Digits),
+    ...stringToAsciiArray(extractedFields.name.padEnd(62, '\0')),
   ];
   return BigInt(packBytesAndPoseidon(packedCommitmentArgs));
 }
@@ -101,7 +108,7 @@ function processQRData(
   const finalPincode = pincode ?? '110051';
   const finalState = state ?? 'Delhi';
 
-  let qrDataBytes: any;
+  let QRData: string;
   if (name || dateOfBirth || gender || pincode || state) {
     const newTestData = generateTestData({
       privKeyPem,
@@ -113,21 +120,39 @@ function processQRData(
       state: finalState,
       timestamp: timestamp,
     });
-    qrDataBytes = convertBigIntToByteArray(BigInt(newTestData.testQRData));
+    QRData = newTestData.testQRData;
   } else {
-    qrDataBytes = convertBigIntToByteArray(BigInt(QRData));
+    QRData = testQRData.testQRData;
   }
 
+  return processQRDataSimple(QRData);
+}
+
+function processQRDataSimple(
+  qrData: string,
+) {
+  const qrDataBytes = convertBigIntToByteArray(BigInt(qrData));
   const decodedData = decompressByteArray(qrDataBytes);
   const signedData = decodedData.slice(0, decodedData.length - 256);
 
   const [qrDataPadded, qrDataPaddedLen] = sha256Pad(signedData, 512 * 3);
 
+  let photoEOI = 0;
+  for (let i = 0; i < qrDataPadded.length - 1; i++) {
+    if (qrDataPadded[i + 1] === 217 && qrDataPadded[i] === 255) {
+      photoEOI = i + 1;
+    }
+  }
+  if (photoEOI === 0) {
+    throw new Error("Photo EOI not found");
+  }
+
   // Extract actual fields from QR data instead of using hardcoded values
   const extractedFields = extractQRDataFields(qrDataBytes);
 
   const qrHash = packBytesAndPoseidon(Array.from(qrDataPadded));
-  const photo = extractPhoto(Array.from(qrDataPadded), qrDataPaddedLen);
+  const photo = extractPhoto(Array.from(qrDataPadded), photoEOI + 1);
+
   const photoHash = packBytesAndPoseidon(photo.bytes.map(Number));
 
   return {
@@ -173,6 +198,15 @@ export function prepareAadhaarRegisterTestData(
       break;
     }
   }
+  let photoEOI = 0;
+  for (let i = delimiterIndices[17]; i < sharedData.qrDataPadded.length - 1; i++) {
+    if (sharedData.qrDataPadded[i + 1] === 217 && sharedData.qrDataPadded[i] === 255) {
+      photoEOI = i + 1;
+    }
+  }
+  if (photoEOI === 0) {
+    throw new Error("Photo EOI not found");
+  }
 
   const signatureBytes = sharedData.decodedData.slice(
     sharedData.decodedData.length - 256,
@@ -185,8 +219,7 @@ export function prepareAadhaarRegisterTestData(
   const modulusHex = publicKey.n.toString(16);
   const pubKey = BigInt('0x' + modulusHex);
 
-  const paddedName = computePaddedName(sharedData.extractedFields.name);
-  const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
+  const nullifier = nullifierHash(sharedData.extractedFields);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
     BigInt(secret),
@@ -203,7 +236,91 @@ export function prepareAadhaarRegisterTestData(
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
     secret: secret,
-    attestation_id: '3',
+    photoEOI: photoEOI,
+  };
+
+  return {
+    inputs,
+    nullifier,
+    commitment,
+  };
+}
+
+export async function prepareAadhaarRegisterData(
+  qrData: string,
+  secret: string,
+  certs: string[],
+) {
+  const sharedData = processQRDataSimple(qrData);
+  const delimiterIndices: number[] = [];
+  for (let i = 0; i < sharedData.qrDataPadded.length; i++) {
+    if (sharedData.qrDataPadded[i] === 255) {
+      delimiterIndices.push(i);
+    }
+    if (delimiterIndices.length === 18) {
+      break;
+    }
+  }
+  let photoEOI = 0;
+  for (let i = delimiterIndices[17]; i < sharedData.qrDataPadded.length - 1; i++) {
+    if (sharedData.qrDataPadded[i + 1] === 217 && sharedData.qrDataPadded[i] === 255) {
+      photoEOI = i + 1;
+    }
+  }
+  if (photoEOI === 0) {
+    throw new Error("Photo EOI not found");
+  }
+
+  const signatureBytes = sharedData.decodedData.slice(
+    sharedData.decodedData.length - 256,
+    sharedData.decodedData.length
+  );
+  const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
+
+  //do promise.all for all certs and pick the one that is valid
+  const certificates = await Promise.all(certs.map(async (cert) => {
+    const certificate = forge.pki.certificateFromPem(cert);
+    const publicKey = certificate.publicKey as forge.pki.rsa.PublicKey;
+
+    try {
+      const md = forge.md.sha256.create();
+      md.update(forge.util.binary.raw.encode(sharedData.signedData));
+
+      const isValid = publicKey.verify(md.digest().getBytes(), signatureBytes);
+      return isValid;
+    } catch (error) {
+      return false;
+    }
+  }));
+
+  //find the valid cert
+  const validCert = certificates.indexOf(true);
+  if (validCert === -1) {
+    throw new Error("No valid certificate found");
+  }
+  const certPem = certs[validCert];
+  const cert = forge.pki.certificateFromPem(certPem);
+  const modulusHex = (cert.publicKey as forge.pki.rsa.PublicKey).n.toString(16);
+  const pubKey = BigInt('0x' + modulusHex);
+
+  const nullifier = nullifierHash(sharedData.extractedFields);
+  const packedCommitment = computePackedCommitment(sharedData.extractedFields);
+  const commitment = computeCommitment(
+    BigInt(secret),
+    BigInt(sharedData.qrHash),
+    nullifier,
+    packedCommitment,
+    BigInt(sharedData.photoHash)
+  );
+
+  const inputs = {
+    qrDataPadded: Uint8ArrayToCharArray(sharedData.qrDataPadded),
+    qrDataPaddedLength: sharedData.qrDataPaddedLen,
+    delimiterIndices: delimiterIndices,
+    signature: splitToWords(signature, BigInt(121), BigInt(17)),
+    pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
+    secret: secret,
+    photoEOI: photoEOI,
   };
 
   return {
@@ -246,9 +363,9 @@ export function prepareAadhaarDiscloseTestData(
     sharedData.extractedFields.yob
   );
 
-  const paddedName = computePaddedName(sharedData.extractedFields.name);
+  const uppercaseName = computeUppercasePaddedName(sharedData.extractedFields.name);
   const genderAscii = stringToAsciiArray(sharedData.extractedFields.gender)[0];
-  const nullifier = computeNullifier(sharedData.extractedFields, paddedName);
+  const nullifier = nullifierHash(sharedData.extractedFields);
   const packedCommitment = computePackedCommitment(sharedData.extractedFields);
   const commitment = computeCommitment(
     BigInt(secret),
@@ -257,6 +374,8 @@ export function prepareAadhaarDiscloseTestData(
     packedCommitment,
     BigInt(sharedData.photoHash)
   );
+
+  const paddedName = computePaddedName(sharedData.extractedFields.name);
 
   if (updateTree) {
     merkletree.insert(BigInt(commitment));

@@ -8,6 +8,7 @@ include "../utils/passport/customHashers.circom";
 include "@openpassport/zk-email-circuits/utils/array.circom";
 include "@openpassport/zk-email-circuits/lib/sha.circom";
 
+
 /// @title: AadhaarRegister
 /// @notice Main circuit — verifies the integrity of the aadhaar data, the signature, and generates commitment and nullifier
 /// @param n RSA pubic key size per chunk
@@ -32,8 +33,9 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal input signature[k];
 
     signal input secret;
+    signal input photoEOI;
 
-    signal input attestation_id;
+    signal attestation_id <== 3;
 
 
     // Assert `qrDataPaddedLength` fits in `ceil(log2(maxDataLength))`
@@ -59,10 +61,32 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     qrDataExtractor.data <== qrDataPadded;
     qrDataExtractor.qrDataPaddedLength <== qrDataPaddedLength;
     qrDataExtractor.delimiterIndices <== delimiterIndices;
+    qrDataExtractor.photoEOI <== photoEOI;
+
+    //convert name lowercase to uppercase
+    //value >= 97 AND value <= 122
+    component is_gt_97[nameMaxLength()];
+    component is_lt_122[nameMaxLength()];
+    signal uppercase_name[nameMaxLength()];
+    signal is_lowercase[nameMaxLength()];
+
+    for (var i = 0; i < nameMaxLength(); i++){
+        is_gt_97[i] = GreaterEqThan(8);
+        is_gt_97[i].in[0] <== qrDataExtractor.name[i];
+        is_gt_97[i].in[1] <== 97;
+
+        is_lt_122[i] = LessEqThan(8);
+        is_lt_122[i].in[0] <== qrDataExtractor.name[i];
+        is_lt_122[i].in[1] <== 122;
+
+        is_lowercase[i] <== is_gt_97[i].out * is_lt_122[i].out;
+
+        uppercase_name[i] <== qrDataExtractor.name[i] - 32 * is_lowercase[i];
+    }
 
     signal output pubKeyHash <== CustomHasher(k)(pubKey);
 
-    // Generate nullifier
+    //Calculate nullifier
     component nullifierHasher = PackBytesAndPoseidon(75);
     nullifierHasher.in[0] <== qrDataExtractor.gender;
 
@@ -79,7 +103,7 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     }
 
     for (var i = 0; i < 62 ; i++){
-        nullifierHasher.in[i + 9] <== qrDataExtractor.name[i];
+        nullifierHasher.in[i + 9] <== uppercase_name[i];
     }
 
     for (var i = 0; i < 4 ; i++){
@@ -92,9 +116,8 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
     signal qrDataHash <== PackBytesAndPoseidon(maxDataLength)(qrDataPadded);
 
     // Generate commitment
-    component packedCommitment = PackBytesAndPoseidon(42);
+    component packedCommitment = PackBytesAndPoseidon(42 + 62);
      packedCommitment.in[0] <== attestation_id;
-
 
     for (var i = 0; i < 6 ; i++){
         packedCommitment.in[i + 1] <== qrDataExtractor.pincode[i];
@@ -108,11 +131,15 @@ template REGISTER_AADHAAR(n, k, maxDataLength){
         packedCommitment.in[i + 38] <== qrDataExtractor.ph_no_last_4digits[i];
     }
 
+    for (var i = 0; i < 62 ; i++){
+        packedCommitment.in[i + 42] <== qrDataExtractor.name[i];
+    }
+
     component commitmentHasher = Poseidon(5);
 
     commitmentHasher.inputs[0] <== secret;
     commitmentHasher.inputs[1] <== qrDataHash;
-    commitmentHasher.inputs[2] <== nullifier;
+    commitmentHasher.inputs[2] <== nullifierHasher.out;
     commitmentHasher.inputs[3] <== packedCommitment.out;
     commitmentHasher.inputs[4] <== qrDataExtractor.photoHash;
 

@@ -84,7 +84,7 @@ template AgeExtractor() {
 
 /// @title TimestampExtractor
 /// @notice Extracts the timestamp when the QR was signed rounded to nearest hour
-/// @dev We ignore minutes and seconds to avoid identifying the user based on the precise timestamp
+/// @dev We ignore seconds to avoid identifying the user based on the precise timestamp
 /// @input nDelimitedData[maxDataLength] - QR data where each delimiter is 255 * n where n is order of the data
 /// @output timestamp - Unix timestamp on signature
 /// @output year - Year of the signature
@@ -219,21 +219,38 @@ template PhnoLast4DigitCodeExtractor(maxDataLength) {
 
     signal output out[4];
 
-    var pinCodeMaxLength = 4;
-    var byteLength = pinCodeMaxLength + 2; // 2 delimiters
+    var phnoMaxLength = 10;
+    var byteLength = phnoMaxLength + 2; // 2 delimiters
+
+    signal length <== endDelimiterIndex - startDelimiterIndex + 1;
 
     component subArraySelector = SelectSubArray(maxDataLength, byteLength);
     subArraySelector.in <== nDelimitedData;
     subArraySelector.startIndex <== startDelimiterIndex;
-    subArraySelector.length <== endDelimiterIndex - startDelimiterIndex + 1;
+    subArraySelector.length <== length;
 
     signal shiftedBytes[byteLength] <== subArraySelector.out;
 
-    // Assert delimiters around the data is correct
-    shiftedBytes[0] === phnoPosition() * 255;
-    shiftedBytes[5] === (phnoPosition() + 1) * 255;
+    component isLessThan7 = LessThan(4);
+    isLessThan7.in[0] <== length;
+    isLessThan7.in[1] <== 7;
 
-    out <== [shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]];
+     shiftedBytes[0] ===  phnoPosition() * 255;
+     // Assert delimiters around the data is correct for phno length 4
+    isLessThan7.out * shiftedBytes[5] === isLessThan7.out * (phnoPosition() + 1) * 255;
+
+    signal isNotLessThan7 <== 1 - isLessThan7.out;
+
+    // Assert delimiters around the data is correct for phno length 10
+    isNotLessThan7 * shiftedBytes[11] === isNotLessThan7 * (phnoPosition() + 1) * 255;
+
+    signal out4[4] <== [shiftedBytes[1], shiftedBytes[2], shiftedBytes[3], shiftedBytes[4]];
+    signal out10[4] <== [shiftedBytes[7], shiftedBytes[8], shiftedBytes[9], shiftedBytes[10]];
+
+    for (var i = 0; i < 4; i ++) {
+        out[i] <== isLessThan7.out * out4[i] + out10[i];
+    }
+
 }
 
 /// @title ExtractData
@@ -307,6 +324,18 @@ template PhotoExtractor(maxDataLength) {
     // Assert that the first byte is the delimiter (255 * position of name field)
     shiftedBytes[0] === photoPosition() * 255;
 
+    // Assert that last byte is the EOI (217)
+    component EOIDelimiterSelector = ItemAtIndex(maxDataLength);
+    EOIDelimiterSelector.in <== nDelimitedData;
+    EOIDelimiterSelector.index <== endIndex;
+    EOIDelimiterSelector.out === 217;
+
+    // Assert that last second byte is the (255)
+    component DelimiterSelector = ItemAtIndex(maxDataLength);
+    DelimiterSelector.in <== nDelimitedData;
+    DelimiterSelector.index <== endIndex - 1;
+    DelimiterSelector.out === 255;
+
     // Pack byte[] to int[] where int is field element which take up to 31 bytes
     // When packing like this the trailing 0s in each chunk would be removed as they are LSB
     // This is ok for being used in nullifiers as the behaviour would be consistent
@@ -320,12 +349,12 @@ template PhotoExtractor(maxDataLength) {
 
 /// @title ValidateDelimiterIndices
 /// @notice Validates the delimiter indices
-/// @param maxDataLength - Maximum length of the data
 /// @input delimiterIndices[18] - Delimiter indices
-template ValidateDelimiterIndices(maxDataLength) {
+template ValidateDelimiterIndices() {
     signal input delimiterIndices[18];
+    signal input photoEOI;
 
-    component range_check[18];
+    component range_check[19];
     component delimiter_idx_less_than_nxt_idx[17];
 
     for(var i = 0; i < 17; i++) {
@@ -335,14 +364,19 @@ template ValidateDelimiterIndices(maxDataLength) {
         delimiter_idx_less_than_nxt_idx[i] = LessThan(12);
         delimiter_idx_less_than_nxt_idx[i].in[0] <== delimiterIndices[i];
         delimiter_idx_less_than_nxt_idx[i].in[1] <== delimiterIndices[i + 1];
+        delimiter_idx_less_than_nxt_idx[i].out === 1;
     }
 
     range_check[17] = Num2Bits(12);
     range_check[17].in <== delimiterIndices[17];
 
+    range_check[18] = Num2Bits(12);
+    range_check[18].in <== photoEOI;
+
     component is_last_delimiter_idx_valid = LessThan(12);
     is_last_delimiter_idx_valid.in[0] <== delimiterIndices[17];
-    is_last_delimiter_idx_valid.in[1] <== maxDataLength;
+    is_last_delimiter_idx_valid.in[1] <== photoEOI;
+    is_last_delimiter_idx_valid.out === 1;
 
 
 }
@@ -368,6 +402,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal input data[maxDataLength];
     signal input qrDataPaddedLength;
     signal input delimiterIndices[18];
+    signal input photoEOI;
 
 
     // Outputs are in ascii format
@@ -382,7 +417,6 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal output ph_no_last_4digits[4];
     signal output photoHash;
     signal output timestamp;
-    signal output age;
 
     // Create `nDelimitedData` - same as `data` but each delimiter is replaced with n * 255
     // where n means the nth occurrence of 255
@@ -394,8 +428,15 @@ template EXTRACT_QR_DATA(maxDataLength) {
     signal n255Filter[maxDataLength + 1];
     n255Filter[0] <== 0;
 
-    component validateDelimiterIndices = ValidateDelimiterIndices(maxDataLength);
+    component validateDelimiterIndices = ValidateDelimiterIndices();
     validateDelimiterIndices.delimiterIndices <== delimiterIndices;
+    validateDelimiterIndices.photoEOI <== photoEOI;
+
+    component photoEOI_valid = LessThan(12);
+    photoEOI_valid.in[0] <== photoEOI;
+    photoEOI_valid.in[1] <== qrDataPaddedLength;
+    photoEOI_valid.out === 1;
+
 
 
     for (var i = 0; i < maxDataLength; i++) {
@@ -465,7 +506,7 @@ template EXTRACT_QR_DATA(maxDataLength) {
     component photoExtractor = PhotoExtractor(maxDataLength);
     photoExtractor.nDelimitedData <== nDelimitedData;
     photoExtractor.startDelimiterIndex <== delimiterIndices[photoPosition() - 1];
-    photoExtractor.endIndex <== qrDataPaddedLength - 1;
+    photoExtractor.endIndex <== photoEOI;
     photoHash <== photoExtractor.out;
 
     // Extract timestamp
