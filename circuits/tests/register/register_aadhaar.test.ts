@@ -168,10 +168,10 @@ describe('REGISTER AADHAAR Circuit Tests', function () {
     const out = await circuit.getOutput(w, ['timestamp']);
   });
 
-  it.skip("should work for a real id", async function() {
+  it.only("should work for a real id", async function() {
     this.timeout(0);
     const actualQrData = "";
-    const { inputs, nullifier, commitment } = prepareAadhaarRegisterData(actualQrData, '1234', pubkeys[0]);
+    const { inputs, nullifier, commitment } = await prepareAadhaarRegisterData(actualQrData, '1234', pubkeys);
     const w = await circuit.calculateWitness(inputs);
     await circuit.checkConstraints(w);
 

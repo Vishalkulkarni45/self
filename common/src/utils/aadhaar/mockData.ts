@@ -246,10 +246,10 @@ export function prepareAadhaarRegisterTestData(
   };
 }
 
-export function prepareAadhaarRegisterData(
+export async function prepareAadhaarRegisterData(
   qrData: string,
   secret: string,
-  certPem: string,
+  certs: string[],
 ) {
   const sharedData = processQRDataSimple(qrData);
   const delimiterIndices: number[] = [];
@@ -277,10 +277,30 @@ export function prepareAadhaarRegisterData(
   );
   const signature = BigInt('0x' + bufferToHex(Buffer.from(signatureBytes)).toString());
 
-  const certificate = forge.pki.certificateFromPem(certPem);
-  const publicKey = certificate.publicKey as forge.pki.rsa.PublicKey;
+  //do promise.all for all certs and pick the one that is valid
+  const certificates = await Promise.all(certs.map(async (cert) => {
+    const certificate = forge.pki.certificateFromPem(cert);
+    const publicKey = certificate.publicKey as forge.pki.rsa.PublicKey;
 
-  const modulusHex = publicKey.n.toString(16);
+    try {
+      const md = forge.md.sha256.create();
+      md.update(forge.util.binary.raw.encode(sharedData.signedData));
+
+      const isValid = publicKey.verify(md.digest().getBytes(), signatureBytes);
+      return isValid;
+    } catch (error) {
+      return false;
+    }
+  }));
+
+  //find the valid cert
+  const validCert = certificates.indexOf(true);
+  if (validCert === -1) {
+    throw new Error("No valid certificate found");
+  }
+  const certPem = certs[validCert];
+  const cert = forge.pki.certificateFromPem(certPem);
+  const modulusHex = (cert.publicKey as forge.pki.rsa.PublicKey).n.toString(16);
   const pubKey = BigInt('0x' + modulusHex);
 
   const nullifier = nullifierHash(sharedData.extractedFields);
@@ -293,10 +313,6 @@ export function prepareAadhaarRegisterData(
     BigInt(sharedData.photoHash)
   );
 
-
-  const paddedName = computePaddedName(sharedData.extractedFields.name);
-
-
   const inputs = {
     qrDataPadded: Uint8ArrayToCharArray(sharedData.qrDataPadded),
     qrDataPaddedLength: sharedData.qrDataPaddedLen,
@@ -304,7 +320,6 @@ export function prepareAadhaarRegisterData(
     signature: splitToWords(signature, BigInt(121), BigInt(17)),
     pubKey: splitToWords(pubKey, BigInt(121), BigInt(17)),
     secret: secret,
-    attestation_id: '3',
     photoEOI: photoEOI,
   };
 
