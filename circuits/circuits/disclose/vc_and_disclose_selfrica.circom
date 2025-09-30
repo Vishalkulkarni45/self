@@ -9,6 +9,14 @@ include "@openpassport/zk-email-circuits/lib/bigint.circom";
 include "../utils/selfrica/constants.circom";
 include "../utils/selfrica/disclose/disclose.circom";
 
+//TODO
+//1. remove disclose_sel and use decimal as input and then decompose to bits
+
+
+//unclear
+//1. range check not needed for SmileID_data_padded to be ascii ?
+//2. are sig in bytes?
+
 template VC_AND_DISCLOSE(
     MAX_FORBIDDEN_COUNTRIES_LIST_LENGTH,
     namedobTreeLevels,
@@ -45,9 +53,14 @@ template VC_AND_DISCLOSE(
     signal input majority_age_ASCII[3];
     signal input selector_older_than;
 
+    //range check on majority_age_ASCII
+    component majority_age_ASCII_range_check[3] = Num2Bits(6);
+    for(var i = 0; i < 3; i++){
+        majority_age_ASCII_range_check[i].in <== majority_age_ASCII[i];
+    }
 
 
-    //range check not needed for SmileID_data_padded to be ascii
+    //TODO : remove this check
     for(var i = 0; i < selfrica_length; i++){
         //Check is selctor binary
         disclose_sel[i] * (disclose_sel[i] - 1) === 0;
@@ -59,20 +72,19 @@ template VC_AND_DISCLOSE(
     msg_hasher.paddedIn <== SmileID_data_padded;
     msg_hasher.paddedInLength <== SMILE_DATA_PADDED();
 
-    //verify Hash(smiledata) signatur
-    component msg_sig_verify = SignatureVerifier(1, n, k);
-    msg_sig_verify.hash <== msg_hasher.out;
-    msg_sig_verify.pubKey <== pubKey;
-    msg_sig_verify.signature <== msg_sig;
+    //verify signature
+    // component msg_sig_verify = SignatureVerifier(1, n, k);
+    // msg_sig_verify.hash <== msg_hasher.out;
+    // msg_sig_verify.pubKey <== pubKey;
+    // msg_sig_verify.signature <== msg_sig;
 
 
     //Calculate IDNUMBER hash
     signal id_num[SMILE_ID_PADDED()];
-    var idNumberIdx = ID_NUMBER_INDEX();
 
     // Fill the first 20 bytes with actual ID number data
     for (var i = 0; i < ID_NUMBER_LENGTH(); i++) {
-        id_num[i] <== SmileID_data_padded[idNumberIdx + i];
+        id_num[i] <== SmileID_data_padded[ID_NUMBER_INDEX() + i];
     }
 
     // Add SHA-256 padding for 20-byte message
@@ -96,17 +108,17 @@ template VC_AND_DISCLOSE(
     id_num_hasher.paddedInLength <== SMILE_ID_PADDED();
 
     //verify Hash(IdNumber) signature
-    component id_num_sig_verify = SignatureVerifier(1, n, k);
-    id_num_sig_verify.hash <== id_num_hasher.out;
-    id_num_sig_verify.pubKey <== pubKey;
-    id_num_sig_verify.signature <== id_num_sig;
+    // component id_num_sig_verify = SignatureVerifier(1, n, k);
+    // id_num_sig_verify.hash <== id_num_hasher.out;
+    // id_num_sig_verify.pubKey <== pubKey;
+    // id_num_sig_verify.signature <== id_num_sig;
 
 
-    // Identity Commitment = Hash( IdNumCommit sig )
+    // Identity Commitment = Hash( msg_sig )
     component idCommCal = CustomHasher(k);
     idCommCal.in <== msg_sig;
 
-    //Nullifier = HASH( nullifier sig , scope )
+    //Nullifier = HASH( id_num_sig , scope )
     component nullifierCal = CustomHasher(k + 1);
     for (var i = 0; i < k; i++) {
         nullifierCal.in[i] <== id_num_sig[i];
@@ -143,8 +155,6 @@ template VC_AND_DISCLOSE(
     signal output identity_commitment <== idCommCal.out;
     signal output nullifier <== nullifierCal.out;
 
-    //dummy constrain
-    signal dummy <== user_identifier * attestation_id;
 }
 
 component main {

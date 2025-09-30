@@ -4331,8 +4331,6 @@ __metadata:
     "@openpassport/zk-kit-smt": "npm:^0.0.1"
     "@types/js-sha1": "npm:^0.6.3"
     "@types/node-forge": "npm:^1.3.10"
-    "@zk-email/helpers": "npm:^6.4.2"
-    "@zk-kit/baby-jubjub": "npm:^1.0.3"
     asn1.js: "npm:^5.4.1"
     asn1js: "npm:^3.0.5"
     axios: "npm:^1.7.2"
@@ -9347,7 +9345,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@zk-email/helpers@npm:^6.1.1, @zk-email/helpers@npm:^6.4.2":
+"@zk-email/helpers@npm:^6.1.1":
   version: 6.4.2
   resolution: "@zk-email/helpers@npm:6.4.2"
   dependencies:
@@ -9381,15 +9379,6 @@ __metadata:
     commander: "npm:^11.0.0"
     snarkjs: "npm:^0.7.5"
   checksum: 10c0/d2b2ccae85b5a4f1a57caf71f895cafb922f4e8b4f136cc57eb3434701640744bd8a02928037604b6f9d7c2084373d922d912180e41da070ff402d6033e35f8b
-  languageName: node
-  linkType: hard
-
-"@zk-kit/baby-jubjub@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "@zk-kit/baby-jubjub@npm:1.0.3"
-  dependencies:
-    "@zk-kit/utils": "npm:1.2.1"
-  checksum: 10c0/daf40c0d51732bf7a488d24afd5900a17a2a361b67a344cfa487ad1eda7f29b7f6eae96c440ec9a484f197db03895220495b6c656683bfad445523039c5bc98c
   languageName: node
   linkType: hard
 
@@ -9435,15 +9424,6 @@ __metadata:
   dependencies:
     "@zk-kit/utils": "npm:1.3.0"
   checksum: 10c0/46aefeb9f7d79dee9b944e3943627ff08a7266bc1824230298fa730d542c124fc81aa90cf2205c2bdcfe5d7516ba599f47d594313cc6d33603809de9f4c816e6
-  languageName: node
-  linkType: hard
-
-"@zk-kit/utils@npm:1.2.1":
-  version: 1.2.1
-  resolution: "@zk-kit/utils@npm:1.2.1"
-  dependencies:
-    buffer: "npm:^6.0.3"
-  checksum: 10c0/6e6163806074ceb3b0b94e12e0471563f61aa4de2c11aa0d37c290c5961f8671317aec7e4069edbd35a34b58602da8e94bbd99fb664a99dc4d95147ccdf63371
   languageName: node
   linkType: hard
 

@@ -52,7 +52,6 @@ template DISCLOSE_SELFRICA(
     is_older_than.birthDateASCII <== birth_date_ASCII;
     signal is_older_than_result <== is_older_than.out;
 
-    is_older_than_result * (is_older_than_result - 1) === 0;
 
     component ofac_name_dob_circuit = OFAC_NAME_DOB_SELFRICA(name_dob_tree_levels);
     ofac_name_dob_circuit.smile_data <== smile_data;
