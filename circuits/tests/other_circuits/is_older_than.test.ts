@@ -87,6 +87,21 @@ describe('DateIsLessChecker Circuit Test', function () {
     expect(circuit).to.not.be.undefined;
   });
 
+  it.only('should fail', async () => {
+    const inputs = {
+      majority: [48, 50],
+      currDate: [9, 6, 0, 4, 0, 1],
+      birthDateASCII: ['9', '4', '0', '4', '0', '3'].map((x) => x.charCodeAt(0)),
+    };
+
+    const witness = await circuit.calculateWitness(inputs);
+    await circuit.checkConstraints(witness);
+
+    const output = await circuit.getOutput(witness, ['out']);
+    console.log(output);
+    expect(output.out).to.equal('0');
+  });
+
   describe('Majority Tests', function () {
     majorityBirthDates.forEach((date, index) => {
       it(`majority check for birthdate ${genDateStr(majorityBirthDates[index])} and current date ${genDateStr(currentDates[index])} and age: ${getAgeFromDates(majorityBirthDates[index], currentDates[index])}`, async function () {

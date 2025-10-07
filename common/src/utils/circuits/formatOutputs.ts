@@ -93,6 +93,7 @@ export function formatAndUnpackReveal(
   );
 }
 
+
 export function formatAndUnpackForbiddenCountriesList(
   forbiddenCountriesList_packed: string[]
 ): string[] {

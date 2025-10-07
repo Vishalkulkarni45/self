@@ -4,7 +4,7 @@ import { ChildNodes, SMT } from '@openpassport/zk-kit-smt';
 import countries from 'i18n-iso-countries';
 // @ts-ignore
 import en from 'i18n-iso-countries/langs/en.json' with { type: 'json' };
-import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon6, poseidon10 } from 'poseidon-lite';
+import { poseidon12, poseidon13, poseidon2, poseidon3, poseidon6, poseidon10 ,poseidon8, poseidon4} from 'poseidon-lite';
 import { CertificateData } from './certificate_parsing/dataStructure.js';
 import { parseCertificateSimple } from './certificate_parsing/parseCertificateSimple.js';
 import {
@@ -400,21 +400,12 @@ function processName(
   return getNameLeaf(nameArr, i);
 }
 
+
 function processDob(day: string, month: string, year: string, i: number): bigint {
   // YYMMDD
   const monthMap: { [key: string]: string } = {
-    jan: '01',
-    feb: '02',
-    mar: '03',
-    apr: '04',
-    may: '05',
-    jun: '06',
-    jul: '07',
-    aug: '08',
-    sep: '09',
-    oct: '10',
-    nov: '11',
-    dec: '12',
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
   };
 
   const lowerMonth = typeof month === 'string' ? month.toLowerCase() : '';
@@ -551,4 +542,130 @@ export function getDobLeaf(dobMrz: (bigint | number)[], i?: number): bigint {
     console.error('Error in getDobLeaf:', err, 'Index:', i, 'DOB MRZ:', dobMrz); // Use console.error
     return BigInt(0); // Return 0 on error
   }
+}
+
+export function buildSelfricaSMT(field: any[], treetype: string): [number, number, SMT] {
+  let count = 0;
+  let startTime = performance.now();
+
+  const hash2 = (childNodes: ChildNodes) =>
+    childNodes.length === 2 ? poseidon2(childNodes) : poseidon3(childNodes);
+  const tree = new SMT(hash2, true);
+
+  for (let i = 0; i < field.length; i++) {
+    const entry = field[i];
+
+    if (i !== 0) {
+      console.log('Processing', treetype, 'number', i, 'out of', field.length);
+    }
+
+    let leaf = BigInt(0);
+    if (treetype == 'name_and_dob') {
+      leaf = processNameAndDobSelfrica(entry, i);
+    } else if (treetype == 'name_and_yob') {
+      leaf = processNameAndYobSelfrica(entry, i);
+    }
+
+    if (leaf == BigInt(0) || tree.createProof(leaf).membership) {
+      console.log('This entry already exists in the tree, skipping...');
+      continue;
+    }
+
+    count += 1;
+    tree.add(leaf, BigInt(1));
+  }
+
+  console.log('Total', treetype, 'paresed are : ', count, ' over ', field.length);
+  console.log(treetype, 'tree built in', performance.now() - startTime, 'ms');
+  return [count, performance.now() - startTime, tree];
+}
+
+const processNameAndDobSelfrica = (entry: any, i: number): bigint => {
+  const firstName = entry.First_Name;
+  const lastName = entry.Last_Name;
+  const day = entry.day;
+  const month = entry.month;
+  const year = entry.year;
+
+  if (day == null || month == null || year == null) {
+    console.log('dob is null', i, entry);
+    return BigInt(0);
+  }
+
+  const nameHash = processNameSelfrica(firstName, lastName, i);
+  // console.log("name hash in utils", nameHash);
+  const dobHash = processDobSelfrica(day, month, year, i);
+  // console.log("dob hash in utils", dobHash);
+
+  // console.log("name dob hash in utils", poseidon2([dobHash, nameHash]));
+  return generateSmallKey(poseidon2([dobHash, nameHash]));
+}
+
+export const getNameDobLeafSelfrica = (name: string, dob: string) => {
+  const paddedName = name.padEnd(40, '\0').split('').map(char => char.charCodeAt(0));
+  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
+  const dobHash = BigInt(poseidon8(stringToAsciiBigIntArray(dob)));
+  return generateSmallKey(poseidon2([dobHash, nameHash]));
+}
+
+const processNameSelfrica = (firstName: string, lastName: string, i: number): bigint => {
+  firstName = firstName.replace(/'/g, '');
+  firstName = firstName.replace(/\./g, '');
+  firstName = firstName.replace(/[- ]/g, '<');
+  lastName = lastName.replace(/'/g, '');
+  lastName = lastName.replace(/[- ]/g, '<');
+  lastName = lastName.replace(/\./g, '');
+
+  //TODO: check if smile id does first name and last name || last name and first name
+  const nameArr = (lastName + ' ' + firstName).padEnd(40, '\0').split('').map(char => char.charCodeAt(0));
+  return BigInt(packBytesAndPoseidon(nameArr));
+}
+
+const processDobSelfrica = (day: string, month: string, year: string, i: number): bigint => {
+  const monthMap: { [key: string]: string } = {
+    jan: '01',
+    feb: '02',
+    mar: '03',
+    apr: '04',
+    may: '05',
+    jun: '06',
+    jul: '07',
+    aug: '08',
+    sep: '09',
+    oct: '10',
+    nov: '11',
+    dec: '12',
+  };
+
+  month = monthMap[month.toLowerCase()];
+  const dob = year + month + day;
+  let arr = stringToAsciiBigIntArray(dob);
+  return BigInt(poseidon8(arr));
+}
+
+export const getNameYobLeafSelfrica = (name: string, yob: string) => {
+  const paddedName = name.padEnd(40, '\0').split('').map(char => char.charCodeAt(0));
+  const nameHash = BigInt(packBytesAndPoseidon(paddedName));
+
+  const yearHash = processYearSelfrica(yob, 0);
+  return generateSmallKey(poseidon2([yearHash, nameHash]));
+}
+
+const processNameAndYobSelfrica = (entry: any, i: number): bigint => {
+  const firstName = entry.First_Name;
+  const lastName = entry.Last_Name;
+  const year = entry.year;
+  if (year == null) {
+    console.log('year is null', i, entry);
+    return BigInt(0);
+  }
+
+  const nameHash = processNameSelfrica(firstName, lastName, i);
+  const yearHash = processYearSelfrica(year, i);
+  return generateSmallKey(poseidon2([yearHash, nameHash]));
+}
+
+const processYearSelfrica = (year: string, i: number): bigint => {
+  const yearArr = stringToAsciiBigIntArray(year);
+  return BigInt(poseidon4(yearArr));
 }

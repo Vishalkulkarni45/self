@@ -68,8 +68,9 @@ REGISTER_ID_CIRCUITS=(
 )
 
 DISCLOSE_CIRCUITS=(
-    "vc_and_disclose:true"
-    "vc_and_disclose_id:true"
+    # "vc_and_disclose:true"
+    # "vc_and_disclose_id:true"
+    "vc_and_disclose_selfrica:true"
 )
 
 DSC_CIRCUITS=(

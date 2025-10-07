@@ -57,7 +57,6 @@ template REGISTER_ID(
     var nLevels = getMaxDSCLevels();
 
     assert(MAX_DSC_LENGTH % 64 == 0);
-
     // This means the attestation is a id card
     var attestation_id = 2;
 
@@ -93,7 +92,6 @@ template REGISTER_ID(
     signal input siblings[nLevels];
 
     signal input csca_tree_leaf;
-
     signal input secret;
 
     // assert only bytes are used in raw_dsc
@@ -214,7 +212,6 @@ template REGISTER_ID(
     // generate commitment
     signal dg1_packed_hash <== PackBytesAndPoseidon(DG1_LEN)(dg1);
     signal eContent_shaBytes_packed_hash <== PackBytesAndPoseidon(ECONTENT_HASH_ALGO_BYTES)(passportVerifier.eContentShaBytes);
-
     signal output commitment <== Poseidon(5)([
         secret,
         attestation_id,
